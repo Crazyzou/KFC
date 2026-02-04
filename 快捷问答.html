@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI多功能工具箱</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-hover: #3a56d4;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --text-color: #2b2d42;
+            --text-secondary: #5a6268;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --success-color: #4cc9f0;
+            --error-color: #f72585;
+            --warning-color: #f8961e;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 15px 30px rgba(0, 0, 0, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 0;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-size: 16px;
+            height: 100vh;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            padding: 1.5rem;
+            display: flex;
+            gap: 1.5rem;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* 左侧功能区 - 纵向排列4个功能块 */
+        .function-area {
+            width: 380px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* 功能块样式优化 */
+        .tool-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+
+        /* 选中功能块的高亮样式 */
+        .tool-card.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.05), rgba(76, 201, 240, 0.05));
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-title .icon {
+            font-size: 1.2rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        /* 右侧结果区 - 占满剩余宽度，默认隐藏，选中功能后显示 */
+        .result-area {
+            flex: 1;
+            min-height: calc(100vh - 3rem);
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .result-area.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* 功能操作面板（原card-body）- 右侧结果区的核心内容 */
+        .function-panel {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .function-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .input-group {
+            margin-bottom: 1.75rem;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        label i {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            min-height: 140px;
+            resize: vertical;
+            transition: var(--transition);
+            background-color: var(--bg-color);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem 1.75rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            margin: 0.5rem 0 1rem;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-hover), var(--accent-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn:hover::after {
+            opacity: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn:disabled::after {
+            display: none;
+        }
+
+        .btn-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            display: none;
+            gap: 0.75rem;
+        }
+
+        .spinner {
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(67, 97, 238, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .result-container {
+            margin-top: 1.75rem;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .result-header {
+            padding: 0.875rem 1.25rem;
+            background-color: rgba(248, 249, 250, 0.9);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-content {
+            padding: 0.5rem;
+            line-height: 1.6;
+            background-color: var(--card-bg);
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            /* 删掉这行：max-height: 400px; */
+            overflow-y: auto;
+            /* 仅内容超屏时滚动，否则无滚动条 */
+        }
+
+        .result-line {
+            position: relative;
+            padding: 0.5rem 1.75rem 0.5rem 0.75rem;
+            margin: 0;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .result-line:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        .line-copy-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .result-line:hover .line-copy-btn {
+            opacity: 0.7;
+        }
+
+        .line-copy-btn:hover {
+            opacity: 1 !important;
+            color: var(--primary-color);
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        .line-copy-btn i {
+            font-size: 0.85rem;
+        }
+
+        /* 新增表格样式 - 适配链接语言提取 */
+        .link-lang-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .link-lang-table thead {
+            background-color: rgba(248, 249, 250, 0.9);
+        }
+
+        .link-lang-table th,
+        .link-lang-table td {
+            padding: 0.875rem 1.25rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-lang-table th {
+            font-weight: 500;
+            color: var(--text-secondary);
+            position: relative;
+        }
+
+        .link-lang-table td {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .link-lang-table tr:hover td {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        /* 表头复制按钮样式 */
+        .header-copy-btn {
+            margin-left: 0.75rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: var(--text-secondary);
+        }
+
+        .header-copy-btn i {
+            font-size: 0.7rem;
+        }
+
+        .header-copy-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .copy-btn i {
+            font-size: 0.8rem;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--text-color);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .toast i {
+            font-size: 1.1rem;
+        }
+
+        /* 空状态提示 */
+        .empty-tip {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            gap: 1rem;
+        }
+
+        .empty-tip i {
+            font-size: 3rem;
+            color: var(--border-color);
+        }
+
+        /* 语言识别结果样式 */
+        .lang-result-box {
+            background-color: rgba(67, 97, 238, 0.05);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .lang-result-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lang-result-value {
+            font-size: 1rem;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                overflow-y: auto;
+            }
+
+            .function-area {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .tool-card {
+                width: calc(50% - 0.5rem);
+            }
+
+            .result-area {
+                flex: none;
+                width: 100%;
+                height: auto;
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 15px;
+                overflow-y: auto;
+                height: auto;
+            }
+
+            .container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .tool-card {
+                width: 100%;
+            }
+
+            .result-area {
+                padding: 1.5rem;
+                min-height: 400px;
+            }
+
+            textarea {
+                min-height: 120px;
+                font-size: 0.95rem;
+            }
+
+            /* 移动端表格适配 */
+            .link-lang-table th,
+            .link-lang-table td {
+                padding: 0.6rem 0.8rem;
+            }
+
+            .header-copy-btn {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 左侧：功能块区域（纵向4个功能块） -->
+        <div class="function-area">
+            <header>
+                <h1>AI多功能工具箱</h1>
+                <p class="subtitle">高效处理文本内容，提升工作效率的智能工具集合</p>
+            </header>
+
+            <!-- 功能1: 翻译结果分行 -->
+            <div class="tool-card" data-target="panel1">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-align-left"></i></span>
+                        翻译结果分行
+                    </div>
+                    <div class="card-desc">自动识别文本中的各种分隔符号，将内容分隔显示，并识别语言</div>
+                </div>
+            </div>
+
+            <!-- 功能2: 链接与语言提取 -->
+            <div class="tool-card" data-target="panel2">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-link"></i></span>
+                        链接与语言提取
+                    </div>
+                    <div class="card-desc">从文本中提取所有链接和对应语言，分两列展示，方便分析</div>
+                </div>
+            </div>
+
+            <!-- 功能3: 欧美青少年广告文案优化 -->
+            <div class="tool-card" data-target="panel3">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon"><i class="fas fa-magic"></i></span>
+                        广告文案优化
+                    </div>
+                    <div class="card-desc">优化广告口播文本，符合欧美青少年文化习惯，提升广告效果</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：结果展示区域（点击功能块后显示） -->
+        <div class="result-area" id="resultArea">
+            <!-- 空状态提示 -->
+            <div class="empty-tip" id="emptyTip">
+                <i class="fas fa-hand-pointer"></i>
+                请选择左侧的功能开始操作
+            </div>
+
+            <!-- 功能1操作面板 -->
+            <div class="function-panel" id="panel1">
+                <div class="input-group">
+                    <label for="text-separator-input">
+                        <i class="fas fa-info-circle"></i>
+                        输入需要分隔的文本
+                    </label>
+                    <textarea id="text-separator-input" placeholder="例如: 你好,世界;这是一段-测试文本。"></textarea>
+                </div>
+                <button class="btn" id="text-separator-btn">
+                    <span class="btn-content">
+                        <i class="fas fa-cut"></i>
+                        分隔文本并识别语言
+                    </span>
+                </button>
+                <div class="loading" id="separator-loading">
+                    <div class="spinner"></div>
+                    正在处理...
+                </div>
+
+                <!-- 语言识别结果区域 -->
+                <div class="lang-result-box" id="lang-detection-result-container" style="display: none;">
+                    <div class="lang-result-label">
+                        <i class="fas fa-language"></i>
+                        识别到的语言
+                    </div>
+                    <div class="lang-result-value" id="lang-detection-result"></div>
+                </div>
+
+                <div class="result-container" id="text-separator-result-container" style="display: none;">
+                    <div class="result-header">
+                        分隔结果
+                        <button class="copy-btn" onclick="copyToClipboard('text-separator-result')">
+                            <i class="far fa-copy"></i>
+                            复制全部
+                        </button>
+                    </div>
+                    <div class="result-content" id="text-separator-result"></div>
+                </div>
+            </div>
+
+            <!-- 功能2操作面板 - 改造为表格展示 -->
+            <div class="function-panel" id="panel2">
+                <div class="input-group">
+                    <label for="link-lang-input">
+                        <i class="fas fa-info-circle"></i>
+                        输入包含链接的文本
+                    </label>
+                    <textarea id="link-lang-input"
+                        placeholder="例如: 中文网站 https://example.cn    英文网站 https://example.com"></textarea>
+                </div>
+                <button class="btn" id="link-lang-btn">
+                    <span class="btn-content">
+                        <i class="fas fa-extract"></i>
+                        提取链接和语言
+                    </span>
+                </button>
+                <div class="loading" id="link-lang-loading">
+                    <div class="spinner"></div>
+                    正在提取...
+                </div>
+                <div class="result-container" id="link-lang-result-container" style="display: none;">
+                    <div class="result-header">提取结果</div>
+                    <div class="result-content" style="padding:0;">
+                        <!-- 链接语言提取表格 - 核心改造 -->
+                        <table class="link-lang-table" id="link-lang-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        链接
+                                        <button class="header-copy-btn" id="copy-all-links" title="一键复制所有链接">
+                                            <i class="far fa-copy"></i>复制
+                                        </button>
+                                    </th>
+                                    <th>
+                                        语言
+                                        <button class="header-copy-btn" id="copy-all-langs" title="一键复制所有语言">
+                                            <i class="far fa-copy"></i>复制
+                                        </button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="link-lang-tbody">
+                                <!-- 动态渲染表格内容 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 功能3操作面板 -->
+            <div class="function-panel" id="panel3">
+                <div class="input-group">
+                    <label for="ad-text-input">
+                        <i class="fas fa-info-circle"></i>
+                        输入需要优化的广告文案
+                    </label>
+                    <textarea id="ad-text-input" placeholder="例如: 这款产品非常棒，你一定要试试看！"></textarea>
+                </div>
+                <button class="btn" id="ad-text-btn">
+                    <span class="btn-content">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        优化文案
+                    </span>
+                </button>
+                <div class="loading" id="ad-text-loading">
+                    <div class="spinner"></div>
+                    正在优化...
+                </div>
+                <div class="result-container" id="ad-text-result-container" style="display: none;">
+                    <div class="result-header">
+                        优化结果
+                        <button class="copy-btn" onclick="copyToClipboard('ad-text-result')">
+                            <i class="far fa-copy"></i>
+                            复制
+                        </button>
+                    </div>
+                    <div class="result-content" id="ad-text-result"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        已复制到剪贴板
+    </div>
+
+    <script>
+        class AITitleProcessor {
+            constructor() {
+                this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
+                this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+            }
+
+            async getAIResponse(prompt) {
+                const response = await fetch(this.apiUrl, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${this.apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "ep-20250813143100-7b9vf",
+                        messages: [{
+                            role: "user",
+                            content: prompt
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`AI请求失败: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return result.choices?.[0]?.message?.content?.trim() || '';
+            }
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent || element.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        function copyLineText(button) {
+            const lineText = button.parentElement.textContent.replace('复制', '').trim();
+            navigator.clipboard.writeText(lineText).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        // 新增：存储提取的链接和语言数据，用于一键复制
+        let extractedLinks = [];
+        let extractedLangs = [];
+
+        // 新增：一键复制所有链接 
+        function copyAllLinks() {
+            if (extractedLinks.length === 0) {
+                alert('暂无链接可复制');
+                return;
+            }
+            const text = extractedLinks.join('\n');
+            navigator.clipboard.writeText(text).then(showToast).catch(err => {
+                console.error('复制链接失败:', err);
+            });
+        }
+
+        // 新增：一键复制所有语言
+        function copyAllLangs() {
+            if (extractedLangs.length === 0) {
+                alert('暂无语言可复制');
+                return;
+            }
+            const text = extractedLangs.join('\n');
+            navigator.clipboard.writeText(text).then(showToast).catch(err => {
+                console.error('复制语言失败:', err);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const aiProcessor = new AITitleProcessor();
+            const toolCards = document.querySelectorAll('.tool-card');
+            const functionPanels = document.querySelectorAll('.function-panel');
+            const resultArea = document.getElementById('resultArea');
+            const emptyTip = document.getElementById('emptyTip');
+
+            // 绑定一键复制按钮事件 
+            document.getElementById('copy-all-links').addEventListener('click', copyAllLinks);
+            document.getElementById('copy-all-langs').addEventListener('click', copyAllLangs);
+
+            // 左侧功能块点击事件 - 切换右侧面板
+            toolCards.forEach(card => {
+                card.addEventListener('click', function () {
+                    // 移除所有选中状态 
+                    toolCards.forEach(c => c.classList.remove('active'));
+                    functionPanels.forEach(p => p.classList.remove('active'));
+                    // 添加当前选中状态
+                    this.classList.add('active');
+                    const targetPanel = document.getElementById(this.dataset.target);
+                    targetPanel.classList.add('active');
+                    // 显示结果区，隐藏空状态
+                    resultArea.classList.add('show');
+                    emptyTip.style.display = 'none';
+                });
+            });
+
+            // 功能1: 符号分隔和语言识别 
+            const separatorInput = document.getElementById('text-separator-input');
+            const separatorBtn = document.getElementById('text-separator-btn');
+            const separatorLoading = document.getElementById('separator-loading');
+            const separatorResult = document.getElementById('text-separator-result');
+            const separatorResultContainer = document.getElementById('text-separator-result-container');
+            const langResult = document.getElementById('lang-detection-result');
+            const langResultContainer = document.getElementById('lang-detection-result-container');
+
+            separatorBtn.addEventListener('click', async function () {
+                const text = separatorInput.value.trim();
+                if (!text) {
+                    alert('请输入需要分隔的文本');
+                    return;
+                }
+
+                separatorBtn.disabled = true;
+                separatorLoading.style.display = 'flex';
+                separatorResult.innerHTML = '';
+                separatorResultContainer.style.display = 'none';
+                langResult.textContent = '';
+                langResultContainer.style.display = 'none';
+
+                try {
+                    // 异步执行语言识别
+                    const langPrompt = `请识别以下文本使用的语言，只需返回语言名称(中文)，不要其他内容:
+                    
+${text}`;
+
+                    const langDetectionPromise = aiProcessor.getAIResponse(langPrompt);
+
+                    // 异步执行文本分隔 
+                    const separatorPrompt = `请严格按照以下要求处理文本：
+1. 输入文本: ${text}
+2. 自动识别常见分隔符号（如。！—— ？—等等）
+3. 将文本按识别到的符号分隔，不需要按照逗号分隔
+4. 每个分隔后的项目单独一行显示 
+5. 保持原始内容不变 
+6. 不要添加任何额外说明 
+ 
+请直接输出分隔后的结果，不要包含其他内容。`;
+
+                    const separatorPromise = aiProcessor.getAIResponse(separatorPrompt);
+
+                    // 等待两个异步任务完成 
+                    const [langResultText, separatorResultText] = await Promise.all([
+                        langDetectionPromise,
+                        separatorPromise
+                    ]);
+
+                    // 处理语言识别结果
+                    langResult.textContent = langResultText;
+                    langResultContainer.style.display = 'block';
+
+                    // 处理分隔结果
+                    const lines = separatorResultText.split('\n').filter(line => line.trim() !== '');
+                    separatorResult.innerHTML = lines.map(line => `
+<div class="result-line">${line}
+    <button class="line-copy-btn" onclick="copyLineText(this)" title="复制">
+        <i class="far fa-copy"></i>
+    </button>
+</div>
+`).join('');
+                    separatorResultContainer.style.display = 'block';
+                } catch (error) {
+                    separatorResult.innerHTML = '<div class="result-line">处理出错，请重试</div>';
+                    separatorResultContainer.style.display = 'block';
+                    langResult.textContent = '语言识别失败';
+                    langResultContainer.style.display = 'block';
+                    console.error('处理错误:', error);
+                } finally {
+                    separatorBtn.disabled = false;
+                    separatorLoading.style.display = 'none';
+                }
+            });
+
+            // 功能2: 链接和语言提取 - 改造为表格渲染 
+            const linkLangInput = document.getElementById('link-lang-input');
+            const linkLangBtn = document.getElementById('link-lang-btn');
+            const linkLangLoading = document.getElementById('link-lang-loading');
+            const linkLangTbody = document.getElementById('link-lang-tbody');
+            const linkLangResultContainer = document.getElementById('link-lang-result-container');
+
+            linkLangBtn.addEventListener('click', async function () {
+                const text = linkLangInput.value.trim();
+                if (!text) {
+                    alert('请输入包含链接的文本');
+                    return;
+                }
+
+                linkLangBtn.disabled = true;
+                linkLangLoading.style.display = 'flex';
+                linkLangTbody.innerHTML = '';
+                linkLangResultContainer.style.display = 'none';
+                // 清空存储的链接和语言数据
+                extractedLinks = [];
+                extractedLangs = [];
+
+                try {
+                    const prompt = `请严格按照以下要求处理文本：
+1. 输入文本: ${text}
+2. 提取所有完整链接（http/https开头）
+3. 识别每个链接内容的主要语言 
+4. 将链接和对应语言分别列出，没有语言的或英语则返回通用
+5. 链接在一列，语言在另一列，上下对应，语言要用原缩写
+6. 不要添加任何额外说明或解释 
+ 
+请按照以下格式返回结果：
+||链接开始|| 
+链接1
+链接2
+链接3
+||链接结束|| 
+ 
+||语言开始|| 
+语言1
+语言2
+语言3
+||语言结束||`;
+
+                    let result;
+                    let retryCount = 0;
+                    const maxRetries = 3;
+                    let hasValidResult = false;
+
+                    do {
+                        result = await aiProcessor.getAIResponse(prompt);
+                        const linkMatch = result.match(/\|\|链接开始\|\|([\s\S]*?)\|\|链接结束\|\|/);
+                        const langMatch = result.match(/\|\|语言开始\|\|([\s\S]*?)\|\|语言结束\|\|/);
+
+                        if (linkMatch && langMatch) {
+                            extractedLinks = linkMatch[1].trim().split('\n').filter(Boolean);
+                            extractedLangs = langMatch[1].trim().split('\n').filter(Boolean);
+                            const hasInvalidResult = extractedLangs.some(lang =>
+                                lang.includes('无法识别') ||
+                                lang.includes('未识别') ||
+                                lang.includes('未知')
+                            );
+
+                            if (!hasInvalidResult && extractedLinks.length > 0 && extractedLangs.length > 0) {
+                                // 渲染表格内容 
+                                let tableHtml = '';
+                                // 取两者长度的最大值，保证行对齐 
+                                const maxLen = Math.max(extractedLinks.length, extractedLangs.length);
+                                for (let i = 0; i < maxLen; i++) {
+                                    const link = extractedLinks[i] || '-';
+                                    const lang = extractedLangs[i] || '-';
+                                    tableHtml += `<tr><td>${link}</td><td>${lang}</td></tr>`;
+                                }
+                                linkLangTbody.innerHTML = tableHtml;
+                                hasValidResult = true;
+                            } else {
+                                retryCount++;
+                                if (retryCount < maxRetries) continue;
+                                else {
+                                    linkLangTbody.innerHTML = '<tr><td>无法提取有效链接</td><td>无法识别语言</td></tr>';
+                                }
+                            }
+                        } else {
+                            retryCount++;
+                            if (retryCount < maxRetries) continue;
+                            else {
+                                linkLangTbody.innerHTML = '<tr><td>未找到链接</td><td>无法识别语言</td></tr>';
+                            }
+                        }
+                    } while (!hasValidResult && retryCount < maxRetries);
+
+                    linkLangResultContainer.style.display = 'block';
+                } catch (error) {
+                    linkLangTbody.innerHTML = '<tr><td>处理出错</td><td>处理出错</td></tr>';
+                    linkLangResultContainer.style.display = 'block';
+                    console.error('链接语言提取错误:', error);
+                } finally {
+                    linkLangBtn.disabled = false;
+                    linkLangLoading.style.display = 'none';
+                }
+            });
+
+            // 功能3: 广告文案优化
+            const adTextInput = document.getElementById('ad-text-input');
+            const adTextBtn = document.getElementById('ad-text-btn');
+            const adTextLoading = document.getElementById('ad-text-loading');
+            const adTextResult = document.getElementById('ad-text-result');
+            const adTextResultContainer = document.getElementById('ad-text-result-container');
+
+            adTextBtn.addEventListener('click', async function () {
+                const text = adTextInput.value.trim();
+                if (!text) {
+                    alert('请输入广告文案');
+                    return;
+                }
+
+                adTextBtn.disabled = true;
+                adTextLoading.style.display = 'flex';
+                adTextResult.textContent = '';
+                adTextResultContainer.style.display = 'none';
+
+                try {
+                    const prompt = `请严格按照以下要求优化广告文案：
+1. 原始文案: ${text}
+2. 目标受众: 欧美青少年(13-19岁)
+3. 优化要求:
+   - 符合欧美青少年语言文化习惯
+   - 不要使用emoji
+   - 不要添加额外解释
+4. 只返回优化后的文案，不要包含其他内容`;
+
+                    const result = await aiProcessor.getAIResponse(prompt);
+                    adTextResult.textContent = result;
+                    adTextResultContainer.style.display = 'block';
+                } catch (error) {
+                    adTextResult.textContent = '优化失败，请重试';
+                    adTextResultContainer.style.display = 'block';
+                    console.error('文案优化错误:', error);
+                } finally {
+                    adTextBtn.disabled = false;
+                    adTextLoading.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
