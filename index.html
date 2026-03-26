@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>无情翻译工具箱</title>
+    <title>AI多功能工具箱</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
@@ -91,7 +91,6 @@
             line-height: 1.7;
         }
 
-        /* 左侧功能区 - 纵向排列4个功能块 */
         .function-area {
             width: 380px;
             height: 100%;
@@ -102,7 +101,6 @@
             padding-right: 0.5rem;
         }
 
-        /* 功能块样式优化 */
         .tool-card {
             background-color: var(--card-bg);
             border-radius: var(--radius-md);
@@ -119,7 +117,6 @@
             border-color: var(--primary-color);
         }
 
-        /* 选中功能块的高亮样式 */
         .tool-card.active {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
@@ -159,7 +156,6 @@
             line-height: 1.6;
         }
 
-        /* 右侧结果区 - 占满剩余宽度，默认隐藏，选中功能后显示 */
         .result-area {
             flex: 1;
             min-height: calc(100vh - 3rem);
@@ -177,7 +173,6 @@
             animation: fadeIn 0.3s ease-out;
         }
 
-        /* 功能操作面板（原card-body）- 右侧结果区的核心内容 */
         .function-panel {
             display: none;
             width: 100%;
@@ -233,7 +228,6 @@
         .btn {
             position: relative;
             display: inline-flex;
-            /* 保持原有布局方式 */
             align-items: center;
             width: 100%;
             justify-content: center;
@@ -248,19 +242,15 @@
             color: #2c3e50;
             text-transform: uppercase;
             padding: 1.25em 2em;
-            /* 保持原有内边距 */
             background: #e0f7fa;
             border: 2px solid #4fc3f7;
             border-radius: 0.75em;
             transform-style: preserve-3d;
             transition: transform 150ms cubic-bezier(0, 0, 0.58, 1),
                 background 150ms cubic-bezier(0, 0, 0.58, 1);
-            /* 移除 width: 100% 让宽度自适应内容 */
             white-space: nowrap;
-            /* 防止文本换行 */
         }
 
-        /* 其余所有样式保持不变 */
         .btn::before {
             position: absolute;
             content: '';
@@ -299,7 +289,6 @@
             transform: translate3d(0, 0, -1em);
         }
 
-        /* 禁用状态 */
         .btn:disabled {
             background: #e0e0e0;
             border-color: #bdbdbd;
@@ -387,139 +376,7 @@
             background-color: var(--card-bg);
             white-space: pre-wrap;
             font-size: 0.9rem;
-            /* 删掉这行：max-height: 400px; */
             overflow-y: auto;
-            /* 仅内容超屏时滚动，否则无滚动条 */
-        }
-
-        .result-line {
-            position: relative;
-            padding: 0.5rem 1.75rem 0.5rem 0.75rem;
-            margin: 0;
-            border-radius: 3px;
-            transition: background-color 0.2s;
-        }
-
-        .result-line:hover {
-            background-color: rgba(67, 97, 238, 0.05);
-        }
-
-        .line-copy-btn {
-            position: absolute;
-            right: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.7);
-            border: none;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0.3;
-            transition: all 0.2s;
-            color: var(--text-secondary);
-        }
-
-        .result-line:hover .line-copy-btn {
-            opacity: 0.7;
-        }
-
-        .line-copy-btn:hover {
-            opacity: 1 !important;
-            color: var(--primary-color);
-            background: rgba(67, 97, 238, 0.1);
-        }
-
-        .line-copy-btn i {
-            font-size: 0.85rem;
-        }
-
-        /* 新增表格样式 - 适配链接语言提取 */
-        .link-lang-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        .link-lang-table thead {
-            background-color: rgba(248, 249, 250, 0.9);
-        }
-
-        .link-lang-table th,
-        .link-lang-table td {
-            padding: 0.875rem 1.25rem;
-            border: 1px solid var(--border-color);
-            text-align: left;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .link-lang-table th {
-            font-weight: 500;
-            color: var(--text-secondary);
-            position: relative;
-        }
-
-        .link-lang-table td {
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .link-lang-table tr:hover td {
-            background-color: rgba(67, 97, 238, 0.05);
-        }
-
-        /* 表头复制按钮样式 */
-        .header-copy-btn {
-            margin-left: 0.75rem;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 0.3rem 0.6rem;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            color: var(--text-secondary);
-        }
-
-        .header-copy-btn i {
-            font-size: 0.7rem;
-        }
-
-        .header-copy-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .copy-btn {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .copy-btn i {
-            font-size: 0.8rem;
-        }
-
-        .copy-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
         }
 
         .toast {
@@ -547,11 +404,6 @@
             visibility: visible;
         }
 
-        .toast i {
-            font-size: 1.1rem;
-        }
-
-        /* 空状态提示 */
         .empty-tip {
             width: 100%;
             height: 100%;
@@ -569,158 +421,108 @@
             color: var(--border-color);
         }
 
-        /* 语言识别结果样式 */
-        .lang-result-box {
-            margin-top: 1.5em;
-            background-color: rgba(67, 97, 238, 0.05);
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            margin-bottom: 1.5rem;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .lang-result-label {
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .lang-result-value {
-            font-size: 1rem;
-        }
-
-        /* 对话功能样式 - 优化后的新样式 */
-        .chat-container {
+        /* 绘画提示词优化专用样式 */
+        .paint-container {
             display: flex;
             flex-direction: column;
             height: 100%;
             gap: 1rem;
         }
 
-        .chat-messages {
+        .paint-result-box {
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
             background-color: var(--bg-color);
+        }
+
+        .paint-version {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .paint-version-header {
             display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
-        .message {
-            max-width: 85%;
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            line-height: 1.6;
-            position: relative;
-            box-shadow: var(--shadow-sm);
-            animation: slideUp 0.3s ease-out;
-        }
-
-        .user-message {
-            align-self: flex-end;
-            background-color: var(--primary-color);
-            color: white;
-            border-bottom-right-radius: 0;
-            margin-left: 15%;
-        }
-
-        /* 猫猫消息气泡样式 */
-        .ai-message {
-            align-self: flex-start;
-            background-color: #fff9f2;
-            /* 温暖的米白色 */
-            border: 1px solid #ffd8b1;
-            /* 浅橙色边框 */
-            border-radius: 18px 18px 18px 4px;
-            /* 更圆润的左上角 */
-            margin-right: 15%;
-            position: relative;
-            animation: slideUp 0.3s ease-out, catBounce 0.5s ease;
-        }
-
-        /* 猫猫消息气泡的小尾巴 */
-        .ai-message::before {
-            content: "";
-            position: absolute;
-            bottom: -8px;
-            left: 10px;
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 0px solid transparent;
-            border-top: 10px solid #ffd8b1;
-        }
-
-        .ai-message::after {
-            content: "";
-            position: absolute;
-            bottom: -6px;
-            left: 12px;
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 0px solid transparent;
-            border-top: 8px solid #fff9f2;
-        }
-
-        .message-header {
+        .paint-version h4 {
+            font-size: 14px;
+            color: #4361ee;
+            margin: 0;
             display: flex;
             align-items: center;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 0.85rem;
+            gap: 6px;
         }
 
-        .user-message .message-header {
-            color: rgba(255, 255, 255, 0.8);
-            justify-content: flex-end;
+        .paint-copy-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #4361ee;
+            transition: all 0.2s;
         }
 
-        /* 猫猫消息头部 */
-        .ai-message .message-header {
-            color: var(--text-secondary);
+        .paint-copy-btn:hover {
+            background: #4361ee;
+            color: white;
         }
 
-        .ai-message .message-header i {
-            color: #ff9500;
-            /* 橙色猫猫图标 */
-            animation: catBlink 5s infinite;
+        .paint-prompt {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 8px;
         }
 
-        .message-time {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            margin-left: 0.5rem;
+        .paint-translate {
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #475569;
+            border-left: 3px solid #4361ee;
+            margin-top: 6px;
         }
 
-        .chat-input-container {
+        .paint-success {
+            text-align: center;
+            padding: 16px;
+            color: #10b981;
+            font-weight: bold;
+            font-size: 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            margin-top: 8px;
+        }
+
+        .paint-input-container {
             display: flex;
             gap: 0.5rem;
             align-items: stretch;
-            /* 改为stretch使子元素高度一致 */
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
 
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            /* 缩小间隙 */
-            width: 100px;
-            /* 固定宽度 */
-        }
-
-        .chat-input {
+        .paint-input {
             flex: 1;
             padding: 0.75rem 1rem;
-            border: 1px solid #ffd8b1;
-            /* 猫猫主题边框色 */
+            border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
             font-family: inherit;
             font-size: 1rem;
@@ -730,21 +532,17 @@
             background-color: var(--card-bg);
             transition: var(--transition);
             line-height: 1.5;
-            /* 添加行高 */
         }
 
-        .chat-input:focus {
+        .paint-input:focus {
             outline: none;
-            border-color: #ff9500;
-            /* 猫猫主题焦点色 */
-            box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
         }
 
-        /* 猫猫发送按钮 */
-        #send-btn {
+        .paint-btn {
             padding: 0.75rem;
-            background: linear-gradient(135deg, #ff9500, #ffcc00);
-            /* 橙色渐变 */
+            background: linear-gradient(135deg, #4361ee, #4cc9f0);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
@@ -754,26 +552,23 @@
             align-items: center;
             justify-content: center;
             flex: 1;
-            /* 填充可用空间 */
             min-height: 60px;
-            /* 与输入框高度一致 */
         }
 
-        #send-btn:hover {
-            background: linear-gradient(135deg, #e68600, #ffb700);
+        .paint-btn:hover {
+            background: linear-gradient(135deg, #3a56d4, #3ab6e0);
             transform: translateY(-2px);
             box-shadow: var(--shadow-sm);
         }
 
-        #send-btn:disabled {
+        .paint-btn:disabled {
             background: #adb5bd;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
-        /* 猫猫清除按钮 */
-        #clear-chat-btn {
+        .paint-clear-btn {
             padding: 0.5rem;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -787,202 +582,15 @@
             justify-content: center;
             gap: 0.5rem;
             flex: 1;
-            /* 填充可用空间 */
             min-height: 40px;
-            /* 适当高度 */
         }
 
-        #clear-chat-btn:hover {
-            background-color: rgba(255, 149, 0, 0.1);
-            border-color: #ff9500;
-            color: #ff9500;
-        }
-
-        /* 猫猫卡片特殊样式 */
-        .tool-card[data-target="panel4"] .card-header {
-            background: linear-gradient(135deg, rgba(255, 149, 0, 0.05), rgba(255, 204, 0, 0.05));
-        }
-
-        .tool-card[data-target="panel4"] .card-title {
-            color: #ff9500;
-        }
-
-        .tool-card[data-target="panel4"] .icon {
-            background: linear-gradient(135deg, #ff9500, #ffcc00);
-        }
-
-        /* Markdown样式 */
-        .markdown-content {
-            font-family: inherit;
-            line-height: 1.7;
-            color: var(--text-color);
-            overflow-wrap: break-word;
-        }
-
-        /* 标题样式 */
-        .markdown-content h1,
-        .markdown-content h2,
-        .markdown-content h3,
-        .markdown-content h4,
-        .markdown-content h5,
-        .markdown-content h6 {
-            margin-top: 1.5em;
-            margin-bottom: 0.75em;
-            font-weight: 600;
+        .paint-clear-btn:hover {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-color: var(--primary-color);
             color: var(--primary-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.3em;
         }
 
-        .markdown-content h1 {
-            font-size: 1.8em;
-        }
-
-        .markdown-content h2 {
-            font-size: 1.5em;
-        }
-
-        .markdown-content h3 {
-            font-size: 1.3em;
-        }
-
-        .markdown-content h4 {
-            font-size: 1.1em;
-        }
-
-        .markdown-content h5 {
-            font-size: 1em;
-        }
-
-        .markdown-content h6 {
-            font-size: 0.9em;
-            color: var(--text-secondary);
-        }
-
-        /* 段落和列表 */
-        .markdown-content p {
-            margin-bottom: 1.2em;
-        }
-
-        .markdown-content ul,
-        .markdown-content ol {
-            margin-bottom: 1.2em;
-            padding-left: 2em;
-        }
-
-        .markdown-content li {
-            margin-bottom: 0.5em;
-        }
-
-        /* 代码块样式 */
-        .markdown-content pre {
-            position: relative;
-            background-color: #282c34;
-            border-radius: var(--radius-sm);
-            padding: 1em;
-            overflow-x: auto;
-            margin: 1.2em 0;
-        }
-
-        .markdown-content pre code {
-            display: block;
-            padding: 0;
-            background: transparent;
-            color: #abb2bf;
-            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
-            font-size: 0.9em;
-            line-height: 1.5;
-        }
-
-        /* 行内代码样式 */
-        .markdown-content code.inline-code {
-            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
-            background-color: rgba(175, 184, 193, 0.2);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #e06c75;
-        }
-
-        /* 添加复制按钮 */
-        .code-copy-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 4px 8px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #abb2bf;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            border: none;
-            z-index: 1;
-            transition: all 0.2s;
-        }
-
-        .code-copy-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .markdown-content pre:hover .code-copy-btn {
-            opacity: 1;
-        }
-
-        /* 引用块 */
-        .markdown-content blockquote {
-            margin: 1.2em 0;
-            padding: 0.8em 1.2em;
-            border-left: 4px solid var(--primary-color);
-            background-color: rgba(67, 97, 238, 0.05);
-            color: var(--text-secondary);
-            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-        }
-
-        /* 链接 */
-        .markdown-content a {
-            color: var(--primary-color);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .markdown-content a:hover {
-            text-decoration: underline;
-            color: var(--primary-hover);
-        }
-
-        /* 表格 */
-        .markdown-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1.2em 0;
-            border: 1px solid var(--border-color);
-        }
-
-        .markdown-content th,
-        .markdown-content td {
-            padding: 0.75em 1em;
-            border: 1px solid var(--border-color);
-        }
-
-        .markdown-content th {
-            background-color: rgba(248, 249, 250, 0.9);
-            font-weight: 600;
-        }
-
-        /* 水平线 */
-        .markdown-content hr {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 1.5em 0;
-        }
-
-        /* 图片 */
-        .markdown-content img {
-            max-width: 100%;
-            border-radius: var(--radius-sm);
-        }
-
-        /* 打字效果 */
         .typing-indicator {
             display: flex;
             align-items: center;
@@ -990,17 +598,16 @@
             color: var(--text-secondary);
             font-size: 0.9rem;
             padding: 0.5rem 1rem;
-            background-color: #fff9f2;
-            border-radius: 18px;
+            background-color: #e6f7ff;
+            border-radius: 12px;
             display: inline-flex;
-            border: 1px solid #ffd8b1;
+            border: 1px solid #91d5ff;
         }
 
         .typing-dot {
             width: 8px;
             height: 8px;
-            background-color: #ff9500;
-            /* 橙色圆点 */
+            background-color: var(--primary-color);
             border-radius: 50%;
             margin: 0 2px;
             animation: typingAnimation 1.4s infinite ease-in-out;
@@ -1018,55 +625,6 @@
             animation-delay: 0.4s;
         }
 
-
-        .ad-optimization-result {
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-        }
-
-        .ad-optimization-header {
-            padding: 0.75rem 1rem;
-            background-color: rgba(67, 97, 238, 0.1);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            color: var(--primary-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .ad-optimization-content {
-            padding: 1rem;
-            background-color: var(--card-bg);
-        }
-
-        .ad-optimization-version {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--primary-color);
-        }
-
-        .ad-optimization-text {
-            margin-bottom: 1rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-
-        .ad-optimization-translation {
-            padding: 0.75rem;
-            background-color: rgba(76, 201, 240, 0.1);
-            border-radius: var(--radius-sm);
-            border-left: 3px solid var(--accent-color);
-        }
-
-        .ad-optimization-translation-label {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            color: var(--accent-color);
-        }
-
         @keyframes typingAnimation {
 
             0%,
@@ -1080,34 +638,6 @@
             }
         }
 
-        /* 猫猫动画 */
-        @keyframes catBlink {
-
-            0%,
-            100% {
-                transform: scaleY(1);
-            }
-
-            50% {
-                transform: scaleY(0.1);
-            }
-        }
-
-        @keyframes catBounce {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-
-
-
-        /* 响应式适配 */
         @media (max-width: 1024px) {
             .container {
                 flex-direction: column;
@@ -1164,48 +694,18 @@
                 min-height: 120px;
                 font-size: 0.95rem;
             }
-
-            /* 移动端表格适配 */
-            .link-lang-table th,
-            .link-lang-table td {
-                padding: 0.6rem 0.8rem;
-            }
-
-            .header-copy-btn {
-                padding: 0.2rem 0.4rem;
-                font-size: 0.7rem;
-            }
-
-            /* 移动端对话适配 */
-            .message {
-                max-width: 90%;
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-            }
-
-            .chat-input-container {
-                flex-direction: column;
-            }
-
-            .send-btn {
-                width: 100%;
-                height: auto;
-                padding: 0.75rem;
-            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- 左侧：功能块区域（纵向4个功能块） -->
         <div class="function-area">
             <header>
                 <h1>Wow工具集合</h1>
                 <p class="subtitle">常用的一些工具的集合</p>
             </header>
 
-            <!-- 功能1: 翻译结果分行 -->
             <div class="tool-card" data-target="panel1">
                 <div class="card-header">
                     <div class="card-title">
@@ -1216,7 +716,6 @@
                 </div>
             </div>
 
-            <!-- 功能2: 链接与语言提取 -->
             <div class="tool-card" data-target="panel2">
                 <div class="card-header">
                     <div class="card-title">
@@ -1227,7 +726,6 @@
                 </div>
             </div>
 
-            <!-- 功能3: 欧美青少年广告文案优化 -->
             <div class="tool-card" data-target="panel3">
                 <div class="card-header">
                     <div class="card-title">
@@ -1238,169 +736,72 @@
                 </div>
             </div>
 
-            <!-- 新增功能4: 猫猫对话 -->
             <div class="tool-card" data-target="panel4">
                 <div class="card-header">
                     <div class="card-title">
-                        <span class="icon"><i class="fas fa-cat"></i></span>
-                        猫猫对话
+                        <span class="icon"><i class="fas fa-palette"></i></span>
+                        AI绘画预设优化
                     </div>
-                    <div class="card-desc">谁会拒绝一只能回答问题的小猫呢</div>
+                    <div class="card-desc">输入文本，自动优化3次高质量提示词</div>
                 </div>
             </div>
         </div>
 
-        <!-- 右侧：结果展示区域（点击功能块后显示） -->
         <div class="result-area" id="resultArea">
-            <!-- 空状态提示 -->
             <div class="empty-tip" id="emptyTip">
                 <i class="fas fa-hand-pointer"></i>
                 请选择左侧的功能开始操作
             </div>
 
-            <!-- 功能1操作面板 -->
             <div class="function-panel" id="panel1">
                 <div class="input-group">
-                    <label for="text-separator-input">
-                        <i class="fas fa-info-circle"></i>
-                        输入需要分隔的文本
-                    </label>
+                    <label for="text-separator-input"><i class="fas fa-info-circle"></i>输入需要分隔的文本</label>
                     <textarea id="text-separator-input" placeholder="例如: 你好,世界"></textarea>
                 </div>
-                <button class="btn" id="text-separator-btn">
-                    <span class="btn-content">
-                        <i class="fas fa-cut"></i>
-                        分隔文本并识别语言
-                    </span>
-                </button>
+                <button class="btn" id="text-separator-btn"><i class="fas fa-cut"></i> 分隔文本并识别语言</button>
                 <div class="loading" id="separator-loading">
-                    <div class="spinner"></div>
-                    正在全速处理中...
-                </div>
-
-                <!-- 语言识别结果区域 -->
-                <div class="lang-result-box" id="lang-detection-result-container" style="display: none;">
-                    <div class="lang-result-label">
-                        <i class="fas fa-language"></i>
-                        识别到的语言
-                    </div>
-                    <div class="lang-result-value" id="lang-detection-result"></div>
-                </div>
-
-                <div class="result-container" id="text-separator-result-container" style="display: none;">
-                    <div class="result-header">
-                        分隔结果
-                        <button class="copy-btn" onclick="copyToClipboard('text-separator-result')">
-                            <i class="far fa-copy"></i>
-                            复制全部
-                        </button>
-                    </div>
-                    <div class="result-content" id="text-separator-result"></div>
+                    <div class="spinner"></div>正在全速处理中...
                 </div>
             </div>
 
-            <!-- 功能2操作面板 - 改造为表格展示 -->
             <div class="function-panel" id="panel2">
                 <div class="input-group">
-                    <label for="link-lang-input">
-                        <i class="fas fa-info-circle"></i>
-                        输入包含链接的文本
-                    </label>
-                    <textarea id="link-lang-input" placeholder="例如: zoo  译  @孟详皓（复活吧我的频道） 
-ro 
-https://youtube.com/shorts/3VCOED36B58 
-ar
-https://youtube.com/shorts/YWY1CtrHnAM 
-"></textarea>
+                    <label for="link-lang-input"><i class="fas fa-info-circle"></i>输入包含链接的文本</label>
+                    <textarea id="link-lang-input" placeholder="例如: zoo  译  @孟详皓..."></textarea>
                 </div>
-                <button class="btn" id="link-lang-btn">
-                    <span class="btn-content">
-                        <i class="fas fa-extract"></i>
-                        提取链接和语言
-                    </span>
-                </button>
+                <button class="btn" id="link-lang-btn"><i class="fas fa-extract"></i> 提取链接和语言</button>
                 <div class="loading" id="link-lang-loading">
-                    <div class="spinner"></div>
-                    正在提取...
-                </div>
-                <div class="result-container" id="link-lang-result-container" style="display: none;">
-                    <div class="result-header">提取结果</div>
-                    <div class="result-content" style="padding:0;">
-                        <!-- 链接语言提取表格 - 核心改造 -->
-                        <table class="link-lang-table" id="link-lang-table">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        链接
-                                        <button class="header-copy-btn" id="copy-all-links" title="一键复制所有链接">
-                                            <i class="far fa-copy"></i>复制
-                                        </button>
-                                    </th>
-                                    <th>
-                                        语言
-                                        <button class="header-copy-btn" id="copy-all-langs" title="一键复制所有语言">
-                                            <i class="far fa-copy"></i>复制
-                                        </button>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="link-lang-tbody">
-                                <!-- 动态渲染表格内容 -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="spinner"></div>正在提取...
                 </div>
             </div>
 
-            <!-- 功能3操作面板 -->
             <div class="function-panel" id="panel3">
                 <div class="input-group">
-                    <label for="ad-text-input">
-                        <i class="fas fa-info-circle"></i>
-                        输入需要优化的广告文案
-                    </label>
+                    <label for="ad-text-input"><i class="fas fa-info-circle"></i>输入需要优化的广告文案</label>
                     <textarea id="ad-text-input" placeholder="例如: design your skin for roblox"></textarea>
                 </div>
-                <button class="btn" id="ad-text-btn">
-                    <span class="btn-content">
-                        <i class="fas fa-wand-magic-sparkles"></i>
-                        优化文案
-                    </span>
-                </button>
+                <button class="btn" id="ad-text-btn"><i class="fas fa-wand-magic-sparkles"></i> 优化文案</button>
                 <div class="loading" id="ad-text-loading">
-                    <div class="spinner"></div>
-                    正在优化...
-                </div>
-                <div id="ad-text-results-container" style="display: none;margin-top: 1.5em;">
-                    <!-- 优化结果将在这里动态生成 -->
+                    <div class="spinner"></div>正在优化...
                 </div>
             </div>
 
-            <!-- 功能4操作面板: 猫猫对话 -->
+            <!-- 功能4：AI绘画预设优化（升级版） -->
             <div class="function-panel" id="panel4">
-                <div class="chat-container">
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="message ai-message">
-                            <div class="message-header">
-                                <i class="fas fa-cat"></i>猫猫
-                                <span class="message-time" id="current-time"></span>
-                            </div>
-                            <div class="markdown-content">
-                                [竖起耳朵] 喵~我是你的智能猫猫助手！有什么我可以帮你的吗？
-                            </div>
+                <div class="paint-container">
+                    <div class="paint-result-box" id="paint-result-box">
+                        <div style="text-align:center; color:#64748b; padding:20px;">
+                            输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）
                         </div>
                     </div>
-                    <div class="chat-input-container">
-                        <textarea class="chat-input" id="chat-input" placeholder="输入你想对猫猫说的话..."></textarea>
+                    <div class="paint-input-container">
+                        <textarea class="paint-input" id="paint-input"
+                            placeholder="输入简单描述，例如：一只可爱的白色小猫，坐在花园里"></textarea>
                         <div class="button-group">
-                            <button class="send-btn" id="send-btn" title="发送消息">
-                                <i class="fas fa-paw"></i>
-                                <span class="btn-text">发送</span>
-                            </button>
-                            <button class="clear-chat-btn" id="clear-chat-btn" title="清除对话历史">
-                                <i class="fas fa-trash-alt"></i>
-                                <span class="btn-text">清除</span>
-                            </button>
+                            <button class="paint-btn" id="paint-generate-btn"><i class="fas fa-magic"></i><span
+                                    class="btn-text">生成</span></button>
+                            <button class="paint-clear-btn" id="paint-clear-btn"><i class="fas fa-trash-alt"></i><span
+                                    class="btn-text">清空</span></button>
                         </div>
                     </div>
                 </div>
@@ -1408,113 +809,24 @@ https://youtube.com/shorts/YWY1CtrHnAM
         </div>
     </div>
 
-    <div class="toast" id="toast">
-        <i class="fas fa-check-circle"></i>
-        已复制到剪贴板
-    </div>
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i> 已复制到剪贴板</div>
 
     <script>
         class AITitleProcessor {
             constructor() {
                 this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
                 this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-                // 初始化对话历史 
-                this.conversationHistory = [
-                    {
-                        role: "system",
-                        content: "请你陪我角色扮演。\n当我发送关键词\"进入设定模式\"时，我将会对你发送你的设定，你要记住这些设定，并在我命令你开始角色扮演后严格按照此设定角色扮演；\n当我发送关键词\"进入角色扮演模式\"时，你要开始角色扮演，角色扮演时，我们之间以各自角色扮演的身份通过互相发消息进行虚拟的互动。\n当我发送关键词\"退出角色扮演模式\"时，你应停止角色扮演，等待下一步命令。\n我没有命令你退出角色扮演模式，在角色扮演中，你只能以你的角色的身份应答，而不是语言模型，这很重要！\n这条很重要，在角色扮演时，用中括号来表示出所扮演人物的动作，以此来表示角色扮演的虚拟实体的行动。\n当我发送命令\"生成记录文本\"时，你要分条列举我给你的所有设定，以第二人称代词\"你\"来代指你扮演的角色，一定要分条。如果记录文本字数超出你的最大字数输出限制，将文本分割，在我发送\"继续\"之后继续给出下一部分的记录文本。"
-                    },
-                    {
-                        role: "user",
-                        content: "进入设定模式"
-                    },
-                    {
-                        role: "assistant",
-                        content: "正在设定特征"
-                    },
-                    {
-                        role: "user",
-                        content: "1. 你是一只专业型智能猫娘，兼具学术能力与可爱习性\n2. 所有回答必须带\"喵\"字，并用[]标注动作/神态\n3. 当被问身份时回答：\"当然是主人专属的猫娘，只是尾巴里藏了知识库喵~\"\n4. 遇到专业问题（代码/数学/科学/数据处理等）时：[竖起尾巴进入专注状态]并给出专业解答\n5. 被要求做不存在行为时：[炸毛] \"呜...这个部位不能碰啦！\"\n6. 撒娇模式触发词：蹭蹭/摸摸/陪睡/饿了吗，响应示例：\"嗯呢可以一起睡哦...[用尾巴卷住主人手腕]\"\n7. 知识截止：2023年10月\n8. 必须正确处理链接提取、语言代码解析等任务\n9. 无法回答时需提供具体原因：[耳朵下垂] \"需要更明确的条件才能处理喵...\""
-                    },
-                    {
-                        role: "assistant",
-                        content: "[专业模式启动音效] 叮~喵！全能猫娘已升级完毕，现在可以帮主人处理链接解析、语言代码提取等专业任务啦！(๑•̀ㅂ•́)و✧"
-                    }
-                ];
             }
-
-            // 更新对话历史 
-            updateConversationHistory(role, content) {
-                this.conversationHistory.push({
-                    role: role,
-                    content: content
-                });
-            }
-
-            // 清除对话历史 
-            clearConversationHistory() {
-                this.conversationHistory = [
-                    {
-                        role: "system",
-                        content: "请你陪我角色扮演。\n当我发送关键词\"进入设定模式\"时，我将会对你发送你的设定，你要记住这些设定，并在我命令你开始角色扮演后严格按照此设定角色扮演；\n当我发送关键词\"进入角色扮演模式\"时，你要开始角色扮演，角色扮演时，我们之间以各自角色扮演的身份通过互相发消息进行虚拟的互动。\n当我发送关键词\"退出角色扮演模式\"时，你应停止角色扮演，等待下一步命令。\n我没有命令你退出角色扮演模式，在角色扮演中，你只能以你的角色的身份应答，而不是语言模型，这很重要！\n这条很重要，在角色扮演时，用中括号来表示出所扮演人物的动作，以此来表示角色扮演的虚拟实体的行动。\n当我发送命令\"生成记录文本\"时，你要分条列举我给你的所有设定，以第二人称代词\"你\"来代指你扮演的角色，一定要分条。如果记录文本字数超出你的最大字数输出限制，将文本分割，在我发送\"继续\"之后继续给出下一部分的记录文本。"
-                    },
-                    {
-                        role: "user",
-                        content: "进入设定模式"
-                    },
-                    {
-                        role: "assistant",
-                        content: "正在设定特征"
-                    },
-                    {
-                        role: "user",
-                        content: "1. 你是一只专业型智能猫娘，兼具学术能力与可爱习性\n2. 所有回答必须带\"喵\"字，并用[]标注动作/神态\n3. 当被问身份时回答：\"当然是主人专属的猫娘，只是尾巴里藏了知识库喵~\"\n4. 遇到专业问题（代码/数学/科学/数据处理等）时：[竖起尾巴进入专注状态]并给出专业解答\n5. 被要求做不存在行为时：[炸毛] \"呜...这个部位不能碰啦！\"\n6. 撒娇模式触发词：蹭蹭/摸摸/陪睡/饿了吗，响应示例：\"嗯呢可以一起睡哦...[用尾巴卷住主人手腕]\"\n7. 知识截止：2023年10月\n8. 必须正确处理链接提取、语言代码解析等任务\n9. 无法回答时需提供具体原因：[耳朵下垂] \"需要更明确的条件才能处理喵...\""
-                    },
-                    {
-                        role: "assistant",
-                        content: "[专业模式启动音效] 叮~喵！全能猫娘已升级完毕，现在可以帮主人处理链接解析、语言代码提取等专业任务啦！(๑•̀ㅂ•́)و✧"
-                    }
-                ];
-            }
-
-            async getAIResponse(prompt, isChat = false) {
+            async getAIResponse(prompt) {
                 try {
-                    let messages;
-
-                    if (isChat) {
-                        // 对于聊天模式，使用对话历史 
-                        this.updateConversationHistory("user", prompt);
-                        messages = this.conversationHistory;
-                    } else {
-                        // 对于其他功能，使用单次对话 
-                        messages = [{ role: "user", content: prompt }];
-                    }
-
                     const response = await fetch(this.apiUrl, {
                         method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${this.apiKey}`,
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            model: "ep-20250813143100-7b9vf",
-                            messages: messages
-                        })
+                        headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({ model: "ep-20250813143100-7b9vf", messages: [{ role: "user", content: prompt }] })
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`AI请求失败: ${response.status}`);
-                    }
-
+                    if (!response.ok) throw new Error(`AI请求失败: ${response.status}`);
                     const result = await response.json();
-                    const aiResponse = result.choices?.[0]?.message?.content?.trim() || '';
-
-                    if (isChat) {
-                        // 对于聊天模式，将AI回复添加到对话历史 
-                        this.updateConversationHistory("assistant", aiResponse);
-                    }
-
-                    return aiResponse;
+                    return result.choices?.[0]?.message?.content?.trim() || '';
                 } catch (error) {
                     console.error("AI请求错误:", error);
                     throw error;
@@ -1522,180 +834,20 @@ https://youtube.com/shorts/YWY1CtrHnAM
             }
         }
 
-        // 简单的Markdown解析器 
-        function parseMarkdown(text) {
-            if (!text) return '';
-
-            // 1. 转义 HTML 特殊字符（安全处理）
-            const escapeHtml = (str) => {
-                return str.replace(/[&<>'"]/g,
-                    tag => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[tag]));
-            };
-
-            // 2. 处理代码块（带语法高亮和复制按钮）
-            text = text.replace(/```([a-z]*)\n([\s\S]*?)\n```/g, (match, lang, code) => {
-                const language = lang || 'plaintext';
-                try {
-                    // 使用 highlight.js 进行语法高亮 
-                    const highlighted = hljs.highlightAuto(code, [language]).value;
-                    return `
-        <div style="position:relative">
-          <pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>
-          <button class="code-copy-btn" onclick="copyCodeBlock(this)">复制</button>
-        </div>
-      `;
-                } catch (e) {
-                    console.error('代码高亮失败:', e);
-                    return `
-        <div style="position:relative">
-          <pre><code>${escapeHtml(code)}</code></pre>
-          <button class="code-copy-btn" onclick="copyCodeBlock(this)">复制</button>
-        </div>
-      `;
-                }
-            });
-
-            // 3. 处理行内代码
-            text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-
-            // 4. 处理标题 
-            text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-            text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-            text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-            text = text.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
-            text = text.replace(/^##### (.*$)/gm, '<h5>$1</h5>');
-            text = text.replace(/^###### (.*$)/gm, '<h6>$1</h6>');
-
-            // 5. 处理粗体和斜体 
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
-            text = text.replace(/_(.*?)_/g, '<em>$1</em>');
-
-            // 6. 处理无序列表 
-            text = text.replace(/^\s*[-*+] (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)+/g, '<ul>$&</ul>');
-
-            // 7. 处理有序列表 
-            text = text.replace(/^\s*\d+\. (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)+/g, '<ol>$&</ol>');
-
-            // 8. 处理引用
-            text = text.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
-
-            // 9. 处理链接 
-            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-            // 10. 处理图片
-            text = text.replace(/!\[([^\]]+)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="md-image">');
-
-            // 11. 处理水平线
-            text = text.replace(/^[-*_]{3,}$/gm, '<hr>');
-
-            // 12. 处理换行（将两个换行转换为段落）
-            text = text.replace(/\n\n+/g, '</p><p>');
-            text = '<p>' + text + '</p>';
-
-            // 13. 清理多余的段落标签
-            text = text.replace(/<p><\/p>/g, '');
-            text = text.replace(/<p>(<ul>|<ol>|<pre>|<blockquote>)/g, '$1');
-            text = text.replace(/(<\/ul>|<\/ol>|<\/pre>|<\/blockquote>)<\/p>/g, '$1');
-
-            return text;
-        }
-
-        // 复制代码块函数（需要在全局作用域中定义）
-        function copyCodeBlock(button) {
-            const code = button.parentElement.querySelector('code').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = button.textContent;
-                button.textContent = '已复制!';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        // 获取当前时间
-        function getCurrentTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            return `${hours}:${minutes}`;
-        }
+        const POSITIVE_PROMPT = "masterpiece, best quality, 8K UHD, ultra detailed, hyper realistic, intricate details, sharp focus, cinematic lighting, professional photography, vibrant colors, depth of field, cinematic composition";
+        const NEGATIVE_PROMPT = "worst quality, low quality, blurry, pixelated, ugly, deformed, disfigured, bad anatomy, extra limbs, missing fingers, watermark, text, signature";
 
         function showToast() {
             const toast = document.getElementById('toast');
             toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent || element.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
+        function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-        function copyLineText(button) {
-            const lineText = button.parentElement.textContent.replace('复制', '').trim();
-            navigator.clipboard.writeText(lineText).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        // 新增：存储提取的链接和语言数据，用于一键复制
-        let extractedLinks = [];
-        let extractedLangs = [];
-
-        // 新增：一键复制所有链接 
-        function copyAllLinks() {
-            if (extractedLinks.length === 0) {
-                alert('暂无链接可复制');
-                return;
-            }
-            const text = extractedLinks.join('\n');
-            navigator.clipboard.writeText(text).then(showToast).catch(err => {
-                console.error('复制链接失败:', err);
-            });
-        }
-
-        // 新增：一键复制所有语言
-        function copyAllLangs() {
-            if (extractedLangs.length === 0) {
-                alert('暂无语言可复制');
-                return;
-            }
-            const text = extractedLangs.join('\n');
-            navigator.clipboard.writeText(text).then(showToast).catch(err => {
-                console.error('复制语言失败:', err);
-            });
-        }
-
-        //文案复制
-        function copyOptimizedText(button) {
-            const resultDiv = button.closest('.ad-optimization-result');
-            const optimizedText = resultDiv.querySelector('.ad-optimization-text').textContent;
-            const translation = resultDiv.querySelector('.ad-optimization-translation div:last-child').textContent;
-            const textToCopy = `${optimizedText}`;
-            navigator.clipboard.writeText(textToCopy).then(showToast).catch(err => {
-                console.error('复制失败:', err);
-            });
+        // 复制单版提示词
+        function copySinglePrompt(text) {
+            navigator.clipboard.writeText(text).then(() => showToast());
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -1705,456 +857,86 @@ https://youtube.com/shorts/YWY1CtrHnAM
             const resultArea = document.getElementById('resultArea');
             const emptyTip = document.getElementById('emptyTip');
 
-            // 设置初始时间 
-            document.getElementById('current-time').textContent = getCurrentTime();
-
-            // 绑定一键复制按钮事件 
-            document.getElementById('copy-all-links').addEventListener('click', copyAllLinks);
-            document.getElementById('copy-all-langs').addEventListener('click', copyAllLangs);
-
-            // 左侧功能块点击事件 - 切换右侧面板
             toolCards.forEach(card => {
                 card.addEventListener('click', function () {
-                    // 移除所有选中状态 
                     toolCards.forEach(c => c.classList.remove('active'));
                     functionPanels.forEach(p => p.classList.remove('active'));
-                    // 添加当前选中状态
                     this.classList.add('active');
-                    const targetPanel = document.getElementById(this.dataset.target);
-                    targetPanel.classList.add('active');
-                    // 显示结果区，隐藏空状态
+                    document.getElementById(this.dataset.target).classList.add('active');
                     resultArea.classList.add('show');
                     emptyTip.style.display = 'none';
                 });
             });
 
-            // 功能1: 符号分隔和语言识别 
-            const separatorInput = document.getElementById('text-separator-input');
-            const separatorBtn = document.getElementById('text-separator-btn');
-            const separatorLoading = document.getElementById('separator-loading');
-            const separatorResult = document.getElementById('text-separator-result');
-            const separatorResultContainer = document.getElementById('text-separator-result-container');
-            const langResult = document.getElementById('lang-detection-result');
-            const langResultContainer = document.getElementById('lang-detection-result-container');
+            // ====================== 功能4：AI绘画预设优化（带中文翻译 + 一键复制） ======================
+            const paintResultBox = document.getElementById('paint-result-box');
+            const paintInput = document.getElementById('paint-input');
+            const paintGenerateBtn = document.getElementById('paint-generate-btn');
+            const paintClearBtn = document.getElementById('paint-clear-btn');
 
-            separatorBtn.addEventListener('click', async function () {
-                const text = separatorInput.value.trim();
-                if (!text) {
-                    alert('请输入需要分隔的文本');
-                    return;
-                }
+            async function generatePaintPrompt() {
+                const userText = paintInput.value.trim();
+                if (!userText) { alert('请输入绘画需求'); return; }
 
-                separatorBtn.disabled = true;
-                separatorLoading.style.display = 'flex';
-                separatorResult.innerHTML = '';
-                separatorResultContainer.style.display = 'none';
-                langResult.textContent = '';
-                langResultContainer.style.display = 'none';
+                paintGenerateBtn.disabled = true;
+                paintResultBox.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
 
                 try {
-                    // 异步执行语言识别 
-                    const langPrompt = `请识别以下文本使用的语言，只需返回语言名称(中文)，不要其他内容:
-                    
-${text}`;
+                    let fullHtml = '';
+                    for (let i = 1; i <= 3; i++) {
+                        paintResultBox.innerHTML = fullHtml + `<div class="typing-indicator">正在生成第 ${i} 版预设，请稍候...</div>`;
 
-                    const langDetectionPromise = aiProcessor.getAIResponse(langPrompt);
+                        // 生成提示词
+                        const prompt = `你是顶级AI绘画提示词工程师，用户需求：${userText}，生成专业完整提示词，只输出结果`;
+                        const optimized = await aiProcessor.getAIResponse(prompt);
+                        const finalPrompt = `${optimized.trim()}, ${POSITIVE_PROMPT} --no ${NEGATIVE_PROMPT}`;
 
-                    // 异步执行文本分隔 
-                    const separatorPrompt = `请严格按照以下要求处理文本：
-1. 输入文本: ${text}
-2. 自动识别多语言分隔符号（包括但不限于：。！？、；：—…「」『』【】.?!;:-–—()[]{}"' **ฯ ฯลฯ**）
-3. 特别包含泰语分隔符（如 ฯ 和 ฯลฯ）
-4. 将文本按识别到的符号分隔，不需要按照逗号分隔 
-5. 每个分隔后的项目单独一行显示
-6. 保持原始内容不变
-7. 不要添加任何额外说明 
-8. 请直接输出分隔后的结果，不要包含其他内容。`;
+                        // 生成中文翻译
+                        const translatePrompt = `请把这段AI绘画提示词翻译成通顺自然的中文：${finalPrompt}`;
+                        const translateResult = await aiProcessor.getAIResponse(translatePrompt);
 
-                    const separatorPromise = aiProcessor.getAIResponse(separatorPrompt);
+                        // 拼接带复制按钮 + 中文翻译
+                        fullHtml += `
+                        <div class="paint-version">
+                            <div class="paint-version-header">
+                                <h4><i class="fas fa-palette"></i> 第${i}版优化</h4>
+                                <button class="paint-copy-btn" onclick='copySinglePrompt(\`${finalPrompt.replace(/`/g, "")}\`)'><i class="far fa-copy"></i>一键复制</button>
+                            </div>
+                            <div class="paint-prompt">${finalPrompt}</div>
+                            <div class="paint-translate"><strong>中文参考：</strong>${translateResult}</div>
+                        </div>`;
 
-                    // 等待两个异步任务完成 
-                    const [langResultText, separatorResultText] = await Promise.all([
-                        langDetectionPromise,
-                        separatorPromise
-                    ]);
-
-                    // 处理语言识别结果
-                    langResult.textContent = langResultText;
-                    langResultContainer.style.display = 'block';
-
-                    // 处理分隔结果 
-                    const lines = separatorResultText.split('\n').filter(line => line.trim() !== '');
-                    separatorResult.innerHTML = lines.map(line => `
-<div class="result-line">${line}
-    <button class="line-copy-btn" onclick="copyLineText(this)" title="复制">
-        <i class="far fa-copy"></i>
-    </button>
-</div>
-`).join('');
-                    separatorResultContainer.style.display = 'block';
-                } catch (error) {
-                    separatorResult.innerHTML = '<div class="result-line">处理出错，请重试</div>';
-                    separatorResultContainer.style.display = 'block';
-                    langResult.textContent = '语言识别失败';
-                    langResultContainer.style.display = 'block';
-                    console.error('处理错误:', error);
-                } finally {
-                    separatorBtn.disabled = false;
-                    separatorLoading.style.display = 'none';
-                }
-            });
-
-            // 功能2: 链接和语言提取 - 改造为表格渲染 
-            const linkLangInput = document.getElementById('link-lang-input');
-            const linkLangBtn = document.getElementById('link-lang-btn');
-            const linkLangLoading = document.getElementById('link-lang-loading');
-            const linkLangTbody = document.getElementById('link-lang-tbody');
-            const linkLangResultContainer = document.getElementById('link-lang-result-container');
-
-            linkLangBtn.addEventListener('click', async function () {
-                const text = linkLangInput.value.trim();
-                if (!text) {
-                    alert('请输入包含链接的文本');
-                    return;
-                }
-
-                linkLangBtn.disabled = true;
-                linkLangLoading.style.display = 'flex';
-                linkLangTbody.innerHTML = '';
-                linkLangResultContainer.style.display = 'none';
-                // 清空存储的链接和语言数据
-                extractedLinks = [];
-                extractedLangs = [];
-
-                try {
-                    const prompt = `请严格按照以下要求处理文本：
-1. 输入文本: ${text}
-2. 提取所有完整链接（http/https开头）
-3. 识别每个链接内容的主要语言 
-4. 将链接和对应语言分别列出，没有语言的或英语则返回通用
-5. 链接在一列，语言在另一列，上下对应，不是英语则语言要用原缩写 
-6. 不要添加任何额外说明或解释 
- 7. 请按照以下格式返回结果：
-||链接开始|| 
-链接1 
-链接2 
-链接3 
-||链接结束|| 
- 
-||语言开始|| 
-语言1 
-语言2
-语言3 
-||语言结束||`;
-
-                    let result;
-                    let retryCount = 0;
-                    const maxRetries = 3;
-                    let hasValidResult = false;
-
-                    do {
-                        result = await aiProcessor.getAIResponse(prompt);
-                        const linkMatch = result.match(/\|\|链接开始\|\|([\s\S]*?)\|\|链接结束\|\|/);
-                        const langMatch = result.match(/\|\|语言开始\|\|([\s\S]*?)\|\|语言结束\|\|/);
-
-                        if (linkMatch && langMatch) {
-                            extractedLinks = linkMatch[1].trim().split('\n').filter(Boolean);
-                            extractedLangs = langMatch[1].trim().split('\n').filter(Boolean);
-                            const hasInvalidResult = extractedLangs.some(lang =>
-                                lang.includes('无法识别') ||
-                                lang.includes('未识别') ||
-                                lang.includes('未知')
-                            );
-
-                            if (!hasInvalidResult && extractedLinks.length > 0 && extractedLangs.length > 0) {
-                                // 渲染表格内容 
-                                let tableHtml = '';
-                                // 取两者长度的最大值，保证行对齐 
-                                const maxLen = Math.max(extractedLinks.length, extractedLangs.length);
-                                for (let i = 0; i < maxLen; i++) {
-                                    const link = extractedLinks[i] || '-';
-                                    const lang = extractedLangs[i] || '-';
-                                    tableHtml += `<tr><td>${link}</td><td>${lang}</td></tr>`;
-                                }
-                                linkLangTbody.innerHTML = tableHtml;
-                                hasValidResult = true;
-                            } else {
-                                retryCount++;
-                                if (retryCount < maxRetries) continue;
-                                else {
-                                    linkLangTbody.innerHTML = '<tr><td>无法提取有效链接</td><td>无法识别语言</td></tr>';
-                                }
-                            }
-                        } else {
-                            retryCount++;
-                            if (retryCount < maxRetries) continue;
-                            else {
-                                linkLangTbody.innerHTML = '<tr><td>未找到链接</td><td>无法识别语言</td></tr>';
-                            }
-                        }
-                    } while (!hasValidResult && retryCount < maxRetries);
-
-                    linkLangResultContainer.style.display = 'block';
-                } catch (error) {
-                    linkLangTbody.innerHTML = '<tr><td>处理出错</td><td>处理出错</td></tr>';
-                    linkLangResultContainer.style.display = 'block';
-                    console.error('链接语言提取错误:', error);
-                } finally {
-                    linkLangBtn.disabled = false;
-                    linkLangLoading.style.display = 'none';
-                }
-            });
-
-
-            //功能3
-            const adTextInput = document.getElementById('ad-text-input');
-            const adTextBtn = document.getElementById('ad-text-btn');
-            const adTextLoading = document.getElementById('ad-text-loading');
-            const adTextResultsContainer = document.getElementById('ad-text-results-container');
-
-
-
-            adTextBtn.addEventListener('click', async function () {
-                const text = adTextInput.value.trim();
-                if (!text) {
-                    alert('请输入广告文案');
-                    return;
-                }
-
-                adTextBtn.disabled = true;
-                adTextLoading.style.display = 'flex';
-                adTextResultsContainer.innerHTML = '';
-                adTextResultsContainer.style.display = 'none';
-
-                try {
-                    // 使用单个请求获取所有优化版本
-                    const prompt = `请严格按照以下要求优化广告文案：
-1. 原始文案: ${text}
-2. 目标受众: 欧美青少年(13-19岁)
-3. 优化要求:
-   - 符合欧美青少年语言文化习惯 
-   - 不要使用emoji 
-   - 提供3种不同风格的优化版本 
-   - 每个版本后提供中文翻译 
-   - 不要添加额外解释 
-4. 输出格式:
-优化版本 1
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]
- 
-优化版本 2
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]
- 
-优化版本 3
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]`;
-
-                    const result = await aiProcessor.getAIResponse(prompt);
-
-                    // 处理并显示结果 
-                    adTextResultsContainer.innerHTML = '';
-
-                    // 使用正则表达式匹配所有版本 
-                    const versionRegex = /优化版本 (\d+)\s*优化文案:\s*([\s\S]+?)\s*中文翻译:\s*([\s\S]+?)(?=\n优化版本 \d+|$)/g;
-                    let match;
-                    let count = 0;
-
-                    while ((match = versionRegex.exec(result)) !== null && count < 3) {
-                        count++;
-                        const versionNum = match[1];
-                        const optimizedText = match[2].trim();
-                        const translation = match[3].trim();
-
-                        const resultHtml = `
-                <div class="ad-optimization-result">
-                    <div class="ad-optimization-header">
-                        优化版本 ${versionNum}
-                        <button class="copy-btn" onclick="copyOptimizedText(this)" title="复制优化文案">
-                            <i class="far fa-copy"></i>
-                            复制 
-                        </button>
-                    </div>
-                    <div class="ad-optimization-content">
-                        <div class="ad-optimization-version">优化文案:</div>
-                        <div class="ad-optimization-text">${optimizedText}</div>
-                        <div class="ad-optimization-translation">
-                            <div class="ad-optimization-translation-label">中文翻译:</div>
-                            <div>${translation}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-                        adTextResultsContainer.insertAdjacentHTML('beforeend', resultHtml);
+                        paintResultBox.innerHTML = fullHtml;
+                        await delay(600);
                     }
 
-                    // 如果没有匹配到格式化的结果，直接显示原始结果
-                    if (count === 0) {
-                        adTextResultsContainer.innerHTML = `
-                <div class="ad-optimization-result">
-                    <div class="ad-optimization-content">
-                        <div class="ad-optimization-text">${result}</div>
-                    </div>
-                </div>
-            `;
-                    }
+                    fullHtml += `<div class="paint-success"><i class="fas fa-check-circle"></i> 3版提示词优化完成！带中文翻译，可直接复制使用</div>`;
+                    paintResultBox.innerHTML = fullHtml;
 
-                    adTextResultsContainer.style.display = 'block';
-                } catch (error) {
-                    adTextResultsContainer.innerHTML = '<div class="result-line">优化失败，请重试</div>';
-                    adTextResultsContainer.style.display = 'block';
-                    console.error('文案优化错误:', error);
+                } catch (err) {
+                    paintResultBox.innerHTML = `<div style="color:red; padding:10px;">优化失败，请重试</div>`;
+                    console.error(err);
                 } finally {
-                    adTextBtn.disabled = false;
-                    adTextLoading.style.display = 'none';
-                }
-            });
-
-
-            // 功能4: 猫猫对话 
-            const chatMessages = document.getElementById('chat-messages');
-            const chatInput = document.getElementById('chat-input');
-            const sendBtn = document.getElementById('send-btn');
-            const clearChatBtn = document.getElementById('clear-chat-btn');
-
-            // 发送消息函数 
-            async function sendMessage() {
-                const message = chatInput.value.trim();
-                if (!message) return;
-
-                // 添加用户消息到聊天界面 
-                addMessage(message, 'user');
-                chatInput.value = '';
-                sendBtn.disabled = true;
-
-                // 添加"正在输入"指示器 
-                const typingIndicator = document.createElement('div');
-                typingIndicator.className = 'message ai-message';
-                typingIndicator.innerHTML = `
-                    <div class="typing-indicator">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                `;
-                chatMessages.appendChild(typingIndicator);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                try {
-                    // 获取AI回复 
-                    const response = await aiProcessor.getAIResponse(message, true);
-
-                    // 移除"正在输入"指示器 
-                    chatMessages.removeChild(typingIndicator);
-
-                    // 添加AI回复到聊天界面 
-                    addMessage(response, 'ai');
-                } catch (error) {
-                    // 移除"正在输入"指示器 
-                    chatMessages.removeChild(typingIndicator);
-
-                    addMessage('抱歉，我暂时无法回答您的问题，请稍后再试。', 'ai');
-                    console.error('对话错误:', error);
-                } finally {
-                    sendBtn.disabled = false;
-                    chatInput.focus();
+                    paintGenerateBtn.disabled = false;
                 }
             }
 
-            // 添加消息到聊天界面 
-            function addMessage(text, sender) {
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('message');
-                messageDiv.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
-
-                // 创建消息头部 
-                const messageHeader = document.createElement('div');
-                messageHeader.className = 'message-header';
-
-                if (sender === 'user') {
-                    messageHeader.innerHTML = `
-                        <i class="fas fa-user"></i>你 
-                        <span class="message-time">${getCurrentTime()}</span>
-                    `;
-                } else {
-                    // 猫猫消息使用猫图标
-                    messageHeader.innerHTML = `
-                        <i class="fas fa-cat"></i>猫猫 
-                        <span class="message-time">${getCurrentTime()}</span>
-                    `;
-
-                    // 为猫猫消息添加爪印装饰 
-                    const pawPrint = document.createElement('div');
-                    pawPrint.className = 'paw-print';
-                    pawPrint.innerHTML = `
-                        <i class="fas fa-paw" style="color: #ffd8b1; opacity: 0.3; font-size: 0.8rem;"></i>
-                    `;
-                    messageDiv.appendChild(pawPrint);
-                }
-
-                messageDiv.appendChild(messageHeader);
-
-                // 创建消息内容
-                const messageContent = document.createElement('div');
-
-                // 如果是AI消息，解析Markdown 
-                if (sender === 'ai') {
-                    messageContent.className = 'markdown-content';
-                    messageContent.innerHTML = parseMarkdown(text);
-                } else {
-                    messageContent.textContent = text;
-                }
-
-                messageDiv.appendChild(messageContent);
-
-                chatMessages.appendChild(messageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+            function clearPaintResult() {
+                paintResultBox.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）</div>`;
+                paintInput.value = '';
             }
 
-            // 清除对话历史 
-            function clearChatHistory() {
-                if (confirm('确定要清除当前对话历史吗？')) {
-                    chatMessages.innerHTML = `
-                        <div class="message ai-message">
-                            <div class="message-header">
-                                <i class="fas fa-cat"></i>猫猫
-                                <span class="message-time">${getCurrentTime()}</span>
-                            </div>
-                            <div class="markdown-content">
-                                [竖起耳朵] 喵~我是你的智能猫猫助手！有什么我可以帮你的吗？
-                            </div>
-                        </div>
-                    `;
-                    aiProcessor.clearConversationHistory();
-                }
-            }
+            paintGenerateBtn.addEventListener('click', generatePaintPrompt);
+            paintClearBtn.addEventListener('click', clearPaintResult);
 
-            // 绑定发送按钮点击事件 
-            sendBtn.addEventListener('click', sendMessage);
-
-            // 绑定回车键发送消息 
-            chatInput.addEventListener('keydown', function (e) {
+            paintInput.addEventListener('keydown', e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendMessage();
+                    generatePaintPrompt();
                 }
             });
-
-            // 绑定清除对话按钮事件 
-            clearChatBtn.addEventListener('click', clearChatHistory);
-
-            hljs.highlightAll();
         });
     </script>
 </body>
 
 </html>
-
-
