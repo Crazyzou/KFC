@@ -2692,7 +2692,7 @@ ${text}`;
                 img.src = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
                 const badge = document.createElement("div");
                 badge.className = "youtube-badge";
-                badge.innerText = isShort ? "竖" : (i + 1);
+                badge.innerText = isShort ? `#${i + 1}竖` : `#${i + 1}`;
                 wrap.appendChild(img);
                 wrap.appendChild(badge);
                 td8.appendChild(wrap);
@@ -2706,7 +2706,11 @@ ${text}`;
                         navigator.clipboard.writeText(cell.innerText).then(() => showToast("已复制"));
                     };
                 });
-                img.onclick = () => copyImage(img);
+                img.onclick = async () => {
+                    await copyImage(img);
+                    // 点击复制后，角标改成“已复制”
+                    badge.innerText = "已复制";
+                };
 
                 // 拉取数据
                 const data = await fetchVideoData(vid);
