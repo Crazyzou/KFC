@@ -1424,6 +1424,20 @@
                 border-radius: 6px;
                 cursor: pointer;
             }
+
+            .sort-btn {
+                background: none;
+                border: none;
+                color: #666;
+                cursor: pointer;
+                font-size: 12px;
+                margin-left: 4px;
+                padding: 2px;
+            }
+
+            .sort-btn:hover {
+                color: #ff0000;
+            }
         }
     </style>
 </head>
@@ -2615,7 +2629,12 @@ ${text}`;
         <th onclick="copyYoutubeColumn(0)">视频链接<br><small style="font-size:12px;opacity:0.7">点击复制</small></th>
         <th onclick="copyYoutubeColumn(1)">标题<br><small style="font-size:12px;opacity:0.7"></small></th>
         <th onclick="copyYoutubeColumn(2)">频道<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th onclick="copyYoutubeColumn(3)">播放<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(3)" style="cursor: pointer;">
+    播放
+    <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); toggleSortViews();" style="margin-left:5px;">
+        <i id="sortIcon" class="fas fa-sort"></i>
+    </button>
+</th>
         <th onclick="copyYoutubeColumn(4)">评论<br><small style="font-size:12px;opacity:0.7"></small></th>
         <th onclick="copyYoutubeColumn(5)">发布<br><small style="font-size:12px;opacity:0.7"></small></th>
         <th onclick="copyYoutubeColumn(6)">时长<br><small style="font-size:12px;opacity:0.7"></small></th>
@@ -2804,6 +2823,53 @@ ${text}`;
             textarea.value = result.join('\n');
             showToast('已转换为 Shorts 标准链接');
         });
+
+        // 播放量排序状态
+        let sortViewsAsc = true;
+
+        // 切换播放量正序 / 逆序
+        function toggleSortViews() {
+            const table = document.querySelector('.youtube-table tbody');
+            if (!table) return;
+
+            const rows = Array.from(table.querySelectorAll('tr'));
+            const icon = document.getElementById('sortIcon');
+
+            // 切换排序方向
+            sortViewsAsc = !sortViewsAsc;
+
+            // 排序
+            rows.sort((a, b) => {
+                const viewA = parseViewCount(a.cells[3].innerText);
+                const viewB = parseViewCount(b.cells[3].innerText);
+                return sortViewsAsc ? viewA - viewB : viewB - viewA;
+            });
+
+            // 重新渲染行
+            rows.forEach(row => table.appendChild(row));
+
+            // 更新图标
+            icon.className = sortViewsAsc
+                ? 'fas fa-sort-amount-up'
+                : 'fas fa-sort-amount-down';
+
+            showToast(`播放量已${sortViewsAsc ? '升序' : '降序'}排列`);
+        }
+
+        // 把 "1.2w" / "3.5亿" 转回数字用于排序
+        function parseViewCount(str) {
+            if (!str || str.includes('失败')) return 0;
+            str = str.trim();
+
+            if (str.includes('亿')) {
+                return parseFloat(str) * 100000000;
+            }
+            if (str.includes('w')) {
+                return parseFloat(str) * 10000;
+            }
+            const num = parseInt(str.replace(/[^0-9]/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
     </script>
 </body>
 
