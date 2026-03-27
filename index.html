@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --primary-color: #4361ee;
@@ -31,6 +33,8 @@
             --radius-md: 12px;
             --radius-lg: 16px;
             --transition: all 0.2s ease;
+            --youtube-red: #ff0000;
+            --youtube-pink: #FF8E8E;
         }
 
         * {
@@ -984,6 +988,365 @@
 
         /* ====================== 结束AI绘画样式优化 ====================== */
 
+        /* ====================== YouTube 查询功能 全新美化样式 ====================== */
+        .youtube-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+        }
+
+        /* 输入区域 */
+        .youtube-input-area {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+        }
+
+        .youtube-textarea {
+            width: 100%;
+            min-height: 130px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.25s ease;
+            background: #fafbfc;
+            font-family: inherit;
+        }
+
+        .youtube-textarea:focus {
+            outline: none;
+            border-color: #ff0033;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(255, 0, 51, 0.1);
+        }
+
+        /* 查询按钮 */
+        .youtube-btn {
+            margin-top: 12px;
+            background: linear-gradient(90deg, #ff0000, #FF8E8E);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(255, 0, 51, 0.25);
+        }
+
+        .youtube-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 0, 51, 0.35);
+        }
+
+        .youtube-btn:active {
+            transform: translateY(0);
+        }
+
+        .youtube-btn:disabled {
+            background: #d1d5db;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 进度条 */
+        .youtube-progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+
+        .youtube-progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
+        .youtube-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .youtube-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #FF8E8E);
+            border-radius: 999px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 结果区域 */
+        .youtube-results-area {
+            flex: 1;
+            overflow-y: auto;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f0f0f0;
+        }
+
+        /* 表格 */
+        .youtube-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        .youtube-table thead {
+            background: #f9fafb;
+        }
+
+        .youtube-table th {
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            font-size: 13px;
+            border-bottom: 2px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: #f9fafb;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .youtube-table th:hover {
+            background: #f3f4f6;
+        }
+
+        .youtube-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            color: #111827;
+        }
+
+        .youtube-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        /* 缩略图 */
+        .youtube-thumbnail {
+            width: 140px;
+            height: 78px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid #e5e7eb;
+        }
+
+        .youtube-thumbnail:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .youtube-thumbnail-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .youtube-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* 操作按钮组 */
+        .youtube-link-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .youtube-link-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            color: #fff;
+        }
+
+        .youtube-link-btn.play {
+            background: #ff0033;
+        }
+
+        .youtube-link-btn.jump {
+            background: #10b981;
+        }
+
+        .youtube-link-btn.copy {
+            background: #3b82f6;
+        }
+
+        .youtube-link-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* 标题 */
+        .youtube-title-cell {
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .youtube-title-cell:hover {
+            color: #ff0033;
+            text-decoration: underline;
+        }
+
+        /* 播放量高亮 */
+        .youtube-view-count {
+            font-weight: 600;
+            color: #ff0033;
+        }
+
+        /* 错误文字 */
+        .youtube-error {
+            color: #ef4444;
+            font-weight: 500;
+        }
+
+        /* 播放器遮罩 */
+        #videoPlayerOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #videoPlayerOverlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        #playerContainer {
+            width: 85%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .youtube-close-btn {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            font-size: 28px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .youtube-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 下载进度弹窗 */
+        .youtube-download-progress {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 320px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: none;
+            z-index: 1000;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .youtube-container {
+                gap: 16px;
+            }
+
+            .youtube-input-area {
+                padding: 18px;
+            }
+
+            .youtube-results-area {
+                padding: 14px;
+            }
+
+            .youtube-table th,
+            .youtube-table td {
+                padding: 10px 8px;
+                font-size: 13px;
+            }
+
+            .youtube-thumbnail {
+                width: 100px;
+                height: 56px;
+            }
+
+            .youtube-title-cell {
+                max-width: 120px;
+            }
+
+            .youtube-link-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
+
         /* 响应式适配 */
         @media (max-width: 1024px) {
             .container {
@@ -1052,6 +1415,15 @@
                 padding: 0.2rem 0.4rem;
                 font-size: 0.7rem;
             }
+
+            .youtube-thumbnail {
+                object-fit: cover;
+                width: 120px;
+                height: 213px;
+                /* 9:16 比例 */
+                border-radius: 6px;
+                cursor: pointer;
+            }
         }
     </style>
 </head>
@@ -1105,6 +1477,17 @@
                         AI绘画预设优化
                     </div>
                     <div class="card-desc">输入文本，自动优化3次高质量提示词</div>
+                </div>
+            </div>
+
+            <div class="tool-card" data-target="panel5">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon" style="background: linear-gradient(135deg, #ff0000, #FF8E8E);"><i
+                                class="fab fa-youtube"></i></span>
+                        YouTube数据查询
+                    </div>
+                    <div class="card-desc">批量查询视频播放量、缩略图等数据</div>
                 </div>
             </div>
         </div>
@@ -1254,15 +1637,133 @@ https://youtube.com/shorts/YWY1CtrHnAM
                     </div>
                 </div>
             </div>
+
+            <div class="function-panel" id="panel5">
+                <div class="youtube-container">
+                    <div class="youtube-input-area">
+                        <div class="input-group">
+                            <label>
+                                <i class="fab fa-youtube" style="color: #ff0000;"></i>
+                                输入 YouTube 视频链接（每行一个）
+                            </label>
+                            <textarea class="youtube-textarea" id="youtubeUrls" placeholder="支持格式：
+普通视频: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+短链接: https://youtu.be/dQw4w9WgXcQ
+Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
+                        </div>
+
+                        <button class="youtube-btn" id="youtubeFetchBtn">
+                            <i class="fas fa-search"></i>
+                            批量查询
+                        </button>
+                        <!-- 一键转 Shorts 按钮 -->
+                        <button class="youtube-btn" id="convertToShortBtn" style="background:#FF006F;margin-left:8px;">
+                            <i class="fab fa-youtube"></i>
+                            一键转 Shorts
+                        </button>
+                        <div class="youtube-progress-container" id="youtubeProgressContainer">
+                            <div class="youtube-progress-info">
+                                <span id="youtubeProgressText">准备查询</span>
+                                <span id="youtubeProgressCount">0/0</span>
+                            </div>
+                            <div class="youtube-progress-bar">
+                                <div class="youtube-progress" id="youtubeProgressBar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="youtube-results-area" id="youtubeResultsArea">
+                        <div class="empty-state"
+                            style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fab fa-youtube"
+                                style="font-size: 3rem; margin-bottom: 15px; color: var(--border-color);"></i>
+                            <p>查询结果将显示在这里</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <div id="videoPlayerOverlay">
+        <div style="position: relative; width: 80%; max-width: 900px;">
+            <button class="youtube-close-btn" id="closePlayer">×</button>
+            <div id="playerContainer"></div>
+        </div>
+    </div>
+
+    <!-- 下载进度提示 -->
+    <div class="youtube-download-progress" id="downloadProgress">
+        <div class="youtube-progress-info">
+            <span id="downloadProgressText">准备下载</span>
+            <span id="downloadProgressPercent">0%</span>
+        </div>
+        <div class="youtube-progress-bar">
+            <div class="youtube-progress" id="downloadProgressBar" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- Toast通知 -->
     <div class="toast" id="toast">
         <i class="fas fa-check-circle"></i>
-        已复制到剪贴板
+        <span id="toastMessage">已复制到剪贴板</span>
     </div>
 
     <script>
+        // ================== 缩略图无损裁剪（专门给 Shorts 使用） ==================
+        async function getLosslessShortThumbnail(videoId) {
+            try {
+                // 先获取最高清原图
+                const highResUrl = await getBestThumbnail(videoId);
+
+                // 不是最高清就直接返回
+                if (!highResUrl.includes('maxresdefault.jpg')) {
+                    return highResUrl;
+                }
+
+                // 加载图片
+                const img = await loadImage(highResUrl);
+
+                // 创建画布：按高度计算 9:16 宽度
+                const canvas = document.createElement('canvas');
+                canvas.width = img.height * (9 / 16);
+                canvas.height = img.height;
+
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.imageSmoothingEnabled = false;
+
+                // 居中裁剪
+                ctx.drawImage(
+                    img,
+                    Math.round((img.width - canvas.width) / 2),
+                    0,
+                    Math.round(canvas.width),
+                    img.height,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+                // 返回裁剪后的 base64
+                return canvas.toDataURL('image/jpeg', 0.9);
+            } catch (error) {
+                console.error('缩略图裁剪失败', error);
+                return await getBestThumbnail(videoId);
+            }
+        }
+
+        // 辅助：异步加载图片
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous'; // 解决跨域
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
         class AITitleProcessor {
             constructor() {
                 this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
@@ -1406,8 +1907,9 @@ https://youtube.com/shorts/YWY1CtrHnAM
             return `${hours}:${minutes}`;
         }
 
-        function showToast() {
+        function showToast(msg = "已复制到剪贴板") {
             const toast = document.getElementById('toast');
+            document.getElementById("toastMessage").innerText = msg;
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -1795,12 +2297,6 @@ ${text}`;
         const POSITIVE_PROMPT = "masterpiece, best quality, 8K UHD, ultra detailed, hyper realistic, intricate details, sharp focus, cinematic lighting, professional photography, vibrant colors, depth of field, cinematic composition";
         const NEGATIVE_PROMPT = "worst quality, low quality, blurry, pixelated, ugly, deformed, disfigured, bad anatomy, extra limbs, missing fingers, watermark, text, signature";
 
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
-
         function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
         // 复制单版提示词
@@ -1893,6 +2389,416 @@ ${text}`;
                     generatePaintPrompt();
                 }
             });
+
+            document.getElementById('youtubeFetchBtn').addEventListener('click', processYoutubeUrls);
+            document.getElementById('youtubeUrls').addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') processYoutubeUrls();
+            });
+            document.getElementById('closePlayer').addEventListener('click', hideVideoPlayer);
+        });
+
+        // ================== 优化版 YouTube查询功能 ==================
+        const YT_API_KEYS = [
+            "AIzaSyBX7YiD9hL6V5_uoG-5dVvoZ6mdNTvLWIM",
+            "AIzaSyDIC5HCCD0UIjHu3F988-3rYg7Eax2hnAQ",
+            "AIzaSyCYRu3QAFeX9fIqBBrA0LD5Hysut-NFpqs"
+        ];
+        const ytApiKeyStatus = YT_API_KEYS.reduce((acc, key) => {
+            acc[key] = { lastUsed: null, errorCount: 0, isActive: true, quotaExceeded: false };
+            return acc;
+        }, {});
+
+        let ytPlayer;
+        let youtubeApiReady = false;
+        let currentVideoId = "";
+
+        function onYouTubeIframeAPIReady() {
+            youtubeApiReady = true;
+            ytPlayer = new YT.Player('playerContainer', {
+                height: '100%',
+                width: '100%',
+                videoId: '',
+                playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
+                events: {
+                    onError: () => {
+                        showToast("视频无法播放，已为你打开新标签页");
+                        window.open(`https://youtu.be/${currentVideoId}`, "_blank");
+                        hideVideoPlayer();
+                    }
+                }
+            });
+        }
+
+        function getAvailableYtApiKey() {
+            for (const key of YT_API_KEYS) {
+                if (ytApiKeyStatus[key].isActive && !ytApiKeyStatus[key].quotaExceeded) return key;
+            }
+            showToast("所有API今日配额已用尽，请明天再试");
+            return null;
+        }
+
+        function extractVideoId(url) {
+            try {
+                if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
+                if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
+                if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
+            } catch (e) { }
+            return null;
+        }
+
+        function formatNumber(num) {
+            const n = parseInt(num);
+            if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+            if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+            return n.toString();
+        }
+
+        function parseDuration(duration) {
+            const regex = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
+            const m = duration.match(regex) || [];
+            const h = m[1] || 0, min = m[2] || 0, s = m[3] || 0;
+            return `${h ? h + '小时' : ''}${min ? min + '分钟' : ''}${s ? s + '秒' : ''}` || "未知";
+        }
+
+        function formatUploadDate(dateStr) {
+            const d = new Date(dateStr);
+            const now = new Date();
+            const day = 86400000;
+            const diff = Math.floor((now - d) / day);
+            if (diff === 0) return "今天";
+            if (diff === 1) return "昨天";
+            if (diff < 30) return diff + "天前";
+            if (diff < 365) return Math.floor(diff / 30) + "个月前";
+            return Math.floor(diff / 365) + "年前";
+        }
+
+        async function getBestThumbnail(vid) {
+            const list = ['maxresdefault', 'hqdefault', 'mqdefault', 'default'];
+            for (const q of list) {
+                const u = `https://i.ytimg.com/vi/${vid}/${q}.jpg`;
+                try {
+                    const r = await fetch(u, { method: 'HEAD' });
+                    if (r.ok) return u;
+                } catch { }
+            }
+            return `https://i.ytimg.com/vi/${vid}/default.jpg`;
+        }
+
+        async function fetchVideoData(vid) {
+            const key = getAvailableYtApiKey();
+            if (!key) return null;
+            try {
+                const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${vid}&key=${key}`);
+                if (r.status === 403) {
+                    ytApiKeyStatus[key].quotaExceeded = true;
+                    return fetchVideoData(vid);
+                }
+                const j = await r.json();
+                return j.items?.[0] || null;
+            } catch {
+                return null;
+            }
+        }
+
+        async function copyImage(img) {
+            try {
+                // 1. 创建临时 Canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                // 2. 处理跨域：必须在设置 src 前配置
+                const tempImg = new Image();
+                tempImg.crossOrigin = 'anonymous'; // 关键：允许跨域加载
+                tempImg.src = img.src;
+
+                // 3. 等待图片加载完成
+                await new Promise((resolve, reject) => {
+                    tempImg.onload = resolve;
+                    tempImg.onerror = reject;
+                });
+
+                // 4. 设置 Canvas 尺寸并绘制
+                canvas.width = tempImg.naturalWidth;
+                canvas.height = tempImg.naturalHeight;
+                ctx.drawImage(tempImg, 0, 0);
+
+                // 5. Canvas 转 Blob 并写入剪贴板
+                const blob = await new Promise(resolve =>
+                    canvas.toBlob(resolve, 'image/png', 0.95)
+                );
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+
+                showToast("缩略图已复制");
+            } catch (error) {
+                console.error("复制失败:", error);
+                // 降级：复制图片 URL（兜底方案）
+                await navigator.clipboard.writeText(img.src);
+                showToast("复制失败，已复制图片链接");
+            }
+        }
+
+        async function downloadAllThumbnails() {
+            const imgs = document.querySelectorAll(".youtube-thumbnail");
+            if (!imgs.length) return;
+            const zip = new JSZip();
+            const f = zip.folder("youtube_thumbnails");
+            const dp = document.getElementById("downloadProgress");
+            dp.style.display = "block";
+
+            for (let i = 0; i < imgs.length; i++) {
+                try {
+                    const r = await fetch(imgs[i].src);
+                    const b = await r.blob();
+                    f.file(`${i + 1}.jpg`, b);
+
+                    const pct = Math.round(((i + 1) / imgs.length) * 100);
+                    document.getElementById("downloadProgressBar").style.width = pct + "%";
+                    document.getElementById("downloadProgressPercent").innerText = pct + "%";
+                    document.getElementById("downloadProgressText").innerText = `打包中 ${i + 1}/${imgs.length}`;
+                } catch { }
+            }
+
+            const blob = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "youtube_thumbnails.zip";
+            a.click();
+            dp.style.display = "none";
+            showToast("全部缩略图已打包下载");
+        }
+
+        function showVideoPlayer(url) {
+            const vid = extractVideoId(url);
+            if (!vid) return;
+            currentVideoId = vid;
+            const o = document.getElementById("videoPlayerOverlay");
+            o.classList.add("show");
+            if (youtubeApiReady) {
+                setTimeout(() => {
+                    ytPlayer.loadVideoById(vid);
+                    ytPlayer.playVideo();
+                }, 100);
+            }
+        }
+
+        function hideVideoPlayer() {
+            const o = document.getElementById("videoPlayerOverlay");
+            o.classList.remove("show");
+            if (ytPlayer) ytPlayer.stopVideo();
+        }
+
+        async function processYoutubeUrls() {
+            const text = document.getElementById("youtubeUrls").value.trim();
+            const lines = text.split("\n").map(i => i.trim()).filter(Boolean);
+            if (lines.length === 0) {
+                showToast("请输入至少一个YouTube链接");
+                return;
+            }
+
+            const btn = document.getElementById("youtubeFetchBtn");
+            const bar = document.getElementById("youtubeProgressContainer");
+            const pText = document.getElementById("youtubeProgressText");
+            const pCount = document.getElementById("youtubeProgressCount");
+            const pBar = document.getElementById("youtubeProgressBar");
+            const area = document.getElementById("youtubeResultsArea");
+
+            btn.disabled = true;
+            bar.style.display = "block";
+            area.innerHTML = "";
+
+            const table = document.createElement("table");
+            table.className = "youtube-table";
+            table.innerHTML = `
+            <thead>
+    <tr>
+        <th onclick="copyYoutubeColumn(0)">视频链接<br><small style="font-size:12px;opacity:0.7">点击复制</small></th>
+        <th onclick="copyYoutubeColumn(1)">标题<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(2)">频道<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(3)">播放<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(4)">评论<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(5)">发布<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th onclick="copyYoutubeColumn(6)">时长<br><small style="font-size:12px;opacity:0.7"></small></th>
+        <th>缩略图</th>
+    </tr>
+</thead>
+            <tbody></tbody>
+            `;
+            area.appendChild(table);
+            const tbody = table.querySelector("tbody");
+            const validUrls = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const url = lines[i];
+                const vid = extractVideoId(url);
+                pText.innerText = `正在查询 ${i + 1}/${lines.length}`;
+                pCount.innerText = `${i + 1}/${lines.length}`;
+                pBar.style.width = ((i + 1) / lines.length) * 100 + "%";
+
+                if (!vid) continue;
+                validUrls.push(url);
+                const isShort = url.includes("shorts");
+
+                const tr = document.createElement("tr");
+
+                // 链接
+                const td1 = document.createElement("td");
+                td1.innerHTML = `
+                <div style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
+                <div class="youtube-link-btns">
+                    <button class="youtube-link-btn play" onclick="showVideoPlayer('${url}')"><i class="fas fa-play"></i>播放</button>
+                    <button class="youtube-link-btn jump" onclick="window.open('${url}','_blank')"><i class="fas fa-external-link-alt"></i>打开</button>
+                    <button class="youtube-link-btn copy" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('链接已复制'))"><i class="fas fa-copy"></i>复制</button>
+                </div>`;
+                tr.appendChild(td1);
+
+                // 标题
+                const td2 = document.createElement("td");
+                td2.className = "youtube-title-cell";
+                td2.innerText = "加载中...";
+                tr.appendChild(td2);
+
+                // 频道
+                const td3 = document.createElement("td");
+                td3.innerText = "...";
+                tr.appendChild(td3);
+
+                // 播放
+                const td4 = document.createElement("td");
+                td4.innerText = "...";
+                tr.appendChild(td4);
+
+                // 评论
+                const td5 = document.createElement("td");
+                td5.innerText = "...";
+                tr.appendChild(td5);
+
+                // 发布
+                const td6 = document.createElement("td");
+                td6.innerText = "...";
+                tr.appendChild(td6);
+
+                // 时长
+                const td7 = document.createElement("td");
+                td7.innerText = "...";
+                tr.appendChild(td7);
+
+                // 缩略图
+                const td8 = document.createElement("td");
+                const wrap = document.createElement("div");
+                wrap.className = "youtube-thumbnail-container";
+                const img = document.createElement("img");
+                img.className = "youtube-thumbnail";
+                img.src = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
+                const badge = document.createElement("div");
+                badge.className = "youtube-badge";
+                badge.innerText = isShort ? "竖" : (i + 1);
+                wrap.appendChild(img);
+                wrap.appendChild(badge);
+                td8.appendChild(wrap);
+                tr.appendChild(td8);
+
+                tbody.appendChild(tr);
+
+                // 点击复制
+                [td2, td3, td4, td5, td6, td7].forEach(cell => {
+                    cell.onclick = () => {
+                        navigator.clipboard.writeText(cell.innerText).then(() => showToast("已复制"));
+                    };
+                });
+                img.onclick = () => copyImage(img);
+
+                // 拉取数据
+                const data = await fetchVideoData(vid);
+                if (data) {
+                    const t = data.snippet.title;
+                    td2.innerText = t.length > 22 ? t.substring(0, 22) + "..." : t;
+                    td2.title = t;
+                    td3.innerText = data.snippet.channelTitle;
+                    td4.innerHTML = `<span class="youtube-view-count">${formatNumber(data.statistics.viewCount || 0)}</span>`;
+                    td5.innerText = formatNumber(data.statistics.commentCount || 0);
+                    td6.innerText = formatUploadDate(data.snippet.publishedAt);
+                    td7.innerText = parseDuration(data.contentDetails.duration);
+                    // 如果是 Shorts，使用裁剪后的竖版缩略图；否则正常显示
+                    if (isShort) {
+                        getLosslessShortThumbnail(vid).then(croppedUrl => {
+                            img.src = croppedUrl;
+                        });
+                    } else {
+                        getBestThumbnail(vid).then(u => img.src = u);
+                    }
+                } else {
+                    [td2, td3, td4, td5, td6, td7].forEach(c => c.innerHTML = `<span class='youtube-error'>获取失败</span>`);
+                }
+            }
+
+            // 一键复制所有链接 + 下载全部缩略图
+            const ths = table.querySelectorAll("th");
+            ths[0].onclick = () => {
+                if (validUrls.length) {
+                    navigator.clipboard.writeText(validUrls.join("\n")).then(() => showToast(`已复制 ${validUrls.length} 个链接`));
+                }
+            };
+            ths[7].onclick = downloadAllThumbnails;
+
+            btn.disabled = false;
+            pText.innerText = "查询完成";
+            showToast("YouTube 数据查询完成");
+        }
+
+        // YouTube 表头一键复制整列
+        function copyYoutubeColumn(colIndex) {
+            const table = document.querySelector('.youtube-table');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr');
+            let textList = [];
+
+            rows.forEach(row => {
+                const cell = row.cells[colIndex];
+                if (!cell) return;
+
+                let val = cell.innerText.trim().replace(/^获取失败$/, '');
+                if (!val) return;
+
+                if (colIndex === 3) {
+                    val = `播放量：${val}`;
+                }
+
+                textList.push(val);
+            });
+
+            const text = textList.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`已复制该列共 ${textList.length} 条数据`);
+            });
+        }
+
+        // ================== 一键转 YouTube Shorts 链接 ==================
+        document.getElementById('convertToShortBtn').addEventListener('click', function () {
+            const textarea = document.getElementById('youtubeUrls');
+            let text = textarea.value.trim();
+            if (!text) {
+                showToast('请先输入链接');
+                return;
+            }
+
+            // 按行分割
+            const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+            const result = [];
+
+            for (let line of lines) {
+                const vid = extractVideoId(line); // 你现成的提取ID函数
+                if (vid) {
+                    result.push(`https://www.youtube.com/shorts/${vid}`);
+                } else {
+                    result.push(line); // 无法识别的保留原样
+                }
+            }
+
+            // 回填输入框
+            textarea.value = result.join('\n');
+            showToast('已转换为 Shorts 标准链接');
         });
     </script>
 </body>
