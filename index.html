@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wow工具箱</title>
-     <link rel="icon" href="https://i.pinimg.com/originals/5c/2b/20/5c2b2023053650ec890d690da18880fa.jpg"
+    <link rel="icon" href="https://i.pinimg.com/originals/5c/2b/20/5c2b2023053650ec890d690da18880fa.jpg"
         type="image/x-icon" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1571,12 +1571,21 @@ ar
 https://youtube.com/shorts/YWY1CtrHnAM 
 "></textarea>
                 </div>
-                <button class="btn" id="link-lang-btn">
-                    <span class="btn-content">
-                        <i class="fas fa-extract"></i>
-                        提取链接和语言
-                    </span>
-                </button>
+                <!-- 按钮组：同一行并排两个按钮 -->
+                <div style="display: flex; gap: 12px; margin-bottom: 10px;">
+                    <button class="btn" id="link-lang-btn" style="flex: 1;">
+                        <span class="btn-content">
+                            <i class="fas fa-extract"></i>
+                            提取链接和语言
+                        </span>
+                    </button>
+                    <button class="btn" id="sort-link-lang-btn" style="flex: 1;">
+                        <span class="btn-content">
+                            <i class="fas fa-sort"></i>
+                            一键整理
+                        </span>
+                    </button>
+                </div>
                 <div class="loading" id="link-lang-loading">
                     <div class="spinner"></div>
                     正在提取...
@@ -1955,6 +1964,50 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
         let extractedLinks = [];
         let extractedLangs = [];
 
+        async function aiSortAppAndLanguage() {
+            const input = document.getElementById('link-lang-input');
+            const text = input.value.trim();
+            if (!text) {
+                showToast('请先粘贴内容');
+                return;
+            }
+
+            const btn = document.getElementById('sort-link-lang-btn');
+            const oldText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'AI整理中...';
+
+            try {
+                const ai = new AITitleProcessor();
+                const prompt = `
+你是内容整理助手。
+请把下面的文本，严格按以下规则整理：
+
+1. 保留所有主题块：Depression 翻：、改：、阿兹海默、老年痴呆、IQ、eye 等，每个主题一块。
+2. 每个块内，相同语言只出现一次，把所有对应链接放在语言下面。
+3. 不同语言之间空一行。
+4. 不同主题块之间空一行。
+5. @xxx 备注原样保留在最后。
+6. 只输出整理后的纯文本，不要解释，不要markdown，不要多余内容。
+
+要整理的内容：
+${text}
+    `;
+
+                const result = await ai.getAIResponse(prompt);
+                if (result) {
+                    input.value = result.trim();
+                    showToast('AI 整理完成！');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('AI整理失败');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = oldText;
+            }
+        }
+
         // 新增：一键复制所有链接 
         function copyAllLinks() {
             if (extractedLinks.length === 0) {
@@ -2000,6 +2053,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             // 绑定一键复制按钮事件 
             document.getElementById('copy-all-links').addEventListener('click', copyAllLinks);
             document.getElementById('copy-all-langs').addEventListener('click', copyAllLangs);
+            document.getElementById('sort-link-lang-btn').addEventListener('click', aiSortAppAndLanguage);
 
             // 左侧功能块点击事件 - 切换右侧面板
             toolCards.forEach(card => {
