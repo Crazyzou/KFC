@@ -1735,756 +1735,899 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
     </div>
 
     <script>
-        // ================== 缩略图无损裁剪（专门给 Shorts 使用） ==================
-        async function getLosslessShortThumbnail(videoId) {
-            try {
-                // 先获取最高清原图
-                const highResUrl = await getBestThumbnail(videoId);
+        // ================== 全局配置与工具类 ==================
+        const CONFIG = {
+            POSITIVE_PROMPT: "masterpiece, best quality, 8K UHD, ultra detailed, hyper realistic, intricate details, sharp focus, cinematic lighting, professional photography, vibrant colors, depth of field, cinematic composition",
+            NEGATIVE_PROMPT: "worst quality, low quality, blurry, pixelated, ugly, deformed, disfigured, bad anatomy, extra limbs, missing fingers, watermark, text, signature",
+            YT_API_KEYS: [
+                "AIzaSyBX7YiD9hL6V5_uoG-5dVvoZ6mdNTvLWIM",
+                "AIzaSyDIC5HCCD0UIjHu3F988-3rYg7Eax2hnAQ",
+                "AIzaSyCYRu3QAFeX9fIqBBrA0LD5Hysut-NFpqs"
+            ]
+        };
 
-                // 不是最高清就直接返回
-                if (!highResUrl.includes('maxresdefault.jpg')) {
-                    return highResUrl;
-                }
+        // 状态管理
+        const STATE = {
+            extractedLinks: [],
+            extractedLangs: [],
+            ytApiKeyStatus: {},
+            youtubeApiReady: false,
+            ytPlayer: null,
+            currentVideoId: "",
+            sortViewsAsc: true
+        };
 
-                // 加载图片
-                const img = await loadImage(highResUrl);
+        // 初始化 YouTube API Key 状态
+        CONFIG.YT_API_KEYS.forEach(key => {
+            STATE.ytApiKeyStatus[key] = { lastUsed: null, errorCount: 0, isActive: true, quotaExceeded: false };
+        });
 
-                // 创建画布：按高度计算 9:16 宽度
-                const canvas = document.createElement('canvas');
-                canvas.width = img.height * (9 / 16);
-                canvas.height = img.height;
+        // ================== 通用工具函数 ==================
+        function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-                const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                ctx.imageSmoothingEnabled = false;
-
-                // 居中裁剪
-                ctx.drawImage(
-                    img,
-                    Math.round((img.width - canvas.width) / 2),
-                    0,
-                    Math.round(canvas.width),
-                    img.height,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-
-                // 返回裁剪后的 base64
-                return canvas.toDataURL('image/jpeg', 0.9);
-            } catch (error) {
-                console.error('缩略图裁剪失败', error);
-                return await getBestThumbnail(videoId);
-            }
+        function showToast(msg = "已复制到剪贴板") {
+            const toast = document.getElementById('toast');
+            document.getElementById("toastMessage").innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // 辅助：异步加载图片
-        function loadImage(url) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous'; // 解决跨域
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = url;
+        function copyToClipboard(text) {
+            return navigator.clipboard.writeText(text).then(() => showToast()).catch(err => console.error('复制失败:', err));
+        }
+
+        function copyElementText(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) copyToClipboard(el.textContent || el.innerText);
+        }
+
+        function copyLineText(button) {
+            copyToClipboard(button.parentElement.textContent.replace('复制', '').trim());
+        }
+
+        function copyCodeBlock(button) {
+            const code = button.parentElement.querySelector('code').textContent;
+            copyToClipboard(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                setTimeout(() => button.textContent = originalText, 2000);
             });
         }
 
+        // ================== AI 处理器 (优化版) ==================
         class AITitleProcessor {
             constructor() {
                 this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
                 this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
             }
 
-            async getAIResponse(prompt) {
-                try {
-                    const response = await fetch(this.apiUrl, {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${this.apiKey}`,
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            model: "doubao-1-5-pro-32k-250115", // 模型名
-                            messages: [{ role: "user", content: prompt }]
-                        })
+            async getAIResponse(prompt, retries = 2) {
+                for (let i = 0; i <= retries; i++) {
+                    try {
+                        const response = await fetch(this.apiUrl, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${this.apiKey}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                model: "doubao-1-5-pro-32k-250115",
+                                messages: [{ role: "user", content: prompt }],
+                                temperature: 0.3 // 降低温度，使输出更稳定
+                            })
+                        });
+
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const result = await response.json();
+                        const content = result.choices?.[0]?.message?.content?.trim();
+                        if (content) return content;
+                        throw new Error("Empty response");
+                    } catch (error) {
+                        console.error(`AI请求错误 (尝试 ${i + 1}/${retries + 1}):`, error);
+                        if (i === retries) throw error;
+                        await delay(500);
+                    }
+                }
+            }
+        }
+
+        // ================== UI 交互控制器 ==================
+        const UIController = {
+            toolCards: null,
+            functionPanels: null,
+            resultArea: null,
+            emptyTip: null,
+
+            init() {
+                this.toolCards = document.querySelectorAll('.tool-card');
+                this.functionPanels = document.querySelectorAll('.function-panel');
+                this.resultArea = document.getElementById('resultArea');
+                this.emptyTip = document.getElementById('emptyTip');
+                this.bindToolSelection();
+            },
+
+            bindToolSelection() {
+                this.toolCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        this.toolCards.forEach(c => c.classList.remove('active'));
+                        this.functionPanels.forEach(p => p.classList.remove('active'));
+
+                        card.classList.add('active');
+                        document.getElementById(card.dataset.target).classList.add('active');
+
+                        this.resultArea.classList.add('show');
+                        this.emptyTip.style.display = 'none';
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`AI请求失败: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    return result.choices?.[0]?.message?.content?.trim() || '';
-                } catch (error) {
-                    console.error("AI请求错误:", error);
-                    throw error;
-                }
-            }
-        }
-
-        // 简单的Markdown解析器 
-        function parseMarkdown(text) {
-            if (!text) return '';
-
-            // 1. 转义 HTML 特殊字符（安全处理）
-            const escapeHtml = (str) => {
-                return str.replace(/[&<>'"]/g,
-                    tag => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[tag]));
-            };
-
-            // 2. 处理代码块（带语法高亮和复制按钮）
-            text = text.replace(/```([a-z]*)\n([\s\S]*?)\n```/g, (match, lang, code) => {
-                const language = lang || 'plaintext';
-                try {
-                    // 使用 highlight.js 进行语法高亮 
-                    const highlighted = hljs.highlightAuto(code, [language]).value;
-                    return `
-        <div style="position:relative">
-          <pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>
-          <button class="code-copy-btn" onclick="copyCodeBlock(this)">复制</button>
-        </div>
-      `;
-                } catch (e) {
-                    console.error('代码高亮失败:', e);
-                    return `
-        <div style="position:relative">
-          <pre><code>${escapeHtml(code)}</code></pre>
-          <button class="code-copy-btn" onclick="copyCodeBlock(this)">复制</button>
-        </div>
-      `;
-                }
-            });
-
-            // 3. 处理行内代码
-            text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-
-            // 4. 处理标题 
-            text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-            text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-            text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-            text = text.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
-            text = text.replace(/^##### (.*$)/gm, '<h5>$1</h5>');
-            text = text.replace(/^###### (.*$)/gm, '<h6>$1</h6>');
-
-            // 5. 处理粗体和斜体 
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
-            text = text.replace(/_(.*?)_/g, '<em>$1</em>');
-
-            // 6. 处理无序列表 
-            text = text.replace(/^\s*[-*+] (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)+/g, '<ul>$&</ul>');
-
-            // 7. 处理有序列表 
-            text = text.replace(/^\s*\d+\. (.*$)/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)+/g, '<ol>$&</ol>');
-
-            // 8. 处理引用
-            text = text.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
-
-            // 9. 处理链接 
-            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-            // 10. 处理图片
-            text = text.replace(/!\[([^\]]+)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="md-image">');
-
-            // 11. 处理水平线
-            text = text.replace(/^[-*_]{3,}$/gm, '<hr>');
-
-            // 12. 处理换行（将两个换行转换为段落）
-            text = text.replace(/\n\n+/g, '</p><p>');
-            text = '<p>' + text + '</p>';
-
-            // 13. 清理多余的段落标签
-            text = text.replace(/<p><\/p>/g, '');
-            text = text.replace(/<p>(<ul>|<ol>|<pre>|<blockquote>)/g, '$1');
-            text = text.replace(/(<\/ul>|<\/ol>|<\/pre>|<\/blockquote>)<\/p>/g, '$1');
-
-            return text;
-        }
-
-        // 复制代码块函数（需要在全局作用域中定义）
-        function copyCodeBlock(button) {
-            const code = button.parentElement.querySelector('code').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = button.textContent;
-                button.textContent = '已复制!';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        // 获取当前时间
-        function getCurrentTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            return `${hours}:${minutes}`;
-        }
-
-        function showToast(msg = "已复制到剪贴板") {
-            const toast = document.getElementById('toast');
-            document.getElementById("toastMessage").innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
-        }
-
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent || element.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        function copyLineText(button) {
-            const lineText = button.parentElement.textContent.replace('复制', '').trim();
-            navigator.clipboard.writeText(lineText).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        // 新增：存储提取的链接和语言数据，用于一键复制
-        let extractedLinks = [];
-        let extractedLangs = [];
-
-        async function aiSortAppAndLanguage() {
-            const input = document.getElementById('link-lang-input');
-            const text = input.value.trim();
-            if (!text) {
-                showToast('请先粘贴内容');
-                return;
-            }
-
-            const btn = document.getElementById('sort-link-lang-btn');
-            const oldText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = 'AI整理中...';
-
-            try {
-                const ai = new AITitleProcessor();
-                const prompt = `
-你是内容整理助手。
-请把下面的文本，严格按以下规则整理：
-
-1. 保留所有主题块：Depression 翻：、改：、阿兹海默、老年痴呆、IQ、eye 等，每个主题一块。
-2. 每个块内，相同语言只出现一次，把所有对应链接放在语言下面。
-3. 不同语言之间空一行。
-4. 不同主题块之间空一行。
-5. @xxx 备注原样保留在最后。
-6. 只输出整理后的纯文本，不要解释，不要markdown，不要多余内容。
-
-要整理的内容：
-${text}
-    `;
-
-                const result = await ai.getAIResponse(prompt);
-                if (result) {
-                    input.value = result.trim();
-                    showToast('AI 整理完成！');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('AI整理失败');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = oldText;
-            }
-        }
-
-        // 新增：一键复制所有链接 
-        function copyAllLinks() {
-            if (extractedLinks.length === 0) {
-                alert('暂无链接可复制');
-                return;
-            }
-            const text = extractedLinks.join('\n');
-            navigator.clipboard.writeText(text).then(showToast).catch(err => {
-                console.error('复制链接失败:', err);
-            });
-        }
-
-        // 新增：一键复制所有语言
-        function copyAllLangs() {
-            if (extractedLangs.length === 0) {
-                alert('暂无语言可复制');
-                return;
-            }
-            const text = extractedLangs.join('\n');
-            navigator.clipboard.writeText(text).then(showToast).catch(err => {
-                console.error('复制语言失败:', err);
-            });
-        }
-
-        //文案复制
-        function copyOptimizedText(button) {
-            const resultDiv = button.closest('.ad-optimization-result');
-            const optimizedText = resultDiv.querySelector('.ad-optimization-text').textContent;
-            const translation = resultDiv.querySelector('.ad-optimization-translation div:last-child').textContent;
-            const textToCopy = `${optimizedText}`;
-            navigator.clipboard.writeText(textToCopy).then(showToast).catch(err => {
-                console.error('复制失败:', err);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const aiProcessor = new AITitleProcessor();
-            const toolCards = document.querySelectorAll('.tool-card');
-            const functionPanels = document.querySelectorAll('.function-panel');
-            const resultArea = document.getElementById('resultArea');
-            const emptyTip = document.getElementById('emptyTip');
-
-            // 绑定一键复制按钮事件 
-            document.getElementById('copy-all-links').addEventListener('click', copyAllLinks);
-            document.getElementById('copy-all-langs').addEventListener('click', copyAllLangs);
-            document.getElementById('sort-link-lang-btn').addEventListener('click', aiSortAppAndLanguage);
-
-            // 左侧功能块点击事件 - 切换右侧面板
-            toolCards.forEach(card => {
-                card.addEventListener('click', function () {
-                    // 移除所有选中状态 
-                    toolCards.forEach(c => c.classList.remove('active'));
-                    functionPanels.forEach(p => p.classList.remove('active'));
-                    // 添加当前选中状态
-                    this.classList.add('active');
-                    const targetPanel = document.getElementById(this.dataset.target);
-                    targetPanel.classList.add('active');
-                    // 显示结果区，隐藏空状态
-                    resultArea.classList.add('show');
-                    emptyTip.style.display = 'none';
                 });
-            });
+            },
 
-            // 功能1: 符号分隔和语言识别 
-            const separatorInput = document.getElementById('text-separator-input');
-            const separatorBtn = document.getElementById('text-separator-btn');
-            const separatorLoading = document.getElementById('separator-loading');
-            const separatorResult = document.getElementById('text-separator-result');
-            const separatorResultContainer = document.getElementById('text-separator-result-container');
-            const langResult = document.getElementById('lang-detection-result');
-            const langResultContainer = document.getElementById('lang-detection-result-container');
+            setLoading(btnEl, loadingEl, isLoading, btnText = "处理中...") {
+                if (btnEl) btnEl.disabled = isLoading;
+                if (loadingEl) loadingEl.style.display = isLoading ? 'flex' : 'none';
+            }
+        };
 
-            separatorBtn.addEventListener('click', async function () {
-                const text = separatorInput.value.trim();
-                if (!text) {
-                    alert('请输入需要分隔的文本');
-                    return;
-                }
+        // ================== 业务逻辑模块 ==================
+        const Modules = {
+            aiProcessor: null,
 
-                separatorBtn.disabled = true;
-                separatorLoading.style.display = 'flex';
-                separatorResult.innerHTML = '';
-                separatorResultContainer.style.display = 'none';
-                langResult.textContent = '';
-                langResultContainer.style.display = 'none';
+            init(aiProcessor) {
+                this.aiProcessor = aiProcessor;
+                this.initTextSeparator();
+                this.initLinkLangExtractor();
+                this.initAdOptimizer();
+                this.initPaintOptimizer();
+                this.initYoutubeModule();
+            },
 
-                try {
-                    // 异步执行语言识别 
-                    const langPrompt = `请识别以下文本使用的语言，只需返回语言名称(中文)，不要其他内容:
-                    
-${text}`;
+            // 功能1: 翻译结果分行
+            initTextSeparator() {
+                const input = document.getElementById('text-separator-input');
+                const btn = document.getElementById('text-separator-btn');
+                const loading = document.getElementById('separator-loading');
+                const resContainer = document.getElementById('text-separator-result-container');
+                const resContent = document.getElementById('text-separator-result');
+                const langContainer = document.getElementById('lang-detection-result-container');
+                const langContent = document.getElementById('lang-detection-result');
 
-                    const langDetectionPromise = aiProcessor.getAIResponse(langPrompt);
+                btn.addEventListener('click', async () => {
+                    const text = input.value.trim();
+                    if (!text) return alert('请输入需要分隔的文本');
 
-                    // 异步执行文本分隔 
-                    const separatorPrompt = `请严格按照以下要求处理文本：
-1. 输入文本: ${text}
-2. 自动识别多语言分隔符号（包括但不限于：。！？、；：—…「」『』【】.?!;:-–—()[]{}"' **ฯ ฯลฯ**）
-3. 特别包含泰语分隔符（如 ฯ 和 ฯลฯ）
-4. 将文本按识别到的符号分隔，不需要按照逗号分隔 
-5. 每个分隔后的项目单独一行显示
-6. 保持原始内容不变
-7. 不要添加任何额外说明 
-8. 请直接输出分隔后的结果，不要包含其他内容。`;
+                    UIController.setLoading(btn, loading, true);
+                    resContainer.style.display = 'none';
+                    langContainer.style.display = 'none';
 
-                    const separatorPromise = aiProcessor.getAIResponse(separatorPrompt);
+                    try {
+                        // 优化后的 Prompt
+                        const langPrompt = `任务：识别语言。输入文本：${text}\n要求：只返回该语言的中文名称（如“英语”、“泰语”），不要其他任何内容。`;
+                        const sepPrompt = `任务：文本分句。
+输入文本：${text}
+要求：
+1. 识别所有标点（。！？、；：.?!;…—()[]{}"' 及泰语分隔符 ฯ ฯลฯ）进行分句。
+2. 不要按逗号分隔。
+3. 每句单独一行。
+4. 不要添加序号，不要解释。
+直接输出结果：`;
 
-                    // 等待两个异步任务完成 
-                    const [langResultText, separatorResultText] = await Promise.all([
-                        langDetectionPromise,
-                        separatorPromise
-                    ]);
+                        const [langText, sepText] = await Promise.all([
+                            this.aiProcessor.getAIResponse(langPrompt),
+                            this.aiProcessor.getAIResponse(sepPrompt)
+                        ]);
 
-                    // 处理语言识别结果
-                    langResult.textContent = langResultText;
-                    langResultContainer.style.display = 'block';
-
-                    // 处理分隔结果 
-                    const lines = separatorResultText.split('\n').filter(line => line.trim() !== '');
-                    separatorResult.innerHTML = lines.map(line => `
-<div class="result-line">${line}
-    <button class="line-copy-btn" onclick="copyLineText(this)" title="复制">
-        <i class="far fa-copy"></i>
-    </button>
-</div>
-`).join('');
-                    separatorResultContainer.style.display = 'block';
-                } catch (error) {
-                    separatorResult.innerHTML = '<div class="result-line">处理出错，请重试</div>';
-                    separatorResultContainer.style.display = 'block';
-                    langResult.textContent = '语言识别失败';
-                    langResultContainer.style.display = 'block';
-                    console.error('处理错误:', error);
-                } finally {
-                    separatorBtn.disabled = false;
-                    separatorLoading.style.display = 'none';
-                }
-            });
-
-            // 功能2: 链接和语言提取 - 改造为表格渲染 
-            const linkLangInput = document.getElementById('link-lang-input');
-            const linkLangBtn = document.getElementById('link-lang-btn');
-            const linkLangLoading = document.getElementById('link-lang-loading');
-            const linkLangTbody = document.getElementById('link-lang-tbody');
-            const linkLangResultContainer = document.getElementById('link-lang-result-container');
-
-            linkLangBtn.addEventListener('click', async function () {
-                const text = linkLangInput.value.trim();
-                if (!text) {
-                    alert('请输入包含链接的文本');
-                    return;
-                }
-
-                linkLangBtn.disabled = true;
-                linkLangLoading.style.display = 'flex';
-                linkLangTbody.innerHTML = '';
-                linkLangResultContainer.style.display = 'none';
-                // 清空存储的链接和语言数据
-                extractedLinks = [];
-                extractedLangs = [];
-
-                try {
-                    const prompt = `请严格按照以下要求处理文本：
-1. 输入文本: ${text}
-2. 提取所有完整链接（http/https开头）
-3. 识别每个链接内容的主要语言 
-4. 将链接和对应语言分别列出，没有语言的或英语则返回通用
-5. 链接在一列，语言在另一列，上下对应，不是英语则语言要用原缩写 
-6. 不要添加任何额外说明或解释 
- 7. 请按照以下格式返回结果：
-||链接开始|| 
-链接1 
-链接2 
-链接3 
-||链接结束|| 
- 
-||语言开始|| 
-语言1 
-语言2
-语言3 
-||语言结束||`;
-
-                    let result;
-                    let retryCount = 0;
-                    const maxRetries = 3;
-                    let hasValidResult = false;
-
-                    do {
-                        result = await aiProcessor.getAIResponse(prompt);
-                        const linkMatch = result.match(/\|\|链接开始\|\|([\s\S]*?)\|\|链接结束\|\|/);
-                        const langMatch = result.match(/\|\|语言开始\|\|([\s\S]*?)\|\|语言结束\|\|/);
-
-                        if (linkMatch && langMatch) {
-                            extractedLinks = linkMatch[1].trim().split('\n').filter(Boolean);
-                            extractedLangs = langMatch[1].trim().split('\n').filter(Boolean);
-                            const hasInvalidResult = extractedLangs.some(lang =>
-                                lang.includes('无法识别') ||
-                                lang.includes('未识别') ||
-                                lang.includes('未知')
-                            );
-
-                            if (!hasInvalidResult && extractedLinks.length > 0 && extractedLangs.length > 0) {
-                                // 渲染表格内容 
-                                let tableHtml = '';
-                                // 取两者长度的最大值，保证行对齐 
-                                const maxLen = Math.max(extractedLinks.length, extractedLangs.length);
-                                for (let i = 0; i < maxLen; i++) {
-                                    const link = extractedLinks[i] || '-';
-                                    const lang = extractedLangs[i] || '-';
-                                    tableHtml += `<tr><td>${link}</td><td>${lang}</td></tr>`;
-                                }
-                                linkLangTbody.innerHTML = tableHtml;
-                                hasValidResult = true;
-                            } else {
-                                retryCount++;
-                                if (retryCount < maxRetries) continue;
-                                else {
-                                    linkLangTbody.innerHTML = '<tr><td>无法提取有效链接</td><td>无法识别语言</td></tr>';
-                                }
-                            }
-                        } else {
-                            retryCount++;
-                            if (retryCount < maxRetries) continue;
-                            else {
-                                linkLangTbody.innerHTML = '<tr><td>未找到链接</td><td>无法识别语言</td></tr>';
-                            }
+                        if (langText) {
+                            langContent.textContent = langText;
+                            langContainer.style.display = 'block';
                         }
-                    } while (!hasValidResult && retryCount < maxRetries);
 
-                    linkLangResultContainer.style.display = 'block';
-                } catch (error) {
-                    linkLangTbody.innerHTML = '<tr><td>处理出错</td><td>处理出错</td></tr>';
-                    linkLangResultContainer.style.display = 'block';
-                    console.error('链接语言提取错误:', error);
-                } finally {
-                    linkLangBtn.disabled = false;
-                    linkLangLoading.style.display = 'none';
-                }
-            });
-
-
-            //功能3
-            const adTextInput = document.getElementById('ad-text-input');
-            const adTextBtn = document.getElementById('ad-text-btn');
-            const adTextLoading = document.getElementById('ad-text-loading');
-            const adTextResultsContainer = document.getElementById('ad-text-results-container');
-
-
-
-            adTextBtn.addEventListener('click', async function () {
-                const text = adTextInput.value.trim();
-                if (!text) {
-                    alert('请输入广告文案');
-                    return;
-                }
-
-                adTextBtn.disabled = true;
-                adTextLoading.style.display = 'flex';
-                adTextResultsContainer.innerHTML = '';
-                adTextResultsContainer.style.display = 'none';
-
-                try {
-                    // 使用单个请求获取所有优化版本
-                    const prompt = `请严格按照以下要求优化广告文案：
-1. 原始文案: ${text}
-2. 目标受众: 欧美青少年(13-19岁)
-3. 优化要求:
-   - 符合欧美青少年语言文化习惯 
-   - 不要使用emoji 
-   - 提供3种不同风格的优化版本 
-   - 每个版本后提供中文翻译 
-   - 不要添加额外解释 
-4. 输出格式:
-优化版本 1
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]
- 
-优化版本 2
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]
- 
-优化版本 3
-优化文案:
-[优化后的文案]
-中文翻译:
-[翻译内容]`;
-
-                    const result = await aiProcessor.getAIResponse(prompt);
-
-                    // 处理并显示结果 
-                    adTextResultsContainer.innerHTML = '';
-
-                    // 使用正则表达式匹配所有版本 
-                    const versionRegex = /优化版本 (\d+)\s*优化文案:\s*([\s\S]+?)\s*中文翻译:\s*([\s\S]+?)(?=\n优化版本 \d+|$)/g;
-                    let match;
-                    let count = 0;
-
-                    while ((match = versionRegex.exec(result)) !== null && count < 3) {
-                        count++;
-                        const versionNum = match[1];
-                        const optimizedText = match[2].trim();
-                        const translation = match[3].trim();
-
-                        const resultHtml = `
-                <div class="ad-optimization-result">
-                    <div class="ad-optimization-header">
-                        优化版本 ${versionNum}
-                        <button class="copy-btn" onclick="copyOptimizedText(this)" title="复制优化文案">
-                            <i class="far fa-copy"></i>
-                            复制 
-                        </button>
-                    </div>
-                    <div class="ad-optimization-content">
-                        <div class="ad-optimization-version">优化文案:</div>
-                        <div class="ad-optimization-text">${optimizedText}</div>
-                        <div class="ad-optimization-translation">
-                            <div class="ad-optimization-translation-label">中文翻译:</div>
-                            <div>${translation}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-                        adTextResultsContainer.insertAdjacentHTML('beforeend', resultHtml);
-                    }
-
-                    // 如果没有匹配到格式化的结果，直接显示原始结果
-                    if (count === 0) {
-                        adTextResultsContainer.innerHTML = `
-                <div class="ad-optimization-result">
-                    <div class="ad-optimization-content">
-                        <div class="ad-optimization-text">${result}</div>
-                    </div>
-                </div>
-            `;
-                    }
-
-                    adTextResultsContainer.style.display = 'block';
-                } catch (error) {
-                    adTextResultsContainer.innerHTML = '<div class="result-line">优化失败，请重试</div>';
-                    adTextResultsContainer.style.display = 'block';
-                    console.error('文案优化错误:', error);
-                } finally {
-                    adTextBtn.disabled = false;
-                    adTextLoading.style.display = 'none';
-                }
-            });
-
-            hljs.highlightAll();
-        });
-    </script>
-    <script>
-        const POSITIVE_PROMPT = "masterpiece, best quality, 8K UHD, ultra detailed, hyper realistic, intricate details, sharp focus, cinematic lighting, professional photography, vibrant colors, depth of field, cinematic composition";
-        const NEGATIVE_PROMPT = "worst quality, low quality, blurry, pixelated, ugly, deformed, disfigured, bad anatomy, extra limbs, missing fingers, watermark, text, signature";
-
-        function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-        // 复制单版提示词
-        function copySinglePrompt(text) {
-            navigator.clipboard.writeText(text).then(() => showToast());
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const aiProcessor = new AITitleProcessor();
-            const toolCards = document.querySelectorAll('.tool-card');
-            const functionPanels = document.querySelectorAll('.function-panel');
-            const resultArea = document.getElementById('resultArea');
-            const emptyTip = document.getElementById('emptyTip');
-
-            toolCards.forEach(card => {
-                card.addEventListener('click', function () {
-                    toolCards.forEach(c => c.classList.remove('active'));
-                    functionPanels.forEach(p => p.classList.remove('active'));
-                    this.classList.add('active');
-                    document.getElementById(this.dataset.target).classList.add('active');
-                    resultArea.classList.add('show');
-                    emptyTip.style.display = 'none';
-                });
-            });
-
-            // ====================== 功能4：AI绘画预设优化（带中文翻译 + 一键复制） ======================
-            const paintResultBox = document.getElementById('paint-result-box');
-            const paintInput = document.getElementById('paint-input');
-            const paintGenerateBtn = document.getElementById('paint-generate-btn');
-            const paintClearBtn = document.getElementById('paint-clear-btn');
-
-            async function generatePaintPrompt() {
-                const userText = paintInput.value.trim();
-                if (!userText) { alert('请输入绘画需求'); return; }
-
-                paintGenerateBtn.disabled = true;
-                paintResultBox.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-
-                try {
-                    let fullHtml = '';
-                    for (let i = 1; i <= 3; i++) {
-                        paintResultBox.innerHTML = fullHtml + `<div class="typing-indicator">正在生成第 ${i} 版预设，请稍候...</div>`;
-
-                        // 生成提示词
-                        const prompt = `你是顶级AI绘画提示词工程师，用户需求：${userText}，生成专业完整提示词，只输出结果`;
-                        const optimized = await aiProcessor.getAIResponse(prompt);
-                        const finalPrompt = `${optimized.trim()}, ${POSITIVE_PROMPT} --no ${NEGATIVE_PROMPT}`;
-
-                        // 生成中文翻译
-                        const translatePrompt = `请把这段AI绘画提示词翻译成通顺自然的中文：${finalPrompt}`;
-                        const translateResult = await aiProcessor.getAIResponse(translatePrompt);
-
-                        // 拼接带复制按钮 + 中文翻译
-                        fullHtml += `
-                        <div class="paint-version">
-                            <div class="paint-version-header">
-                                <h4><i class="fas fa-palette"></i> 第${i}版优化</h4>
-                                <button class="paint-copy-btn" onclick='copySinglePrompt(\`${finalPrompt.replace(/`/g, "")}\`)'><i class="far fa-copy"></i>一键复制</button>
+                        const lines = sepText.split('\n').filter(l => l.trim());
+                        resContent.innerHTML = lines.map(line => `
+                            <div class="result-line">${line}
+                                <button class="line-copy-btn" onclick="copyLineText(this)" title="复制">
+                                    <i class="far fa-copy"></i>
+                                </button>
                             </div>
-                            <div class="paint-prompt">${finalPrompt}</div>
-                            <div class="paint-translate"><strong>中文参考：</strong>${translateResult}</div>
-                        </div>`;
+                        `).join('');
+                        resContainer.style.display = 'block';
 
-                        paintResultBox.innerHTML = fullHtml;
-                        await delay(600);
+                    } catch (err) {
+                        console.error(err);
+                        alert('处理出错，请重试');
+                    } finally {
+                        UIController.setLoading(btn, loading, false);
                     }
+                });
+            },
 
-                    fullHtml += `<div class="paint-success"><i class="fas fa-check-circle"></i> 3版提示词优化完成！带中文翻译，可直接复制使用</div>`;
-                    paintResultBox.innerHTML = fullHtml;
+            // 功能2: 链接与语言提取
+            initLinkLangExtractor() {
+                const input = document.getElementById('link-lang-input');
+                const btn = document.getElementById('link-lang-btn');
+                const sortBtn = document.getElementById('sort-link-lang-btn');
+                const loading = document.getElementById('link-lang-loading');
+                const tbody = document.getElementById('link-lang-tbody');
+                const container = document.getElementById('link-lang-result-container');
+                const copyLinksBtn = document.getElementById('copy-all-links');
+                const copyLangsBtn = document.getElementById('copy-all-langs');
 
-                } catch (err) {
-                    paintResultBox.innerHTML = `<div style="color:red; padding:10px;">优化失败，请重试</div>`;
-                    console.error(err);
-                } finally {
-                    paintGenerateBtn.disabled = false;
+                const renderTable = (links, langs) => {
+                    STATE.extractedLinks = links;
+                    STATE.extractedLangs = langs;
+                    let html = '';
+                    const maxLen = Math.max(links.length, langs.length);
+                    for (let i = 0; i < maxLen; i++) {
+                        html += `<tr><td>${links[i] || '-'}</td><td>${langs[i] || '-'}</td></tr>`;
+                    }
+                    tbody.innerHTML = html;
+                    container.style.display = 'block';
+                };
+
+                btn.addEventListener('click', async () => {
+                    const text = input.value.trim();
+                    if (!text) return alert('请输入包含链接的文本');
+
+                    UIController.setLoading(btn, loading, true);
+                    container.style.display = 'none';
+
+                    try {
+                        const prompt = `任务：提取链接和语言。
+输入文本：
+${text}
+
+要求：
+1. 提取所有 http/https 链接。
+2. 识别每个链接对应的语言缩写（如en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw等），如果是us，en则填 "通用"，或无法识别则在（en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw）语言表里再次识别。
+3. 严格按以下 Markdown 表格格式输出，不要其他内容：
+
+| 链接 | 语言 |
+| --- | --- |
+| 链接1 | 语言1 |
+| 链接2 | 语言2 |`;
+
+                        const result = await this.aiProcessor.getAIResponse(prompt);
+
+                        // 简单解析 Markdown 表格
+                        const lines = result.split('\n').map(l => l.trim()).filter(l => l && !l.includes('|---') && !l.includes('链接'));
+                        const links = [];
+                        const langs = [];
+
+                        lines.forEach(line => {
+                            // 匹配 | 链接 | 语言 | 格式
+                            const parts = line.split('|').map(p => p.trim()).filter(p => p);
+                            if (parts.length >= 2) {
+                                // 尝试找链接
+                                const linkMatch = parts.find(p => p.startsWith('http'));
+                                if (linkMatch) {
+                                    links.push(linkMatch);
+                                    // 另一个部分是语言
+                                    const lang = parts.find(p => p !== linkMatch) || '通用';
+                                    langs.push(lang);
+                                }
+                            }
+                        });
+
+                        if (links.length > 0) {
+                            renderTable(links, langs);
+                        } else {
+                            throw new Error("Format parse failed");
+                        }
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('提取失败，请重试');
+                    } finally {
+                        UIController.setLoading(btn, loading, false);
+                    }
+                });
+
+                sortBtn.addEventListener('click', async () => {
+                    const text = input.value.trim();
+                    if (!text) return showToast('请先粘贴内容');
+
+                    const oldText = sortBtn.innerText;
+                    sortBtn.disabled = true;
+                    sortBtn.innerText = 'AI整理中...';
+
+                    try {
+                        const prompt = `任务：内容整理。
+请把以下文本整理成清晰的格式。
+规则：
+1. 保留所有主题块（如 "Depression 翻："、"改："、"阿兹海默" 等）。
+2. 每个主题块内，相同语言合并，链接列在下方。
+3. 不同语言、不同主题块之间空一行。
+4. 保留 @xxx 备注。
+5. 只输出纯文本，不要解释。
+
+待整理内容：
+${text}`;
+                        const result = await this.aiProcessor.getAIResponse(prompt);
+                        if (result) {
+                            input.value = result.trim();
+                            showToast('AI 整理完成！');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showToast('AI整理失败');
+                    } finally {
+                        sortBtn.disabled = false;
+                        sortBtn.innerText = oldText;
+                    }
+                });
+
+                copyLinksBtn.addEventListener('click', () => {
+                    if (STATE.extractedLinks.length) copyToClipboard(STATE.extractedLinks.join('\n'));
+                });
+                copyLangsBtn.addEventListener('click', () => {
+                    if (STATE.extractedLangs.length) copyToClipboard(STATE.extractedLangs.join('\n'));
+                });
+            },
+
+            // 功能3: 广告文案优化
+            initAdOptimizer() {
+                const input = document.getElementById('ad-text-input');
+                const btn = document.getElementById('ad-text-btn');
+                const loading = document.getElementById('ad-text-loading');
+                const container = document.getElementById('ad-text-results-container');
+
+                const copyOptimizedText = (button) => {
+                    const div = button.closest('.ad-optimization-result');
+                    const text = div.querySelector('.ad-optimization-text').textContent;
+                    copyToClipboard(text);
+                };
+                // 挂载到全局以便 onclick 调用
+                window.copyOptimizedText = copyOptimizedText;
+
+                btn.addEventListener('click', async () => {
+                    const text = input.value.trim();
+                    if (!text) return alert('请输入广告文案');
+
+                    UIController.setLoading(btn, loading, true);
+                    container.style.display = 'none';
+
+                    try {
+                        const prompt = `任务：欧美青少年广告文案优化。
+原始文案：${text}
+目标受众：欧美 13-19 岁青少年。
+
+要求：
+1. 生成 3 种不同风格的版本。
+2. 语言要地道、符合 Z 世代习惯，不要用 Emoji。
+3. 每个版本包含：优化文案、中文翻译。
+4. 严格按以下 JSON 格式输出（只输出 JSON，不要其他文字）：
+
+{
+  "versions": [
+    { "opt": "优化文案1", "trans": "中文翻译1" },
+    { "opt": "优化文案2", "trans": "中文翻译2" },
+    { "opt": "优化文案3", "trans": "中文翻译3" }
+  ]
+}`;
+
+                        const result = await this.aiProcessor.getAIResponse(prompt);
+                        // 尝试提取 JSON
+                        const jsonMatch = result.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) throw new Error("JSON not found");
+
+                        const data = JSON.parse(jsonMatch[0]);
+                        let html = '';
+
+                        (data.versions || []).forEach((v, i) => {
+                            html += `
+                            <div class="ad-optimization-result">
+                                <div class="ad-optimization-header">
+                                    优化版本 ${i + 1}
+                                    <button class="copy-btn" onclick="copyOptimizedText(this)" title="复制优化文案">
+                                        <i class="far fa-copy"></i> 复制 
+                                    </button>
+                                </div>
+                                <div class="ad-optimization-content">
+                                    <div class="ad-optimization-version">优化文案:</div>
+                                    <div class="ad-optimization-text">${v.opt}</div>
+                                    <div class="ad-optimization-translation">
+                                        <div class="ad-optimization-translation-label">中文翻译:</div>
+                                        <div>${v.trans}</div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+
+                        container.innerHTML = html || '<div class="result-line">生成失败</div>';
+                        container.style.display = 'block';
+
+                    } catch (err) {
+                        console.error(err);
+                        container.innerHTML = '<div class="result-line">优化失败，请重试</div>';
+                        container.style.display = 'block';
+                    } finally {
+                        UIController.setLoading(btn, loading, false);
+                    }
+                });
+            },
+
+            // 功能4: AI绘画预设优化
+            initPaintOptimizer() {
+                const resultBox = document.getElementById('paint-result-box');
+                const input = document.getElementById('paint-input');
+                const genBtn = document.getElementById('paint-generate-btn');
+                const clearBtn = document.getElementById('paint-clear-btn');
+
+                const copySinglePrompt = (text) => copyToClipboard(text);
+                window.copySinglePrompt = copySinglePrompt;
+
+                const generate = async () => {
+                    const userText = input.value.trim();
+                    if (!userText) return alert('请输入绘画需求');
+
+                    genBtn.disabled = true;
+                    let fullHtml = '';
+
+                    try {
+                        for (let i = 1; i <= 3; i++) {
+                            resultBox.innerHTML = fullHtml + `<div class="typing-indicator">正在生成第 ${i} 版预设，请稍候...</div>`;
+
+                            const prompt = `你是专业AI绘画提示词架构师，精通Midjourney与Stable Diffusion。
+
+用户输入：${userText}
+
+第一步：自动解析用户真实用意
+用户输入可能非常简短、模糊、口语化，你需要智能推断：
+- 主体是什么
+- 场景/环境
+- 风格倾向（写实、动漫、科幻、国风、治愈、赛博、复古等）
+- 氛围、色调、情绪
+- 构图与画质偏好
+
+第二步：基于解析结果，生成第 ${i} 版专业英文提示词
+要求：
+- 结构完整：主体 + 场景 + 光影 + 材质 + 画质 + 构图 + 色彩
+- 专业、精准、画面感极强
+- 适配MJ/SD，可直接使用
+- 只输出最终英文提示词，不解释、不分析、不输出中文`;
+
+                            const opt = await this.aiProcessor.getAIResponse(prompt);
+                            const finalPrompt = `${opt.trim()}, ${CONFIG.POSITIVE_PROMPT} --no ${CONFIG.NEGATIVE_PROMPT}`;
+
+                            const transPrompt = `请将以下英文绘画提示词翻译成通顺的中文：\n${finalPrompt}`;
+                            const trans = await this.aiProcessor.getAIResponse(transPrompt);
+
+                            // 安全处理引号
+                            const safePrompt = finalPrompt.replace(/`/g, "\\`").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+                            fullHtml += `
+                            <div class="paint-version">
+                                <div class="paint-version-header">
+                                    <h4><i class="fas fa-palette"></i> 第${i}版优化</h4>
+                                    <button class="paint-copy-btn" onclick='copySinglePrompt("${safePrompt.replace(/'/g, "\\'")}")'><i class="far fa-copy"></i>一键复制</button>
+                                </div>
+                                <div class="paint-prompt">${finalPrompt}</div>
+                                <div class="paint-translate"><strong>中文参考：</strong>${trans}</div>
+                            </div>`;
+
+                            resultBox.innerHTML = fullHtml;
+                            await delay(300);
+                        }
+
+                        fullHtml += `<div class="paint-success"><i class="fas fa-check-circle"></i> 3版提示词优化完成！</div>`;
+                        resultBox.innerHTML = fullHtml;
+
+                    } catch (err) {
+                        console.error(err);
+                        resultBox.innerHTML = `<div style="color:red; padding:10px;">优化失败，请重试</div>`;
+                    } finally {
+                        genBtn.disabled = false;
+                    }
+                };
+
+                genBtn.addEventListener('click', generate);
+                clearBtn.addEventListener('click', () => {
+                    resultBox.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）</div>`;
+                    input.value = '';
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generate(); }
+                });
+            },
+
+            // 功能5: YouTube 查询
+            initYoutubeModule() {
+                const fetchBtn = document.getElementById('youtubeFetchBtn');
+                const urlInput = document.getElementById('youtubeUrls');
+                const convertBtn = document.getElementById('convertToShortBtn');
+                const closePlayerBtn = document.getElementById('closePlayer');
+
+                // 挂载全局函数
+                window.showVideoPlayer = this.showVideoPlayer.bind(this);
+                window.hideVideoPlayer = this.hideVideoPlayer.bind(this);
+                window.copyYoutubeColumn = this.copyYoutubeColumn.bind(this);
+                window.toggleSortViews = this.toggleSortViews.bind(this);
+                window.processYoutubeUrls = this.processYoutubeUrls.bind(this);
+                window.copyImage = this.copyImage.bind(this);
+                window.downloadAllThumbnails = this.downloadAllThumbnails.bind(this);
+                window.getLosslessShortThumbnail = this.getLosslessShortThumbnail.bind(this);
+                window.loadImage = this.loadImage.bind(this);
+
+                // 绑定事件
+                fetchBtn.addEventListener('click', () => this.processYoutubeUrls());
+                urlInput.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') this.processYoutubeUrls(); });
+                convertBtn.addEventListener('click', () => this.convertToShort());
+                closePlayerBtn.addEventListener('click', () => this.hideVideoPlayer());
+            },
+
+            // YouTube 辅助方法
+            extractVideoId(url) {
+                try {
+                    if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
+                    if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
+                    if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
+                } catch (e) { }
+                return null;
+            },
+
+            formatNumber(num) {
+                const n = parseInt(num);
+                if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+                if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+                return n.toString();
+            },
+
+            parseDuration(duration) {
+                const m = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/) || [];
+                const parts = [];
+                if (m[1]) parts.push(m[1] + '小时');
+                if (m[2]) parts.push(m[2] + '分钟');
+                if (m[3]) parts.push(m[3] + '秒');
+                return parts.join('') || "未知";
+            },
+
+            formatUploadDate(dateStr) {
+                const d = new Date(dateStr);
+                const now = new Date();
+                const diff = Math.floor((now - d) / 86400000);
+                if (diff === 0) return "今天";
+                if (diff === 1) return "昨天";
+                if (diff < 30) return diff + "天前";
+                if (diff < 365) return Math.floor(diff / 30) + "个月前";
+                return Math.floor(diff / 365) + "年前";
+            },
+
+            getAvailableYtApiKey() {
+                for (const key of CONFIG.YT_API_KEYS) {
+                    if (STATE.ytApiKeyStatus[key].isActive && !STATE.ytApiKeyStatus[key].quotaExceeded) return key;
                 }
-            }
+                showToast("所有API今日配额已用尽，请明天再试");
+                return null;
+            },
 
-            function clearPaintResult() {
-                paintResultBox.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）</div>`;
-                paintInput.value = '';
-            }
-
-            paintGenerateBtn.addEventListener('click', generatePaintPrompt);
-            paintClearBtn.addEventListener('click', clearPaintResult);
-
-            paintInput.addEventListener('keydown', e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    generatePaintPrompt();
+            async fetchVideoData(vid) {
+                const key = this.getAvailableYtApiKey();
+                if (!key) return null;
+                try {
+                    const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${vid}&key=${key}`);
+                    if (r.status === 403) {
+                        STATE.ytApiKeyStatus[key].quotaExceeded = true;
+                        return this.fetchVideoData(vid); // 递归尝试下一个 Key
+                    }
+                    const j = await r.json();
+                    return j.items?.[0] || null;
+                } catch {
+                    return null;
                 }
-            });
+            },
 
-            document.getElementById('youtubeFetchBtn').addEventListener('click', processYoutubeUrls);
-            document.getElementById('youtubeUrls').addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'Enter') processYoutubeUrls();
-            });
-            document.getElementById('closePlayer').addEventListener('click', hideVideoPlayer);
-        });
+            async getBestThumbnail(vid) {
+                const list = ['maxresdefault', 'hqdefault', 'mqdefault', 'default'];
+                for (const q of list) {
+                    const u = `https://i.ytimg.com/vi/${vid}/${q}.jpg`;
+                    try {
+                        const r = await fetch(u, { method: 'HEAD' });
+                        if (r.ok) return u;
+                    } catch { }
+                }
+                return `https://i.ytimg.com/vi/${vid}/default.jpg`;
+            },
 
-        // ================== 优化版 YouTube查询功能 ==================
-        const YT_API_KEYS = [
-            "AIzaSyBX7YiD9hL6V5_uoG-5dVvoZ6mdNTvLWIM",
-            "AIzaSyDIC5HCCD0UIjHu3F988-3rYg7Eax2hnAQ",
-            "AIzaSyCYRu3QAFeX9fIqBBrA0LD5Hysut-NFpqs"
-        ];
-        const ytApiKeyStatus = YT_API_KEYS.reduce((acc, key) => {
-            acc[key] = { lastUsed: null, errorCount: 0, isActive: true, quotaExceeded: false };
-            return acc;
-        }, {});
+            loadImage(url) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = url;
+                });
+            },
 
-        let ytPlayer;
-        let youtubeApiReady = false;
-        let currentVideoId = "";
+            async getLosslessShortThumbnail(videoId) {
+                try {
+                    const highResUrl = await this.getBestThumbnail(videoId);
+                    if (!highResUrl.includes('maxresdefault.jpg')) return highResUrl;
 
-        function onYouTubeIframeAPIReady() {
-            youtubeApiReady = true;
-            ytPlayer = new YT.Player('playerContainer', {
+                    const img = await this.loadImage(highResUrl);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.height * (9 / 16);
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(
+                        img,
+                        Math.round((img.width - canvas.width) / 2), 0, Math.round(canvas.width), img.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+                    return canvas.toDataURL('image/jpeg', 0.9);
+                } catch (error) {
+                    console.error('缩略图裁剪失败', error);
+                    return await this.getBestThumbnail(videoId);
+                }
+            },
+
+            async copyImage(img) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const tempImg = new Image();
+                    tempImg.crossOrigin = 'anonymous';
+                    tempImg.src = img.src;
+                    await new Promise((resolve, reject) => { tempImg.onload = resolve; tempImg.onerror = reject; });
+                    canvas.width = tempImg.naturalWidth;
+                    canvas.height = tempImg.naturalHeight;
+                    ctx.drawImage(tempImg, 0, 0);
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    showToast("缩略图已复制");
+                } catch (error) {
+                    console.error("复制失败:", error);
+                    await copyToClipboard(img.src);
+                    showToast("复制失败，已复制图片链接");
+                }
+            },
+
+            async downloadAllThumbnails() {
+                const imgs = document.querySelectorAll(".youtube-thumbnail");
+                if (!imgs.length) return;
+                const zip = new JSZip();
+                const f = zip.folder("youtube_thumbnails");
+                const dp = document.getElementById("downloadProgress");
+                dp.style.display = "block";
+
+                for (let i = 0; i < imgs.length; i++) {
+                    try {
+                        const r = await fetch(imgs[i].src);
+                        const b = await r.blob();
+                        f.file(`${i + 1}.jpg`, b);
+                        const pct = Math.round(((i + 1) / imgs.length) * 100);
+                        document.getElementById("downloadProgressBar").style.width = pct + "%";
+                        document.getElementById("downloadProgressPercent").innerText = pct + "%";
+                        document.getElementById("downloadProgressText").innerText = `打包中 ${i + 1}/${imgs.length}`;
+                    } catch { }
+                }
+                const blob = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "youtube_thumbnails.zip";
+                a.click();
+                dp.style.display = "none";
+                showToast("全部缩略图已打包下载");
+            },
+
+            showVideoPlayer(url) {
+                const vid = this.extractVideoId(url);
+                if (!vid) return;
+                STATE.currentVideoId = vid;
+                const o = document.getElementById("videoPlayerOverlay");
+                o.classList.add("show");
+                if (STATE.youtubeApiReady && STATE.ytPlayer) {
+                    setTimeout(() => {
+                        STATE.ytPlayer.loadVideoById(vid);
+                        STATE.ytPlayer.playVideo();
+                    }, 100);
+                }
+            },
+
+            hideVideoPlayer() {
+                const o = document.getElementById("videoPlayerOverlay");
+                o.classList.remove("show");
+                if (STATE.ytPlayer) STATE.ytPlayer.stopVideo();
+            },
+
+            copyYoutubeColumn(colIndex) {
+                const table = document.querySelector('.youtube-table');
+                if (!table) return;
+                const rows = table.querySelectorAll('tbody tr');
+                const textList = [];
+                rows.forEach(row => {
+                    const cell = row.cells[colIndex];
+                    if (!cell) return;
+                    let val = cell.innerText.trim().replace(/^获取失败$/, '');
+                    if (!val) return;
+                    if (colIndex === 3) val = `播放量：${val}`;
+                    textList.push(val);
+                });
+                if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
+            },
+
+            parseViewCount(str) {
+                if (!str || str.includes('失败')) return 0;
+                str = str.trim();
+                if (str.includes('亿')) return parseFloat(str) * 100000000;
+                if (str.includes('w')) return parseFloat(str) * 10000;
+                const num = parseInt(str.replace(/[^0-9]/g, ''));
+                return isNaN(num) ? 0 : num;
+            },
+
+            toggleSortViews() {
+                const table = document.querySelector('.youtube-table tbody');
+                if (!table) return;
+                const rows = Array.from(table.querySelectorAll('tr'));
+                const icon = document.getElementById('sortIcon');
+                STATE.sortViewsAsc = !STATE.sortViewsAsc;
+
+                rows.sort((a, b) => {
+                    const viewA = this.parseViewCount(a.cells[3].innerText);
+                    const viewB = this.parseViewCount(b.cells[3].innerText);
+                    return STATE.sortViewsAsc ? viewA - viewB : viewB - viewA;
+                });
+
+                rows.forEach(row => table.appendChild(row));
+                icon.className = STATE.sortViewsAsc ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
+                showToast(`播放量已${STATE.sortViewsAsc ? '升序' : '降序'}排列`);
+            },
+
+            convertToShort() {
+                const textarea = document.getElementById('youtubeUrls');
+                const text = textarea.value.trim();
+                if (!text) return showToast('请先输入链接');
+
+                const lines = text.split('\n').map(line => line.trim());
+                const result = lines.map(line => {
+                    const vid = this.extractVideoId(line);
+                    return vid ? `https://www.youtube.com/shorts/${vid}` : line;
+                });
+
+                textarea.value = result.join('\n');
+                showToast('已转换为 Shorts 标准链接');
+            },
+
+            validUrls: [], // 暂存当前有效链接
+
+            async processYoutubeUrls() {
+                const text = document.getElementById("youtubeUrls").value.trim();
+                const lines = text.split("\n").map(i => i.trim()).filter(Boolean);
+                if (lines.length === 0) return showToast("请输入至少一个YouTube链接");
+
+                const btn = document.getElementById("youtubeFetchBtn");
+                const bar = document.getElementById("youtubeProgressContainer");
+                const pText = document.getElementById("youtubeProgressText");
+                const pCount = document.getElementById("youtubeProgressCount");
+                const pBar = document.getElementById("youtubeProgressBar");
+                const area = document.getElementById("youtubeResultsArea");
+
+                btn.disabled = true;
+                bar.style.display = "block";
+                area.innerHTML = "";
+                this.validUrls = [];
+
+                // 创建表格
+                const table = document.createElement("table");
+                table.className = "youtube-table";
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th onclick="window.copyYoutubeColumn(0)">视频链接<br><small style="font-size:12px;opacity:0.7">点击复制</small></th>
+                            <th onclick="window.copyYoutubeColumn(1)">标题<br><small style="font-size:12px;opacity:0.7"></small></th>
+                            <th onclick="window.copyYoutubeColumn(2)">频道<br><small style="font-size:12px;opacity:0.7"></small></th>
+                            <th onclick="window.copyYoutubeColumn(3)" style="cursor: pointer;">
+                                播放
+                                <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;">
+                                    <i id="sortIcon" class="fas fa-sort"></i>
+                                </button>
+                            </th>
+                            <th onclick="window.copyYoutubeColumn(4)">评论<br><small style="font-size:12px;opacity:0.7"></small></th>
+                            <th onclick="window.copyYoutubeColumn(5)">发布<br><small style="font-size:12px;opacity:0.7"></small></th>
+                            <th onclick="window.copyYoutubeColumn(6)">时长<br><small style="font-size:12px;opacity:0.7"></small></th>
+                            <th>缩略图</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                area.appendChild(table);
+                const tbody = table.querySelector("tbody");
+
+                for (let i = 0; i < lines.length; i++) {
+                    const url = lines[i];
+                    const vid = this.extractVideoId(url);
+
+                    // 更新进度条
+                    pText.innerText = `正在查询 ${i + 1}/${lines.length}`;
+                    pCount.innerText = `${i + 1}/${lines.length}`;
+                    pBar.style.width = ((i + 1) / lines.length) * 100 + "%";
+
+                    if (!vid) continue;
+                    this.validUrls.push(url);
+                    const isShort = url.includes("shorts");
+
+                    const tr = document.createElement("tr");
+
+                    // 1. 链接
+                    const td1 = document.createElement("td");
+                    td1.innerHTML = `
+                        <div style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
+                        <div class="youtube-link-btns">
+                            <button class="youtube-link-btn play" onclick="window.showVideoPlayer('${url}')"><i class="fas fa-play"></i>播放</button>
+                            <button class="youtube-link-btn jump" onclick="window.open('${url}','_blank')"><i class="fas fa-external-link-alt"></i>打开</button>
+                            <button class="youtube-link-btn copy" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('链接已复制'))"><i class="fas fa-copy"></i>复制</button>
+                        </div>`;
+                    tr.appendChild(td1);
+
+                    // 2-7. 占位
+                    const td2 = document.createElement("td"); td2.className = "youtube-title-cell"; td2.innerText = "加载中..."; tr.appendChild(td2);
+                    const td3 = document.createElement("td"); td3.innerText = "..."; tr.appendChild(td3);
+                    const td4 = document.createElement("td"); td4.innerText = "..."; tr.appendChild(td4);
+                    const td5 = document.createElement("td"); td5.innerText = "..."; tr.appendChild(td5);
+                    const td6 = document.createElement("td"); td6.innerText = "..."; tr.appendChild(td6);
+                    const td7 = document.createElement("td"); td7.innerText = "..."; tr.appendChild(td7);
+
+                    // 8. 缩略图
+                    const td8 = document.createElement("td");
+                    const wrap = document.createElement("div");
+                    wrap.className = "youtube-thumbnail-container";
+                    const img = document.createElement("img");
+                    img.className = "youtube-thumbnail";
+                    img.src = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
+                    const badge = document.createElement("div");
+                    badge.className = "youtube-badge";
+                    badge.innerText = isShort ? `#${i + 1}竖` : `#${i + 1}`;
+                    wrap.appendChild(img); wrap.appendChild(badge); td8.appendChild(wrap);
+                    tr.appendChild(td8);
+
+                    tbody.appendChild(tr);
+
+                    // 点击复制事件
+                    [td2, td3, td4, td5, td6, td7].forEach(cell => {
+                        cell.onclick = () => copyToClipboard(cell.innerText);
+                    });
+                    img.onclick = async () => {
+                        await this.copyImage(img);
+                        badge.innerText = "已复制";
+                    };
+
+                    // 异步拉取数据并回填
+                    const data = await this.fetchVideoData(vid);
+                    if (data) {
+                        const t = data.snippet.title;
+                        td2.innerText = t.length > 22 ? t.substring(0, 22) + "..." : t;
+                        td2.title = t;
+                        td3.innerText = data.snippet.channelTitle;
+                        td4.innerHTML = `<span class="youtube-view-count">${this.formatNumber(data.statistics.viewCount || 0)}</span>`;
+                        td5.innerText = this.formatNumber(data.statistics.commentCount || 0);
+                        td6.innerText = this.formatUploadDate(data.snippet.publishedAt);
+                        td7.innerText = this.parseDuration(data.contentDetails.duration);
+
+                        if (isShort) {
+                            this.getLosslessShortThumbnail(vid).then(u => img.src = u);
+                        } else {
+                            this.getBestThumbnail(vid).then(u => img.src = u);
+                        }
+                    } else {
+                        [td2, td3, td4, td5, td6, td7].forEach(c => c.innerHTML = `<span class='youtube-error'>获取失败</span>`);
+                    }
+                }
+
+                // 表头额外功能
+                const ths = table.querySelectorAll("th");
+                ths[0].onclick = () => {
+                    if (this.validUrls.length) copyToClipboard(this.validUrls.join("\n")).then(() => showToast(`已复制 ${this.validUrls.length} 个链接`));
+                };
+                ths[7].onclick = () => this.downloadAllThumbnails();
+
+                btn.disabled = false;
+                pText.innerText = "查询完成";
+                showToast("YouTube 数据查询完成");
+            }
+        };
+
+        // ================== 全局 YouTube API 回调 ==================
+        window.onYouTubeIframeAPIReady = function () {
+            STATE.youtubeApiReady = true;
+            STATE.ytPlayer = new YT.Player('playerContainer', {
                 height: '100%',
                 width: '100%',
                 videoId: '',
@@ -2492,440 +2635,20 @@ ${text}`;
                 events: {
                     onError: () => {
                         showToast("视频无法播放，已为你打开新标签页");
-                        window.open(`https://youtu.be/${currentVideoId}`, "_blank");
-                        hideVideoPlayer();
+                        window.open(`https://youtu.be/${STATE.currentVideoId}`, "_blank");
+                        Modules.hideVideoPlayer();
                     }
                 }
             });
-        }
+        };
 
-        function getAvailableYtApiKey() {
-            for (const key of YT_API_KEYS) {
-                if (ytApiKeyStatus[key].isActive && !ytApiKeyStatus[key].quotaExceeded) return key;
-            }
-            showToast("所有API今日配额已用尽，请明天再试");
-            return null;
-        }
-
-        function extractVideoId(url) {
-            try {
-                if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
-                if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
-                if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
-            } catch (e) { }
-            return null;
-        }
-
-        function formatNumber(num) {
-            const n = parseInt(num);
-            if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
-            if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
-            return n.toString();
-        }
-
-        function parseDuration(duration) {
-            const regex = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
-            const m = duration.match(regex) || [];
-            const h = m[1] || 0, min = m[2] || 0, s = m[3] || 0;
-            return `${h ? h + '小时' : ''}${min ? min + '分钟' : ''}${s ? s + '秒' : ''}` || "未知";
-        }
-
-        function formatUploadDate(dateStr) {
-            const d = new Date(dateStr);
-            const now = new Date();
-            const day = 86400000;
-            const diff = Math.floor((now - d) / day);
-            if (diff === 0) return "今天";
-            if (diff === 1) return "昨天";
-            if (diff < 30) return diff + "天前";
-            if (diff < 365) return Math.floor(diff / 30) + "个月前";
-            return Math.floor(diff / 365) + "年前";
-        }
-
-        async function getBestThumbnail(vid) {
-            const list = ['maxresdefault', 'hqdefault', 'mqdefault', 'default'];
-            for (const q of list) {
-                const u = `https://i.ytimg.com/vi/${vid}/${q}.jpg`;
-                try {
-                    const r = await fetch(u, { method: 'HEAD' });
-                    if (r.ok) return u;
-                } catch { }
-            }
-            return `https://i.ytimg.com/vi/${vid}/default.jpg`;
-        }
-
-        async function fetchVideoData(vid) {
-            const key = getAvailableYtApiKey();
-            if (!key) return null;
-            try {
-                const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${vid}&key=${key}`);
-                if (r.status === 403) {
-                    ytApiKeyStatus[key].quotaExceeded = true;
-                    return fetchVideoData(vid);
-                }
-                const j = await r.json();
-                return j.items?.[0] || null;
-            } catch {
-                return null;
-            }
-        }
-
-        async function copyImage(img) {
-            try {
-                // 1. 创建临时 Canvas
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                // 2. 处理跨域：必须在设置 src 前配置
-                const tempImg = new Image();
-                tempImg.crossOrigin = 'anonymous'; // 关键：允许跨域加载
-                tempImg.src = img.src;
-
-                // 3. 等待图片加载完成
-                await new Promise((resolve, reject) => {
-                    tempImg.onload = resolve;
-                    tempImg.onerror = reject;
-                });
-
-                // 4. 设置 Canvas 尺寸并绘制
-                canvas.width = tempImg.naturalWidth;
-                canvas.height = tempImg.naturalHeight;
-                ctx.drawImage(tempImg, 0, 0);
-
-                // 5. Canvas 转 Blob 并写入剪贴板
-                const blob = await new Promise(resolve =>
-                    canvas.toBlob(resolve, 'image/png', 0.95)
-                );
-                await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': blob })
-                ]);
-
-                showToast("缩略图已复制");
-            } catch (error) {
-                console.error("复制失败:", error);
-                // 降级：复制图片 URL（兜底方案）
-                await navigator.clipboard.writeText(img.src);
-                showToast("复制失败，已复制图片链接");
-            }
-        }
-
-        async function downloadAllThumbnails() {
-            const imgs = document.querySelectorAll(".youtube-thumbnail");
-            if (!imgs.length) return;
-            const zip = new JSZip();
-            const f = zip.folder("youtube_thumbnails");
-            const dp = document.getElementById("downloadProgress");
-            dp.style.display = "block";
-
-            for (let i = 0; i < imgs.length; i++) {
-                try {
-                    const r = await fetch(imgs[i].src);
-                    const b = await r.blob();
-                    f.file(`${i + 1}.jpg`, b);
-
-                    const pct = Math.round(((i + 1) / imgs.length) * 100);
-                    document.getElementById("downloadProgressBar").style.width = pct + "%";
-                    document.getElementById("downloadProgressPercent").innerText = pct + "%";
-                    document.getElementById("downloadProgressText").innerText = `打包中 ${i + 1}/${imgs.length}`;
-                } catch { }
-            }
-
-            const blob = await zip.generateAsync({ type: "blob" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "youtube_thumbnails.zip";
-            a.click();
-            dp.style.display = "none";
-            showToast("全部缩略图已打包下载");
-        }
-
-        function showVideoPlayer(url) {
-            const vid = extractVideoId(url);
-            if (!vid) return;
-            currentVideoId = vid;
-            const o = document.getElementById("videoPlayerOverlay");
-            o.classList.add("show");
-            if (youtubeApiReady) {
-                setTimeout(() => {
-                    ytPlayer.loadVideoById(vid);
-                    ytPlayer.playVideo();
-                }, 100);
-            }
-        }
-
-        function hideVideoPlayer() {
-            const o = document.getElementById("videoPlayerOverlay");
-            o.classList.remove("show");
-            if (ytPlayer) ytPlayer.stopVideo();
-        }
-
-        async function processYoutubeUrls() {
-            const text = document.getElementById("youtubeUrls").value.trim();
-            const lines = text.split("\n").map(i => i.trim()).filter(Boolean);
-            if (lines.length === 0) {
-                showToast("请输入至少一个YouTube链接");
-                return;
-            }
-
-            const btn = document.getElementById("youtubeFetchBtn");
-            const bar = document.getElementById("youtubeProgressContainer");
-            const pText = document.getElementById("youtubeProgressText");
-            const pCount = document.getElementById("youtubeProgressCount");
-            const pBar = document.getElementById("youtubeProgressBar");
-            const area = document.getElementById("youtubeResultsArea");
-
-            btn.disabled = true;
-            bar.style.display = "block";
-            area.innerHTML = "";
-
-            const table = document.createElement("table");
-            table.className = "youtube-table";
-            table.innerHTML = `
-            <thead>
-    <tr>
-        <th onclick="copyYoutubeColumn(0)">视频链接<br><small style="font-size:12px;opacity:0.7">点击复制</small></th>
-        <th onclick="copyYoutubeColumn(1)">标题<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th onclick="copyYoutubeColumn(2)">频道<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th onclick="copyYoutubeColumn(3)" style="cursor: pointer;">
-    播放
-    <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); toggleSortViews();" style="margin-left:5px;">
-        <i id="sortIcon" class="fas fa-sort"></i>
-    </button>
-</th>
-        <th onclick="copyYoutubeColumn(4)">评论<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th onclick="copyYoutubeColumn(5)">发布<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th onclick="copyYoutubeColumn(6)">时长<br><small style="font-size:12px;opacity:0.7"></small></th>
-        <th>缩略图</th>
-    </tr>
-</thead>
-            <tbody></tbody>
-            `;
-            area.appendChild(table);
-            const tbody = table.querySelector("tbody");
-            const validUrls = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                const url = lines[i];
-                const vid = extractVideoId(url);
-                pText.innerText = `正在查询 ${i + 1}/${lines.length}`;
-                pCount.innerText = `${i + 1}/${lines.length}`;
-                pBar.style.width = ((i + 1) / lines.length) * 100 + "%";
-
-                if (!vid) continue;
-                validUrls.push(url);
-                const isShort = url.includes("shorts");
-
-                const tr = document.createElement("tr");
-
-                // 链接
-                const td1 = document.createElement("td");
-                td1.innerHTML = `
-                <div style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
-                <div class="youtube-link-btns">
-                    <button class="youtube-link-btn play" onclick="showVideoPlayer('${url}')"><i class="fas fa-play"></i>播放</button>
-                    <button class="youtube-link-btn jump" onclick="window.open('${url}','_blank')"><i class="fas fa-external-link-alt"></i>打开</button>
-                    <button class="youtube-link-btn copy" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('链接已复制'))"><i class="fas fa-copy"></i>复制</button>
-                </div>`;
-                tr.appendChild(td1);
-
-                // 标题
-                const td2 = document.createElement("td");
-                td2.className = "youtube-title-cell";
-                td2.innerText = "加载中...";
-                tr.appendChild(td2);
-
-                // 频道
-                const td3 = document.createElement("td");
-                td3.innerText = "...";
-                tr.appendChild(td3);
-
-                // 播放
-                const td4 = document.createElement("td");
-                td4.innerText = "...";
-                tr.appendChild(td4);
-
-                // 评论
-                const td5 = document.createElement("td");
-                td5.innerText = "...";
-                tr.appendChild(td5);
-
-                // 发布
-                const td6 = document.createElement("td");
-                td6.innerText = "...";
-                tr.appendChild(td6);
-
-                // 时长
-                const td7 = document.createElement("td");
-                td7.innerText = "...";
-                tr.appendChild(td7);
-
-                // 缩略图
-                const td8 = document.createElement("td");
-                const wrap = document.createElement("div");
-                wrap.className = "youtube-thumbnail-container";
-                const img = document.createElement("img");
-                img.className = "youtube-thumbnail";
-                img.src = `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
-                const badge = document.createElement("div");
-                badge.className = "youtube-badge";
-                badge.innerText = isShort ? `#${i + 1}竖` : `#${i + 1}`;
-                wrap.appendChild(img);
-                wrap.appendChild(badge);
-                td8.appendChild(wrap);
-                tr.appendChild(td8);
-
-                tbody.appendChild(tr);
-
-                // 点击复制
-                [td2, td3, td4, td5, td6, td7].forEach(cell => {
-                    cell.onclick = () => {
-                        navigator.clipboard.writeText(cell.innerText).then(() => showToast("已复制"));
-                    };
-                });
-                img.onclick = async () => {
-                    await copyImage(img);
-                    // 点击复制后，角标改成“已复制”
-                    badge.innerText = "已复制";
-                };
-
-                // 拉取数据
-                const data = await fetchVideoData(vid);
-                if (data) {
-                    const t = data.snippet.title;
-                    td2.innerText = t.length > 22 ? t.substring(0, 22) + "..." : t;
-                    td2.title = t;
-                    td3.innerText = data.snippet.channelTitle;
-                    td4.innerHTML = `<span class="youtube-view-count">${formatNumber(data.statistics.viewCount || 0)}</span>`;
-                    td5.innerText = formatNumber(data.statistics.commentCount || 0);
-                    td6.innerText = formatUploadDate(data.snippet.publishedAt);
-                    td7.innerText = parseDuration(data.contentDetails.duration);
-                    // 如果是 Shorts，使用裁剪后的竖版缩略图；否则正常显示
-                    if (isShort) {
-                        getLosslessShortThumbnail(vid).then(croppedUrl => {
-                            img.src = croppedUrl;
-                        });
-                    } else {
-                        getBestThumbnail(vid).then(u => img.src = u);
-                    }
-                } else {
-                    [td2, td3, td4, td5, td6, td7].forEach(c => c.innerHTML = `<span class='youtube-error'>获取失败</span>`);
-                }
-            }
-
-            // 一键复制所有链接 + 下载全部缩略图
-            const ths = table.querySelectorAll("th");
-            ths[0].onclick = () => {
-                if (validUrls.length) {
-                    navigator.clipboard.writeText(validUrls.join("\n")).then(() => showToast(`已复制 ${validUrls.length} 个链接`));
-                }
-            };
-            ths[7].onclick = downloadAllThumbnails;
-
-            btn.disabled = false;
-            pText.innerText = "查询完成";
-            showToast("YouTube 数据查询完成");
-        }
-
-        // YouTube 表头一键复制整列
-        function copyYoutubeColumn(colIndex) {
-            const table = document.querySelector('.youtube-table');
-            if (!table) return;
-
-            const rows = table.querySelectorAll('tbody tr');
-            let textList = [];
-
-            rows.forEach(row => {
-                const cell = row.cells[colIndex];
-                if (!cell) return;
-
-                let val = cell.innerText.trim().replace(/^获取失败$/, '');
-                if (!val) return;
-
-                if (colIndex === 3) {
-                    val = `播放量：${val}`;
-                }
-
-                textList.push(val);
-            });
-
-            const text = textList.join('\n');
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(`已复制该列共 ${textList.length} 条数据`);
-            });
-        }
-
-        // ================== 一键转 YouTube Shorts 链接 ==================
-        document.getElementById('convertToShortBtn').addEventListener('click', function () {
-            const textarea = document.getElementById('youtubeUrls');
-            let text = textarea.value.trim();
-            if (!text) {
-                showToast('请先输入链接');
-                return;
-            }
-
-            // 按行分割
-            const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-            const result = [];
-
-            for (let line of lines) {
-                const vid = extractVideoId(line); // 你现成的提取ID函数
-                if (vid) {
-                    result.push(`https://www.youtube.com/shorts/${vid}`);
-                } else {
-                    result.push(line); // 无法识别的保留原样
-                }
-            }
-
-            // 回填输入框
-            textarea.value = result.join('\n');
-            showToast('已转换为 Shorts 标准链接');
+        // ================== 主入口 ==================
+        document.addEventListener('DOMContentLoaded', function () {
+            const ai = new AITitleProcessor();
+            UIController.init();
+            Modules.init(ai);
+            // hljs.highlightAll(); // 初始页面无代码块，按需高亮
         });
-
-        // 播放量排序状态
-        let sortViewsAsc = true;
-
-        // 切换播放量正序 / 逆序
-        function toggleSortViews() {
-            const table = document.querySelector('.youtube-table tbody');
-            if (!table) return;
-
-            const rows = Array.from(table.querySelectorAll('tr'));
-            const icon = document.getElementById('sortIcon');
-
-            // 切换排序方向
-            sortViewsAsc = !sortViewsAsc;
-
-            // 排序
-            rows.sort((a, b) => {
-                const viewA = parseViewCount(a.cells[3].innerText);
-                const viewB = parseViewCount(b.cells[3].innerText);
-                return sortViewsAsc ? viewA - viewB : viewB - viewA;
-            });
-
-            // 重新渲染行
-            rows.forEach(row => table.appendChild(row));
-
-            // 更新图标
-            icon.className = sortViewsAsc
-                ? 'fas fa-sort-amount-up'
-                : 'fas fa-sort-amount-down';
-
-            showToast(`播放量已${sortViewsAsc ? '升序' : '降序'}排列`);
-        }
-
-        // 把 "1.2w" / "3.5亿" 转回数字用于排序
-        function parseViewCount(str) {
-            if (!str || str.includes('失败')) return 0;
-            str = str.trim();
-
-            if (str.includes('亿')) {
-                return parseFloat(str) * 100000000;
-            }
-            if (str.includes('w')) {
-                return parseFloat(str) * 10000;
-            }
-            const num = parseInt(str.replace(/[^0-9]/g, ''));
-            return isNaN(num) ? 0 : num;
-        }
     </script>
 </body>
 
