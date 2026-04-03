@@ -1976,13 +1976,13 @@ ${text}
 
 要求：
 1. 提取所有 http/https 链接。
-2. 识别每个链接对应的语言缩写（如en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw等），如果是us，en则填 "通用"，或无法识别则在（en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw）语言表里再次识别。
+2. 识别每个链接对应的语言缩写（如en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw等），如果是us，en则填 "通用"，或无法识别则使用无法识别的缩写进行输出。
 3. 严格按以下 Markdown 表格格式输出，不要其他内容：
 
 | 链接 | 语言 |
 | --- | --- |
-| 链接1 | 语言1 |
-| 链接2 | 语言2 |`;
+| 链接1 | 语言缩写1 |
+| 链接2 | 语言缩写2 |`;
 
                         const result = await this.aiProcessor.getAIResponse(prompt);
 
