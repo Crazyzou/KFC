@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八字四柱 · AI精准运势分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'KaiTi', 'SimSun', 'Microsoft YaHei', serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FDF6E9 0%, #F5F0E1 100%);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: url('https://zh.pngtree.com/freebackground/vector-classical-tai-chi-gossip-illustration-background_1133082.html');
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: #FEFBF3;
+            border-radius: 12px;
+            border: 2px solid #D4B16A;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.15);
+            overflow: hidden;
+        }
+
+        .page-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #8B0000;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-desc {
+            text-align: center;
+            color: #6B4226;
+            margin-bottom: 40px;
+            font-size: 15px;
+        }
+
+        .date-box {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        #datePicker {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #8B0000;
+            border-radius: 8px;
+            background: #FFFDF8;
+            outline: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            color: #222;
+        }
+
+        #datePicker:focus {
+            border-color: #D4B16A;
+            box-shadow: 0 0 0 3px rgba(212, 177, 106, 0.2);
+        }
+
+        .grid-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .item-card {
+            padding: 28px;
+            border-radius: 12px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .item-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card-bg1 {
+            background: #2E7D32;
+        }
+
+        .card-bg2 {
+            background: #C62828;
+        }
+
+        .card-bg3 {
+            background: #F59E0B;
+        }
+
+        .card-bg4 {
+            background: #0F766E;
+        }
+
+        .card-label {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .card-text {
+            font-size: 12px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .ai-container {
+            background: #FAF6EE;
+            border-radius: 12px;
+            padding: 32px;
+            border-left: 5px solid #8B0000;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .ai-icon {
+            font-size: 24px;
+        }
+
+        .ai-title-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #8B0000;
+        }
+
+        .ai-content {
+            line-height: 1.9;
+            color: #3D2B1F;
+            font-size: 15px;
+        }
+
+        .ai-content h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #6B4226;
+            margin: 22px 0 12px 0;
+            padding-left: 10px;
+            border-left: 4px solid #8B0000;
+            line-height: 1.4;
+        }
+
+        .ai-content h3:first-child {
+            margin-top: 0 !important;
+        }
+
+        .ai-content p {
+            margin: 10px 0;
+            text-align: justify;
+        }
+
+        .ai-content ul {
+            margin: 10px 0;
+            padding-left: 24px;
+        }
+
+        .ai-content li {
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .ai-content strong {
+            color: #8B0000;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px 0;
+            color: #8B0000;
+            font-size: 15px;
+        }
+
+        .loading span {
+            display: inline-block;
+            animation: rotate 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .retry-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 24px;
+            background: #8B0000;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .retry-btn:hover {
+            background: #6A0000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="page-title">八字四柱 · AI精准运势分析</h1>
+        <p class="page-desc">选择日期，自动获取大运/流年/流月/流日 + AI专属精准建议</p>
+
+        <div class="date-box">
+            <input type="date" id="datePicker" value="">
+        </div>
+
+        <div class="grid-box">
+            <div class="item-card card-bg1">
+                <div class="card-label">当前大运</div>
+                <div class="card-value" id="dayun">--</div>
+                <div class="card-text" id="dayunTime">--</div>
+            </div>
+            <div class="item-card card-bg2">
+                <div class="card-label">流年</div>
+                <div class="card-value" id="liunian">--</div>
+            </div>
+            <div class="item-card card-bg3">
+                <div class="card-label">流月（节气）</div>
+                <div class="card-value" id="liuyue">--</div>
+                <div class="card-text" id="liuyueTime">--</div>
+            </div>
+            <div class="item-card card-bg4">
+                <div class="card-label">流日</div>
+                <div class="card-value" id="liuri">--</div>
+            </div>
+        </div>
+
+        <div class="ai-container">
+            <div class="ai-header">
+                <div class="ai-icon">🤖</div>
+                <div class="ai-title-text">AI 精准运势建议</div>
+            </div>
+            <div class="ai-content" id="aiResult">
+                <div class="loading"><span>⌛</span>请选择日期，AI正在精准分析...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 官方稳定版 lunar.js -->
+    <script src="../lanur.js"></script>
+
+    <script>
+        // 工具函数：延迟
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ===================== 命主精准配置（核心修正） =====================
+        const MINGZHU = {
+            name: '男命',
+            // 精准八字：癸未 丙辰 甲戌 乙丑
+            bazi: ['癸未', '丙辰', '甲戌', '乙丑'],
+            rizhu: '甲木',
+            // 喜用神精准定义
+            xiyong: ['水', '木'],
+            // 忌神精准定义
+            jishen: ['土', '金'],
+            // 闲神
+            xianshen: ['火'],
+            // 原局核心特点
+            baseInfo: '身弱财旺，地支辰戌丑未四库俱全，土多木折，需水木生扶帮身',
+            // 大运精准修正：阴年男命逆行，起运时间2012年1月
+            dayunList: [
+                { ganzhi: '乙卯', start: '2011-01-01', end: '2021-01-01', age: '8-18岁', shishen: '比肩', desc: '喜用帮身，学业顺遂，长辈助力多' },
+                { ganzhi: '甲寅', start: '2021-01-01', end: '2031-01-01', age: '18-28岁', shishen: '比肩', desc: '喜用强旺，人生起步黄金期，利升学深造、职场积累' },
+                { ganzhi: '癸丑', start: '2031-01-01', end: '2041-01-01', age: '28-38岁', shishen: '正印', desc: '第一喜用到位，事业家庭双稳定，利升职扎根' },
+                { ganzhi: '壬子', start: '2041-01-01', end: '2051-01-01', age: '38-48岁', shishen: '偏印', desc: '喜用极旺，人生巅峰期，事业财富达到顶峰' },
+                { ganzhi: '辛亥', start: '2051-01-01', end: '2061-01-01', age: '48-58岁', shishen: '正官', desc: '亥水为用，整体平稳，以守成为主' },
+                { ganzhi: '庚戌', start: '2061-01-01', end: '2071-01-01', age: '58-68岁', shishen: '七杀', desc: '忌神渐旺，以养生守成为主' },
+                { ganzhi: '己酉', start: '2071-01-01', end: '2081-01-01', age: '68-78岁', shishen: '正财', desc: '忌神旺，安享晚年，重点关注健康' },
+                { ganzhi: '戊申', start: '2081-01-01', end: '2091-01-01', age: '78-88岁', shishen: '偏财', desc: '晚年安稳，子女孝顺，修身养性为主' },
+                { ganzhi: '丁未', start: '2091-01-01', end: '2101-01-01', age: '88岁后', shishen: '伤官', desc: '晚年颐养天年' }
+            ]
+        };
+
+        // ===================== 八字精准计算器（适配lunar.js 1.7.7） =====================
+        class BaziCalculator {
+            // 获取农历对象（支持真太阳时逻辑）
+            static getLunar(dateStr) {
+                const [y, m, d] = dateStr.split('-');
+                const solar = Solar.fromYmd(Number(y), Number(m), Number(d));
+                return solar.getLunar();
+            }
+
+            // 流年：立春换年，精准干支
+            static getYearGanZhi(dateStr) {
+                return this.getLunar(dateStr).getYearInGanZhiExact();
+            }
+
+            // 流月：节气换月，精准干支+起止时间
+            static getLiuyue(dateStr) {
+                const lunar = this.getLunar(dateStr);
+                const ganzhi = lunar.getMonthInGanZhiExact();
+                // 获取当月节气起止
+                const jieQiTable = lunar.getJieQiTable();
+
+                // 安全排序（直接用对象本身比较，不用getSolar）
+                const jieQiList = Object.values(jieQiTable)
+                    .filter(item => item)
+                    .sort((a, b) => a.toYmd() - b.toYmd());
+
+                const currentMonthZhi = lunar.getMonthZhiExact();
+                const zhiJieQiMap = {
+                    '寅': ['立春', '惊蛰'],
+                    '卯': ['惊蛰', '清明'],
+                    '辰': ['清明', '立夏'],
+                    '巳': ['立夏', '芒种'],
+                    '午': ['芒种', '小暑'],
+                    '未': ['小暑', '立秋'],
+                    '申': ['立秋', '白露'],
+                    '酉': ['白露', '寒露'],
+                    '戌': ['寒露', '立冬'],
+                    '亥': ['立冬', '大雪'],
+                    '子': ['大雪', '小寒'],
+                    '丑': ['小寒', '立春']
+                };
+                const [startJie, endJie] = zhiJieQiMap[currentMonthZhi] || [];
+
+                // 直接取 toYmd()，不需要 getSolar()
+                const start = jieQiTable[startJie]?.toYmd() || '';
+                const end = jieQiTable[endJie]?.toYmd() || '';
+
+                return { ganzhi, start, end };
+            }// 流日：23点换日，精准干支
+            static getDayGanZhi(dateStr) {
+                return this.getLunar(dateStr).getDayInGanZhiExact();
+            }
+
+            // 大运：精准匹配日期区间
+            static getDayun(dateStr) {
+                const d = new Date(dateStr);
+                return MINGZHU.dayunList.find(item =>
+                    d >= new Date(item.start) && d < new Date(item.end)
+                ) || MINGZHU.dayunList.at(-1);
+            }
+
+            // 新增1：十二时辰对应时间（固定不变）
+            static SHICHEN_TIME = [
+                { name: '子', start: 23, end: 1, index: 0 },
+                { name: '丑', start: 1, end: 3, index: 1 },
+                { name: '寅', start: 3, end: 5, index: 2 },
+                { name: '卯', start: 5, end: 7, index: 3 },
+                { name: '辰', start: 7, end: 9, index: 4 },
+                { name: '巳', start: 9, end: 11, index: 5 },
+                { name: '午', start: 11, end: 13, index: 6 },
+                { name: '未', start: 13, end: 15, index: 7 },
+                { name: '申', start: 15, end: 17, index: 8 },
+                { name: '酉', start: 17, end: 19, index: 9 },
+                { name: '戌', start: 19, end: 21, index: 10 },
+                { name: '亥', start: 21, end: 23, index: 11 },
+            ];
+
+            // 新增2：根据流日天干+当前时间，自动计算精准流时（五鼠遁日上起时法）
+            static getLiushi(riGan) {
+                // 五鼠遁固定口诀：日干对应子时的天干
+                const wushuDun = {
+                    '甲': '甲', '己': '甲',
+                    '乙': '丙', '庚': '丙',
+                    '丙': '戊', '辛': '戊',
+                    '丁': '庚', '壬': '庚',
+                    '戊': '壬', '癸': '壬'
+                };
+
+                // 十天干顺序，用于顺排时辰
+                const tianGan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+                const diZhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+                // 获取当前时间，匹配对应时辰
+                const now = new Date();
+                const hour = now.getHours();
+                const currentShichen = this.SHICHEN_TIME.find(item => {
+                    if (item.start < item.end) {
+                        return hour >= item.start && hour < item.end;
+                    } else {
+                        // 处理子时23点-次日1点的跨天情况
+                        return hour >= item.start || hour < item.end;
+                    }
+                }) || this.SHICHEN_TIME[6]; // 默认午时
+
+                // 计算时辰天干
+                const ziGan = wushuDun[riGan];
+                const ziGanIndex = tianGan.indexOf(ziGan);
+                const shichenGan = tianGan[(ziGanIndex + currentShichen.index) % 10];
+                const shichenZhi = diZhi[currentShichen.index];
+
+                return {
+                    ganzhi: shichenGan + shichenZhi,
+                    name: currentShichen.name,
+                    time: `${currentShichen.start}:00-${currentShichen.end}:00`
+                };
+            }
+        }
+
+
+
+
+        // ===================== AI分析处理器（深度适配命主原局） =====================
+        class AITitleProcessor {
+            constructor() {
+                this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
+                this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+            }
+
+            async getAIResponse(prompt, retries = 2) {
+                for (let i = 0; i <= retries; i++) {
+                    try {
+                        const response = await fetch(this.apiUrl, {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${this.apiKey}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                model: "doubao-1-5-pro-32k-250115",
+                                messages: [
+                                    { role: "system", content: this.getSystemPrompt() },
+                                    { role: "user", content: prompt }
+                                ],
+                                temperature: 0.05,
+                                max_tokens: 2500
+                            })
+                        });
+
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const result = await response.json();
+                        const content = result.choices?.[0]?.message?.content?.trim();
+                        if (content) return content;
+                        throw new Error("Empty response");
+                    } catch (error) {
+                        console.error(`AI请求错误 (尝试 ${i + 1})`, error);
+                        if (i === retries) throw error;
+                        await delay(800);
+                    }
+                }
+            }
+
+            getSystemPrompt() {
+                return `【角色】你是一位精通子平八字的专业命理师，同时深度了解《原神》游戏机制，所有分析必须严格基于命主原局，禁止脱离命局泛泛而谈，禁止喜用大运全吉化的偏颇判定。
+【命主核心档案（必须严格遵循）】
+- 八字：${MINGZHU.bazi.join(' ')}
+- 日主：${MINGZHU.rizhu}
+- 原局格局：${MINGZHU.baseInfo}
+- 喜用神：${MINGZHU.xiyong.join('、')}（水为第一喜用，木为第二喜用）
+- 忌神：${MINGZHU.jishen.join('、')}（土为核心忌神，金为次忌神）
+- 闲神：${MINGZHU.xianshen.join('、')}（适度利才华，多则生土为忌）
+- 婚姻宫：日支戌土，逢辰戌冲、戌未刑、戌丑刑，婚姻宫不稳，忌早婚
+- 性别：男命，阴年生逆行大运
+
+【分析核心逻辑（必须严格执行，禁止颠倒）】
+1.  以日主甲木为核心，严格遵循「大运定基调→流年定应期→流月催吉凶→流日定落地→流时调细节」的权重优先级，权重占比固定为：大运40%>流年30%>流月15%>流日10%>流时5%，低维周期无法突破高维周期框架，高维周期也无法直接一票定单日吉凶，必须逐层叠加判定
+2.  核心判定标准：喜用神旺相则吉，忌神旺相则凶；同层级内，合冲刑害、暗合拱合的优先级高于普通五行生克；跨层级间，高层级的生克合冲优先级，绝对高于低层级
+3.  喜用大运吉凶铁则（必须优先执行，禁止偏颇）：
+    - 优先判定大运甲寅喜用根气是否受损：地支寅木遇申冲、巳申刑、合局被破，直接导致帮身力量下降，当日吉凶强制降档
+    - 流年+流月+流日，2个及以上周期忌神土金旺相，当日吉凶不得高于小吉；3个及以上周期忌神旺相，直接判凶
+    - 流日触发辰戌冲、戌未刑、戌丑刑，动婚姻宫忌神，当日吉凶不得高于平运
+    - 闲神火过旺形成火局泄木生土，当日吉凶不得高于平运
+4.  重点关注：各周期干支与原局、大运、流年的天干五合、地支六合/三合/三会、六冲/三刑/六害，尤其关注与原局四库、婚姻宫、大运寅木根气的互动
+5.  原神建议必须100%贴合当日整体喜忌，先定当日吉凶等级，再在框架内优选时辰执行对应操作，禁止以时辰吉凶覆盖当日整体判定：
+   - 大吉日（喜用无损、忌神有制）：可在当日喜用神旺相的时辰，进行抽卡、刷圣遗物（优先水/木属性角色养成、武器强化）、打深渊、开宝箱等核心操作
+   - 小吉日（喜用无损、小忌有制）：仅可在喜用神旺相的时辰，做少量低风险抽卡/强化，优先完成日常，不建议大额投入
+   - 平运日（喜用无增益、忌神无制也无冲克）：建议佛系游戏，完成日常任务即可，不做任何高风险、高期待值的操作
+   - 凶日（喜用受损、忌神旺相无制）：无论时辰好坏，均建议囤原石、囤体力、刷基础材料，严禁抽卡/强化/打深渊等高风险操作
+6.  生活建议必须贴合命主身弱财旺的特点，严格遵循当日吉凶基调，重点围绕事业、财运、健康、情绪给出可落地的精准建议，禁止空泛表述
+
+【输出格式要求】
+严格使用Markdown，仅包含以下三个部分，禁止额外增减标题：
+### 1. 当日整体运势
+（先给当日吉凶总评+明确吉凶等级，再按大运→流年→流月→流日的层级拆解五行生克、合冲刑害、与原局的互动，精准说明吉凶原因，字数控制在300字内）
+### 2. 原神专属建议
+（分核心建议、当日推荐、当日禁忌三点，必须具体可执行，贴合原神游戏机制）
+### 3. 生活小贴士
+（分事业财运、健康情绪、人际感情三点，贴合命主原局特点，精准实用）`;
+            }
+        }
+
+        // ===================== 工具函数：Markdown转HTML =====================
+        function parseMarkdown(text) {
+            if (!text) return "";
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>')
+                .replace(/- (.*?)(\n|$)/g, '<li>$1</li>')
+                .replace(/<li>(.*?)<\/li>/g, '<ul>$&</ul>')
+                .replace(/<\/ul>\s*<ul>/g, '')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            if (!html.startsWith('<h3') && !html.startsWith('<ul')) html = '<p>' + html + '</p>';
+            return html;
+        }
+
+        // ===================== 页面主渲染逻辑 =====================
+        const ai = new AITitleProcessor();
+
+        async function render(dateStr) {
+            // 计算八字核心数据
+            // 原有代码不动，只新增和修改下面的内容
+            const dayun = BaziCalculator.getDayun(dateStr);
+            const liunian = BaziCalculator.getYearGanZhi(dateStr);
+            const liuyue = BaziCalculator.getLiuyue(dateStr);
+            const liuri = BaziCalculator.getDayGanZhi(dateStr);
+            // 新增：获取流日天干+当前精准流时
+            const riGan = liuri.charAt(0); // 提取流日天干（比如戊申日，提取"戊"）
+            const liushi = BaziCalculator.getLiushi(riGan); // 自动计算当前流时
+
+            // 渲染页面数据
+            document.getElementById('dayun').innerText = dayun.ganzhi;
+            document.getElementById('dayunTime').innerText = `${dayun.start} ~ ${dayun.age} | ${dayun.desc}`;
+            document.getElementById('liunian').innerText = liunian;
+            document.getElementById('liuyue').innerText = liuyue.ganzhi;
+            document.getElementById('liuyueTime').innerText = `${liuyue.start} 至 ${liuyue.end}`;
+            document.getElementById('liuri').innerText = liuri;
+
+            // 构建AI提示词
+            const prompt = `【精准测算数据】
+所选日期：${dateStr}
+当前时间对应时辰：${liushi.ganzhi}（${liushi.time}）
+当前大运：${dayun.ganzhi}（${dayun.shishen}，${dayun.desc}，喜用强旺，极大提升日主甲木力量）
+流年干支：${liunian}
+流月干支：${liuyue.ganzhi}
+流日干支：${liuri}
+
+【命理分析优先级规则（必须严格执行，禁止颠倒顺序）】
+1.  运势影响力权重从大到小，严格遵循：**大运40% > 流年30% > 流月15% > 流日10% > 流时5%**，低维周期的吉凶无法突破高维周期定下的整体基调，所有分析必须先锚定大运核心框架，再逐层向下拆解
+2.  同层级干支作用中，合冲刑害、暗合拱合的优先级，绝对高于普通五行生克；不同层级间，高层级的普通生克，优先级仍高于低层级的合冲刑害
+3.  喜用大运吉凶铁则（优先执行）：
+    - 优先判定大运寅木根气是否受损：遇申金冲克、寅巳申三刑，当日吉凶强制降档
+    - 流年+流月+流日，2个及以上周期忌神土金旺相，当日吉凶不得高于小吉；3个及以上周期忌神旺相，直接判凶
+    - 流日触发婚姻宫辰戌冲、戌未刑、戌丑刑，当日吉凶不得高于平运
+4.  核心喜忌判定：第一喜用为水、第二喜用为木；核心忌神为土、次忌神为金；闲神为火。优先判定各周期对喜用神的增益、对忌神的制化
+5.  流时仅为当日吉凶框架内的细节微调与操作时机选择，无逆转当日整体吉凶的能力，禁止以流时吉凶覆盖当日及以上周期的整体判定`;
+
+            // 渲染AI结果
+            const resBox = document.getElementById('aiResult');
+            resBox.innerHTML = '<div class="loading"><span>⌛</span>AI精准测算中...</div>';
+
+            try {
+                const aiText = await ai.getAIResponse(prompt);
+                resBox.innerHTML = parseMarkdown(aiText);
+            } catch (e) {
+                resBox.innerHTML = `
+                <div style="text-align:center;color:#e53e3e">❌ AI请求失败，请检查网络后重试</div>
+                <div style="text-align:center">
+                    <button class="retry-btn" onclick="render(document.getElementById('datePicker').value)">重新测算</button>
+                </div>`;
+            }
+        }
+
+        // 页面初始化：默认选中今天
+        const picker = document.getElementById('datePicker');
+        const today = new Date().toISOString().split('T')[0];
+        picker.value = today;
+        // 绑定日期变化事件
+        picker.addEventListener('change', e => render(e.target.value));
+        // 首次渲染
+        render(today);
+    </script>
+</body>
+
+</html>
