@@ -239,6 +239,7 @@
         .btn {
             position: relative;
             display: inline-flex;
+            /* 保持原有布局方式 */
             align-items: center;
             width: 100%;
             justify-content: center;
@@ -253,15 +254,19 @@
             color: #2c3e50;
             text-transform: uppercase;
             padding: 1.25em 2em;
+            /* 保持原有内边距 */
             background: #e0f7fa;
             border: 2px solid #4fc3f7;
             border-radius: 0.75em;
             transform-style: preserve-3d;
             transition: transform 150ms cubic-bezier(0, 0, 0.58, 1),
                 background 150ms cubic-bezier(0, 0, 0.58, 1);
+            /* 移除 width: 100% 让宽度自适应内容 */
             white-space: nowrap;
+            /* 防止文本换行 */
         }
 
+        /* 其余所有样式保持不变 */
         .btn::before {
             position: absolute;
             content: '';
@@ -388,7 +393,9 @@
             background-color: var(--card-bg);
             white-space: pre-wrap;
             font-size: 0.9rem;
+            /* 删掉这行：max-height: 400px; */
             overflow-y: auto;
+            /* 仅内容超屏时滚动，否则无滚动条 */
         }
 
         .result-line {
@@ -810,7 +817,7 @@
             color: var(--accent-color);
         }
 
-        /* ====================== AI绘画提示词优化样式 ====================== */
+        /* ====================== AI绘画提示词优化样式（仅修改这里） ====================== */
         .paint-container {
             display: flex;
             flex-direction: column;
@@ -980,6 +987,8 @@
         .paint-clear-btn:hover {
             background: #e9ecef;
         }
+
+        /* ====================== 结束AI绘画样式优化 ====================== */
 
         /* ====================== YouTube 查询功能 全新美化样式 ====================== */
         .youtube-container {
@@ -1413,6 +1422,7 @@
                 object-fit: cover;
                 width: 120px;
                 height: 213px;
+                /* 9:16 比例 */
                 border-radius: 6px;
                 cursor: pointer;
             }
@@ -1491,9 +1501,9 @@
                     <div class="card-title">
                         <span class="icon" style="background: linear-gradient(135deg, #ff0000, #FF8E8E);"><i
                                 class="fab fa-youtube"></i></span>
-                        YouTube
+                        YouTube数据查询
                     </div>
-                    <div class="card-desc">批量查询视频数据</div>
+                    <div class="card-desc">批量查询视频播放量、缩略图等数据</div>
                 </div>
             </div>
         </div>
@@ -1659,7 +1669,7 @@ https://youtube.com/shorts/YWY1CtrHnAM
                         <div class="input-group">
                             <label>
                                 <i class="fab fa-youtube" style="color: #ff0000;"></i>
-                                输入视频链接（每行一个）
+                                输入 YouTube 视频链接（每行一个）
                             </label>
                             <textarea class="youtube-textarea" id="youtubeUrls" placeholder="支持格式：
 普通视频: https://www.youtube.com/watch?v=dQw4w9WgXcQ
@@ -1784,35 +1794,6 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             });
         }
 
-        // 识别链接平台
-        function detectPlatform(url) {
-            if (!url) return 'unknown';
-            if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-            if (url.includes('tiktok.com') || url.includes('douyin.com')) return 'tiktok';
-            return 'unknown';
-        }
-
-        // TikTok 工具函数
-        function getNowTime() {
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hour = String(date.getHours()).padStart(2, '0');
-            const minute = String(date.getMinutes()).padStart(2, '0');
-            const second = String(date.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day}_${hour}-${minute}-${second}`;
-        }
-
-        function cleanFileName(name) {
-            return name.replace(/[\\/:*?"<>|]/g, '').trim() || '无标题';
-        }
-
-        function truncateTitle(title, maxLen = 28) {
-            if (!title) return '无标题';
-            return title.length > maxLen ? title.substring(0, maxLen) + '...' : title;
-        }
-
         // ================== AI 处理器 (优化版) ==================
         class AITitleProcessor {
             constructor() {
@@ -1832,7 +1813,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                             body: JSON.stringify({
                                 model: "doubao-1-5-pro-32k-250115",
                                 messages: [{ role: "user", content: prompt }],
-                                temperature: 0.3
+                                temperature: 0.3 // 降低温度，使输出更稳定
                             })
                         });
 
@@ -1918,6 +1899,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                     langContainer.style.display = 'none';
 
                     try {
+                        // 优化后的 Prompt
                         const langPrompt = `任务：识别语言。输入文本：${text}\n要求：只返回该语言的中文名称（如“英语”、“泰语”），不要其他任何内容。`;
                         const sepPrompt = `任务：文本分句。
 输入文本：${text}
@@ -1994,26 +1976,30 @@ ${text}
 
 要求：
 1. 提取所有 http/https 链接。
-2. 识别每个链接对应的语言缩写（如en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw等），如果是us，en则填 "通用"，或无法识别则在（en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw）语言表里再次识别。
+2. 识别每个链接对应的语言缩写（如en,es,ar,zh,ro,fr,de,ru,pt,ja,ko,it,hi,tr,pl,nl,sv,fi,da,el,id,ms,th,vi,hu,cs,sk,bg,uk,fa,ur,bn,sw等），如果是没有语言，us，en则填 "通用"，或无法识别则使用无法识别的缩写进行输出。
 3. 严格按以下 Markdown 表格格式输出，不要其他内容：
 
 | 链接 | 语言 |
 | --- | --- |
-| 链接1 | 语言1 |
-| 链接2 | 语言2 |`;
+| 链接1 | 语言缩写1 |
+| 链接2 | 语言缩写2 |`;
 
                         const result = await this.aiProcessor.getAIResponse(prompt);
 
+                        // 简单解析 Markdown 表格
                         const lines = result.split('\n').map(l => l.trim()).filter(l => l && !l.includes('|---') && !l.includes('链接'));
                         const links = [];
                         const langs = [];
 
                         lines.forEach(line => {
+                            // 匹配 | 链接 | 语言 | 格式
                             const parts = line.split('|').map(p => p.trim()).filter(p => p);
                             if (parts.length >= 2) {
+                                // 尝试找链接
                                 const linkMatch = parts.find(p => p.startsWith('http'));
                                 if (linkMatch) {
                                     links.push(linkMatch);
+                                    // 另一个部分是语言
                                     const lang = parts.find(p => p !== linkMatch) || '通用';
                                     langs.push(lang);
                                 }
@@ -2088,6 +2074,7 @@ ${text}`;
                     const text = div.querySelector('.ad-optimization-text').textContent;
                     copyToClipboard(text);
                 };
+                // 挂载到全局以便 onclick 调用
                 window.copyOptimizedText = copyOptimizedText;
 
                 btn.addEventListener('click', async () => {
@@ -2117,6 +2104,7 @@ ${text}`;
 }`;
 
                         const result = await this.aiProcessor.getAIResponse(prompt);
+                        // 尝试提取 JSON
                         const jsonMatch = result.match(/\{[\s\S]*\}/);
                         if (!jsonMatch) throw new Error("JSON not found");
 
@@ -2202,6 +2190,7 @@ ${text}`;
                             const transPrompt = `请将以下英文绘画提示词翻译成通顺的中文：\n${finalPrompt}`;
                             const trans = await this.aiProcessor.getAIResponse(transPrompt);
 
+                            // 安全处理引号
                             const safePrompt = finalPrompt.replace(/`/g, "\\`").replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
                             fullHtml += `
@@ -2239,13 +2228,14 @@ ${text}`;
                 });
             },
 
-            // 功能5: YouTube/TikTok 查询
+            // 功能5: YouTube 查询
             initYoutubeModule() {
                 const fetchBtn = document.getElementById('youtubeFetchBtn');
                 const urlInput = document.getElementById('youtubeUrls');
                 const convertBtn = document.getElementById('convertToShortBtn');
                 const closePlayerBtn = document.getElementById('closePlayer');
 
+                // 挂载全局函数
                 window.showVideoPlayer = this.showVideoPlayer.bind(this);
                 window.hideVideoPlayer = this.hideVideoPlayer.bind(this);
                 window.copyYoutubeColumn = this.copyYoutubeColumn.bind(this);
@@ -2256,115 +2246,14 @@ ${text}`;
                 window.getLosslessShortThumbnail = this.getLosslessShortThumbnail.bind(this);
                 window.loadImage = this.loadImage.bind(this);
 
+                // 绑定事件
                 fetchBtn.addEventListener('click', () => this.processYoutubeUrls());
                 urlInput.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') this.processYoutubeUrls(); });
                 convertBtn.addEventListener('click', () => this.convertToShort());
                 closePlayerBtn.addEventListener('click', () => this.hideVideoPlayer());
-
-                // ===================== TikTok 本地解析下载 =====================
-                const PARSE_API = "http://127.0.0.1/api/hybrid/video_data";
-                const DOWNLOAD_API = "http://127.0.0.1/api/download";
-                let tiktokVideoList = [];
-
-                window.downloadTikTokVideo = async (videoDirectUrl, title) => {
-                    try {
-                        const time = getNowTime();
-                        const cleanTitle = cleanFileName(title);
-                        const fileName = `${time}_${cleanTitle}`;
-                        const downloadUrl = `${DOWNLOAD_API}?url=${encodeURIComponent(videoDirectUrl)}&with_watermark=false`;
-
-                        const res = await fetch(downloadUrl);
-                        const blob = await res.blob();
-                        const objUrl = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = objUrl;
-                        a.download = `${fileName}.mp4`;
-                        a.click();
-                        URL.revokeObjectURL(objUrl);
-                        showToast("下载成功");
-                    } catch (e) {
-                        showToast("下载失败");
-                    }
-                };
-
-                window.processTikTokUrls = async (lines) => {
-                    const btn = document.getElementById("youtubeFetchBtn");
-                    const bar = document.getElementById("youtubeProgressContainer");
-                    const pText = document.getElementById("youtubeProgressText");
-                    const pCount = document.getElementById("youtubeProgressCount");
-                    const pBar = document.getElementById("youtubeProgressBar");
-                    const area = document.getElementById("youtubeResultsArea");
-
-                    btn.disabled = true;
-                    bar.style.display = "block";
-                    area.innerHTML = "";
-                    tiktokVideoList = [];
-
-                    const table = document.createElement("table");
-                    table.className = "youtube-table";
-                    table.innerHTML = `
-                        <thead>
-                            <tr>
-                                <th>序号</th>
-                                <th>视频封面</th>
-                                <th>原链接</th>
-                                <th>作者</th>
-                                <th>标题</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tkTableBody"></tbody>
-                    `;
-                    area.appendChild(table);
-                    const tbody = document.getElementById("tkTableBody");
-
-                    for (let i = 0; i < lines.length; i++) {
-                        const originalUrl = lines[i].trim();
-                        const idx = i + 1;
-                        pText.innerText = `解析中 ${idx}/${lines.length}`;
-                        pCount.innerText = `${idx}/${lines.length}`;
-                        pBar.style.width = ((idx) / lines.length) * 100 + "%";
-
-                        try {
-                            const res = await fetch(`${PARSE_API}?url=${encodeURIComponent(originalUrl)}`);
-                            const data = await res.json();
-
-                            if (data.code === 200 && data.data?.video?.play_addr?.url_list?.length) {
-                                const videoUrl = data.data.video.play_addr.url_list[0];
-                                const author = data.data.author?.nickname || "未知";
-                                const title = data.data.desc || "无标题";
-                                const cover = data.data.video?.cover?.url_list?.[0] || "";
-                                const shortTitle = truncateTitle(title);
-
-                                tiktokVideoList.push({ url: videoUrl, title });
-                                tbody.innerHTML += `
-                                    <tr>
-                                        <td>${idx}</td>
-                                        <td><img src="${cover}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${cover}')"></td>
-                                        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${originalUrl}</td>
-                                        <td>${author}</td>
-                                        <td title="${title}" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shortTitle}</td>
-                                        <td>
-                                            <button class="youtube-link-btn copy" onclick="downloadTikTokVideo('${videoUrl}', '${title.replace(/'/g, "")}')">
-                                                <i class="fas fa-download"></i>下载
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `;
-                            } else {
-                                tbody.innerHTML += `<tr><td colspan="6" class="youtube-error">解析失败：${originalUrl}</td></tr>`;
-                            }
-                        } catch (e) {
-                            tbody.innerHTML += `<tr><td colspan="6" class="youtube-error">解析失败：${originalUrl}</td></tr>`;
-                        }
-                    }
-
-                    btn.disabled = false;
-                    bar.style.display = "none";
-                    showToast(`解析完成，成功 ${tiktokVideoList.length} 个`);
-                };
             },
 
+            // YouTube 辅助方法
             extractVideoId(url) {
                 try {
                     if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
@@ -2416,7 +2305,7 @@ ${text}`;
                     const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${vid}&key=${key}`);
                     if (r.status === 403) {
                         STATE.ytApiKeyStatus[key].quotaExceeded = true;
-                        return this.fetchVideoData(vid);
+                        return this.fetchVideoData(vid); // 递归尝试下一个 Key
                     }
                     const j = await r.json();
                     return j.items?.[0] || null;
@@ -2447,9 +2336,9 @@ ${text}`;
                 });
             },
 
-            async getLosslessShortThumbnail(vid) {
+            async getLosslessShortThumbnail(videoId) {
                 try {
-                    const highResUrl = await this.getBestThumbnail(vid);
+                    const highResUrl = await this.getBestThumbnail(videoId);
                     if (!highResUrl.includes('maxresdefault.jpg')) return highResUrl;
 
                     const img = await this.loadImage(highResUrl);
@@ -2466,7 +2355,7 @@ ${text}`;
                     return canvas.toDataURL('image/jpeg', 0.9);
                 } catch (error) {
                     console.error('缩略图裁剪失败', error);
-                    return await this.getBestThumbnail(vid);
+                    return await this.getBestThumbnail(videoId);
                 }
             },
 
@@ -2597,25 +2486,13 @@ ${text}`;
                 showToast('已转换为 Shorts 标准链接');
             },
 
-            validUrls: [],
+            validUrls: [], // 暂存当前有效链接
 
             async processYoutubeUrls() {
                 const text = document.getElementById("youtubeUrls").value.trim();
                 const lines = text.split("\n").map(i => i.trim()).filter(Boolean);
-                if (lines.length === 0) return showToast("请输入至少一个链接");
+                if (lines.length === 0) return showToast("请输入至少一个YouTube链接");
 
-                // 自动识别平台
-                const platform = detectPlatform(lines[0]);
-                if (platform === 'tiktok') {
-                    window.processTikTokUrls(lines);
-                    return;
-                }
-                if (platform !== 'youtube') {
-                    showToast("仅支持 YouTube / TikTok 链接");
-                    return;
-                }
-
-                // 原有 YouTube 逻辑
                 const btn = document.getElementById("youtubeFetchBtn");
                 const bar = document.getElementById("youtubeProgressContainer");
                 const pText = document.getElementById("youtubeProgressText");
@@ -2628,6 +2505,7 @@ ${text}`;
                 area.innerHTML = "";
                 this.validUrls = [];
 
+                // 创建表格
                 const table = document.createElement("table");
                 table.className = "youtube-table";
                 table.innerHTML = `
@@ -2657,6 +2535,7 @@ ${text}`;
                     const url = lines[i];
                     const vid = this.extractVideoId(url);
 
+                    // 更新进度条
                     pText.innerText = `正在查询 ${i + 1}/${lines.length}`;
                     pCount.innerText = `${i + 1}/${lines.length}`;
                     pBar.style.width = ((i + 1) / lines.length) * 100 + "%";
@@ -2667,6 +2546,7 @@ ${text}`;
 
                     const tr = document.createElement("tr");
 
+                    // 1. 链接
                     const td1 = document.createElement("td");
                     td1.innerHTML = `
                         <div style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
@@ -2677,6 +2557,7 @@ ${text}`;
                         </div>`;
                     tr.appendChild(td1);
 
+                    // 2-7. 占位
                     const td2 = document.createElement("td"); td2.className = "youtube-title-cell"; td2.innerText = "加载中..."; tr.appendChild(td2);
                     const td3 = document.createElement("td"); td3.innerText = "..."; tr.appendChild(td3);
                     const td4 = document.createElement("td"); td4.innerText = "..."; tr.appendChild(td4);
@@ -2684,6 +2565,7 @@ ${text}`;
                     const td6 = document.createElement("td"); td6.innerText = "..."; tr.appendChild(td6);
                     const td7 = document.createElement("td"); td7.innerText = "..."; tr.appendChild(td7);
 
+                    // 8. 缩略图
                     const td8 = document.createElement("td");
                     const wrap = document.createElement("div");
                     wrap.className = "youtube-thumbnail-container";
@@ -2698,6 +2580,7 @@ ${text}`;
 
                     tbody.appendChild(tr);
 
+                    // 点击复制事件
                     [td2, td3, td4, td5, td6, td7].forEach(cell => {
                         cell.onclick = () => copyToClipboard(cell.innerText);
                     });
@@ -2706,6 +2589,7 @@ ${text}`;
                         badge.innerText = "已复制";
                     };
 
+                    // 异步拉取数据并回填
                     const data = await this.fetchVideoData(vid);
                     if (data) {
                         const t = data.snippet.title;
@@ -2727,6 +2611,7 @@ ${text}`;
                     }
                 }
 
+                // 表头额外功能
                 const ths = table.querySelectorAll("th");
                 ths[0].onclick = () => {
                     if (this.validUrls.length) copyToClipboard(this.validUrls.join("\n")).then(() => showToast(`已复制 ${this.validUrls.length} 个链接`));
@@ -2739,6 +2624,7 @@ ${text}`;
             }
         };
 
+        // ================== 全局 YouTube API 回调 ==================
         window.onYouTubeIframeAPIReady = function () {
             STATE.youtubeApiReady = true;
             STATE.ytPlayer = new YT.Player('playerContainer', {
@@ -2756,10 +2642,12 @@ ${text}`;
             });
         };
 
+        // ================== 主入口 ==================
         document.addEventListener('DOMContentLoaded', function () {
             const ai = new AITitleProcessor();
             UIController.init();
             Modules.init(ai);
+            // hljs.highlightAll(); // 初始页面无代码块，按需高亮
         });
     </script>
 </body>
