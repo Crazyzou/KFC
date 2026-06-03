@@ -2649,7 +2649,7 @@ ${text}`;
                     if (!cell) return;
                     let val = cell.innerText.trim().replace(/^获取失败$/, '');
                     if (!val) return;
-                    if (colIndex === 4) val = `播放量：${val}`;
+                    if (colIndex === 5) val = `播放量：${val}`;
                     textList.push(val);
                 });
                 if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
