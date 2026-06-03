@@ -1147,6 +1147,181 @@
             background: #f9fafb;
         }
 
+        /* ========== YouTube 表格选择列美化 ========== */
+
+        /* 选择列表头 */
+        .youtube-table th.select-col {
+            width: 60px;
+            min-width: 60px;
+            text-align: center;
+            cursor: default;
+            background: linear-gradient(180deg, #fef2f2 0%, #f9fafb 100%);
+            border-right: 2px solid #fee2e2;
+            vertical-align: middle;
+            padding: 12px 8px;
+            position: sticky;
+            left: 0;
+            z-index: 11;
+        }
+
+        .youtube-table th.select-col:hover {
+            background: linear-gradient(180deg, #fef2f2 0%, #f3f4f6 100%);
+        }
+
+        /* 全选复选框美化 */
+        .select-all-checkbox-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .select-all-checkbox-wrap input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #ff0033;
+            margin: 0;
+        }
+
+        /* "复制选中"按钮 - 精致版 */
+        .btn-copy-selected {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 7px 14px;
+            background: linear-gradient(135deg, #ff0033 0%, #ff4466 100%);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(255, 0, 51, 0.25);
+            min-width: 80px;
+        }
+
+        .btn-copy-selected i {
+            font-size: 11px;
+        }
+
+        .btn-copy-selected:hover {
+            background: linear-gradient(135deg, #e60030 0%, #ff3360 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(255, 0, 51, 0.35);
+        }
+
+        .btn-copy-selected:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(255, 0, 51, 0.2);
+        }
+
+        /* 选中计数器徽标 */
+        .selected-count-badge {
+            display: none;
+            font-size: 10px;
+            font-weight: 700;
+            background: #ff0033;
+            color: #fff;
+            border-radius: 10px;
+            padding: 2px 7px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .selected-count-badge.show {
+            display: inline-block;
+            animation: popIn 0.25s ease;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 选择列数据单元格 */
+        .youtube-table td.select-col {
+            width: 60px;
+            min-width: 60px;
+            text-align: center;
+            vertical-align: middle;
+            background: #fafafa;
+            border-right: 1px solid #f3f4f6;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            transition: background 0.2s ease;
+        }
+
+        .youtube-table tr:hover td.select-col {
+            background: #fef2f2;
+        }
+
+        /* 选中行高亮 */
+        .youtube-table tr.row-selected td {
+            background: #fff5f5 !important;
+            border-bottom-color: #fecaca !important;
+        }
+
+        .youtube-table tr.row-selected td.select-col {
+            background: #ffe0e0 !important;
+            border-right-color: #fca5a5 !important;
+        }
+
+        .youtube-table tr.row-selected:hover td {
+            background: #ffe8e8 !important;
+        }
+
+        /* 行复选框美化 */
+        .youtube-table td.select-col input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            accent-color: #ff0033;
+            margin: 0;
+            transition: transform 0.15s ease;
+        }
+
+        .youtube-table td.select-col input[type="checkbox"]:hover {
+            transform: scale(1.15);
+        }
+
+        /* 选择列固定在左侧的阴影效果 */
+        .youtube-table th.select-col::after,
+        .youtube-table td.select-col::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -6px;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* 缩略图表头改为不可点击（原下载功能保留在缩略图列） */
+        .youtube-table th:last-child {
+            cursor: pointer;
+            text-align: center;
+        }
+
+
+
         /* 缩略图 */
         .youtube-thumbnail {
             width: 140px;
@@ -2246,6 +2421,42 @@ ${text}`;
                 window.getLosslessShortThumbnail = this.getLosslessShortThumbnail.bind(this);
                 window.loadImage = this.loadImage.bind(this);
 
+                window.toggleAllCheckboxes = function (selectAllCheckbox) {
+                    const checked = selectAllCheckbox.checked;
+                    document.querySelectorAll('.row-checkbox').forEach(cb => {
+                        cb.checked = checked;
+                        const row = cb.closest('tr');
+                        if (row) {
+                            checked ? row.classList.add('row-selected') : row.classList.remove('row-selected');
+                        }
+                    });
+                    updateSelectedCount();
+                };
+
+                window.copySelectedUrls = function () {
+                    const selected = [];
+                    document.querySelectorAll('.row-checkbox:checked').forEach(cb => {
+                        const url = cb.closest('tr').getAttribute('data-url');
+                        if (url) selected.push(url);
+                    });
+                    if (selected.length === 0) {
+                        showToast('⚠️ 请至少选择一个视频');
+                        return;
+                    }
+                    navigator.clipboard.writeText(selected.join('\n')).then(() => {
+                        showToast(`✅ 已复制 ${selected.length} 个链接到剪贴板`);
+                    });
+                };
+
+                // 更新选中计数（可选，显示在按钮上）
+                function updateSelectedCount() {
+                    const count = document.querySelectorAll('.row-checkbox:checked').length;
+                    const btn = document.querySelector('.btn-copy-selected span');
+                    if (btn) {
+                        btn.textContent = count > 0 ? `复制选中 (${count})` : '复制选中';
+                    }
+                }
+
                 // 绑定事件
                 fetchBtn.addEventListener('click', () => this.processYoutubeUrls());
                 urlInput.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') this.processYoutubeUrls(); });
@@ -2509,25 +2720,36 @@ ${text}`;
                 const table = document.createElement("table");
                 table.className = "youtube-table";
                 table.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th onclick="window.copyYoutubeColumn(0)">视频链接<br><small style="font-size:12px;opacity:0.7">点击复制</small></th>
-                            <th onclick="window.copyYoutubeColumn(1)">标题<br><small style="font-size:12px;opacity:0.7"></small></th>
-                            <th onclick="window.copyYoutubeColumn(2)">频道<br><small style="font-size:12px;opacity:0.7"></small></th>
-                            <th onclick="window.copyYoutubeColumn(3)" style="cursor: pointer;">
-                                播放
-                                <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;">
-                                    <i id="sortIcon" class="fas fa-sort"></i>
-                                </button>
-                            </th>
-                            <th onclick="window.copyYoutubeColumn(4)">评论<br><small style="font-size:12px;opacity:0.7"></small></th>
-                            <th onclick="window.copyYoutubeColumn(5)">发布<br><small style="font-size:12px;opacity:0.7"></small></th>
-                            <th onclick="window.copyYoutubeColumn(6)">时长<br><small style="font-size:12px;opacity:0.7"></small></th>
-                            <th>缩略图</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                `;
+    <thead>
+        <tr>
+            <th class="select-col">
+                <div class="select-all-checkbox-wrap">
+                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this)" title="全选/取消全选">
+                    <button class="btn-copy-selected" 
+                            onclick="event.stopPropagation(); copySelectedUrls()" 
+                            title="复制选中行的链接">
+                        <i class="fas fa-copy"></i>
+                        <span>复制选中</span>
+                    </button>
+                </div>
+            </th>
+            <th onclick="window.copyYoutubeColumn(1)">视频链接<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制整列</small></th>
+            <th onclick="window.copyYoutubeColumn(2)">标题<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
+            <th onclick="window.copyYoutubeColumn(3)">频道<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
+            <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">
+                播放
+                <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;">
+                    <i id="sortIcon" class="fas fa-sort"></i>
+                </button>
+            </th>
+            <th onclick="window.copyYoutubeColumn(5)">评论<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
+            <th onclick="window.copyYoutubeColumn(6)">发布<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
+            <th onclick="window.copyYoutubeColumn(7)">时长<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
+            <th onclick="window.downloadAllThumbnails()" title="点击打包下载所有缩略图">缩略图<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击打包下载</small></th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+`;
                 area.appendChild(table);
                 const tbody = table.querySelector("tbody");
 
@@ -2545,6 +2767,25 @@ ${text}`;
                     const isShort = url.includes("shorts");
 
                     const tr = document.createElement("tr");
+                    tr.setAttribute('data-url', url);   // 存储原始链接方便复制 
+
+                    // 新增：复选框列（美化版）
+                    const tdCheck = document.createElement("td");
+                    tdCheck.className = "select-col";
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.className = "row-checkbox";
+                    // 勾选/取消时切换行高亮
+                    cb.addEventListener('change', function () {
+                        if (this.checked) {
+                            tr.classList.add('row-selected');
+                        } else {
+                            tr.classList.remove('row-selected');
+                        }
+                        updateSelectedCount();
+                    });
+                    tdCheck.appendChild(cb);
+                    tr.appendChild(tdCheck);
 
                     // 1. 链接
                     const td1 = document.createElement("td");
@@ -2610,14 +2851,6 @@ ${text}`;
                         [td2, td3, td4, td5, td6, td7].forEach(c => c.innerHTML = `<span class='youtube-error'>获取失败</span>`);
                     }
                 }
-
-                // 表头额外功能
-                const ths = table.querySelectorAll("th");
-                ths[0].onclick = () => {
-                    if (this.validUrls.length) copyToClipboard(this.validUrls.join("\n")).then(() => showToast(`已复制 ${this.validUrls.length} 个链接`));
-                };
-                ths[7].onclick = () => this.downloadAllThumbnails();
-
                 btn.disabled = false;
                 pText.innerText = "查询完成";
                 showToast("YouTube 数据查询完成");
