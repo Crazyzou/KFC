@@ -2649,7 +2649,7 @@ ${text}`;
                     if (!cell) return;
                     let val = cell.innerText.trim().replace(/^获取失败$/, '');
                     if (!val) return;
-                    if (colIndex === 3) val = `播放量：${val}`;
+                    if (colIndex === 4) val = `播放量：${val}`;
                     textList.push(val);
                 });
                 if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
@@ -2672,8 +2672,8 @@ ${text}`;
                 STATE.sortViewsAsc = !STATE.sortViewsAsc;
 
                 rows.sort((a, b) => {
-                    const viewA = this.parseViewCount(a.cells[3].innerText);
-                    const viewB = this.parseViewCount(b.cells[3].innerText);
+                    const viewA = this.parseViewCount(a.cells[4].innerText);
+                    const viewB = this.parseViewCount(b.cells[4].innerText);
                     return STATE.sortViewsAsc ? viewA - viewB : viewB - viewA;
                 });
 
