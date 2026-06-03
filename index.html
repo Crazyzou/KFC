@@ -1923,14 +1923,16 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
 
         // 状态管理
         const STATE = {
-            extractedLinks: [],
-            extractedLangs: [],
-            ytApiKeyStatus: {},
-            youtubeApiReady: false,
-            ytPlayer: null,
-            currentVideoId: "",
-            sortViewsAsc: true
-        };
+    extractedLinks: [],
+    extractedLangs: [],
+    ytApiKeyStatus: {},
+    youtubeApiReady: false,
+    ytPlayer: null,
+    currentVideoId: "",
+    sortViewsAsc: true,
+    sortState: 'original',     // 新增：'original' | 'asc' | 'desc'
+    originalRows: []           // 新增：保存初始行顺序
+};
 
         // 初始化 YouTube API Key 状态
         CONFIG.YT_API_KEYS.forEach(key => {
@@ -2665,22 +2667,56 @@ ${text}`;
             },
 
             toggleSortViews() {
-                const table = document.querySelector('.youtube-table tbody');
-                if (!table) return;
-                const rows = Array.from(table.querySelectorAll('tr'));
-                const icon = document.getElementById('sortIcon');
-                STATE.sortViewsAsc = !STATE.sortViewsAsc;
+    const tbody = document.querySelector('.youtube-table tbody');
+    if (!tbody) return;
 
-                rows.sort((a, b) => {
-                    const viewA = this.parseViewCount(a.cells[4].innerText);
-                    const viewB = this.parseViewCount(b.cells[4].innerText);
-                    return STATE.sortViewsAsc ? viewA - viewB : viewB - viewA;
-                });
+    const icon = document.getElementById('sortIcon');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
 
-                rows.forEach(row => table.appendChild(row));
-                icon.className = STATE.sortViewsAsc ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
-                showToast(`播放量已${STATE.sortViewsAsc ? '升序' : '降序'}排列`);
-            },
+    // 三态循环：original → asc → desc → original
+    switch (STATE.sortState) {
+        case 'original':
+            // 当前原始顺序 → 切换到升序
+            rows.sort((a, b) => {
+                const viewA = this.parseViewCount(a.cells[4].innerText);
+                const viewB = this.parseViewCount(b.cells[4].innerText);
+                return viewA - viewB;
+            });
+            STATE.sortState = 'asc';
+            icon.className = 'fas fa-sort-amount-up';
+            showToast('播放量已升序排列');
+            break;
+
+        case 'asc':
+            // 当前升序 → 切换到降序
+            rows.sort((a, b) => {
+                const viewA = this.parseViewCount(a.cells[4].innerText);
+                const viewB = this.parseViewCount(b.cells[4].innerText);
+                return viewB - viewA;
+            });
+            STATE.sortState = 'desc';
+            icon.className = 'fas fa-sort-amount-down';
+            showToast('播放量已降序排列');
+            break;
+
+        case 'desc':
+            // 当前降序 → 恢复原始顺序
+            if (STATE.originalRows.length > 0) {
+                // 清空 tbody，按原始顺序重新插入
+                tbody.innerHTML = '';
+                STATE.originalRows.forEach(row => tbody.appendChild(row));
+            }
+            STATE.sortState = 'original';
+            icon.className = 'fas fa-sort';
+            showToast('已恢复原始顺序');
+            break;
+    }
+
+    // 如果不是恢复原始顺序，则需要将排序后的行重新插入
+    if (STATE.sortState !== 'original') {
+        rows.forEach(row => tbody.appendChild(row));
+    }
+},
 
             convertToShort() {
                 const textarea = document.getElementById('youtubeUrls');
@@ -2851,6 +2887,10 @@ ${text}`;
                         [td2, td3, td4, td5, td6, td7].forEach(c => c.innerHTML = `<span class='youtube-error'>获取失败</span>`);
                     }
                 }
+// 保存原始行顺序（所有行都已插入 tbody）
+STATE.originalRows = Array.from(tbody.children);
+STATE.sortState = 'original';   // 重置排序状态
+                
                 btn.disabled = false;
                 pText.innerText = "查询完成";
                 showToast("YouTube 数据查询完成");
