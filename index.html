@@ -2669,40 +2669,39 @@ ${text}`;
             toggleSortViews() {
     const tbody = document.querySelector('.youtube-table tbody');
     if (!tbody) return;
-
+ 
     const icon = document.getElementById('sortIcon');
     const rows = Array.from(tbody.querySelectorAll('tr'));
-
-    // 三态循环：original → asc → desc → original
+ 
+    // 三态循环：original → desc → asc → original  （改这里）
     switch (STATE.sortState) {
         case 'original':
-            // 当前原始顺序 → 切换到升序
+            // 当前原始顺序 → 切换到降序（优先倒序）
             rows.sort((a, b) => {
                 const viewA = this.parseViewCount(a.cells[4].innerText);
                 const viewB = this.parseViewCount(b.cells[4].innerText);
-                return viewA - viewB;
-            });
-            STATE.sortState = 'asc';
-            icon.className = 'fas fa-sort-amount-up';
-            showToast('播放量已升序排列');
-            break;
-
-        case 'asc':
-            // 当前升序 → 切换到降序
-            rows.sort((a, b) => {
-                const viewA = this.parseViewCount(a.cells[4].innerText);
-                const viewB = this.parseViewCount(b.cells[4].innerText);
-                return viewB - viewA;
+                return viewB - viewA;  // 降序 
             });
             STATE.sortState = 'desc';
             icon.className = 'fas fa-sort-amount-down';
-            showToast('播放量已降序排列');
+            showToast('播放量已降序排列（从高到低）');
             break;
-
+ 
         case 'desc':
-            // 当前降序 → 恢复原始顺序
+            // 当前降序 → 切换到升序 
+            rows.sort((a, b) => {
+                const viewA = this.parseViewCount(a.cells[4].innerText);
+                const viewB = this.parseViewCount(b.cells[4].innerText);
+                return viewA - viewB;  // 升序 
+            });
+            STATE.sortState = 'asc';
+            icon.className = 'fas fa-sort-amount-up';
+            showToast('播放量已升序排列（从低到高）');
+            break;
+ 
+        case 'asc':
+            // 当前升序 → 恢复原始顺序 
             if (STATE.originalRows.length > 0) {
-                // 清空 tbody，按原始顺序重新插入
                 tbody.innerHTML = '';
                 STATE.originalRows.forEach(row => tbody.appendChild(row));
             }
@@ -2711,8 +2710,8 @@ ${text}`;
             showToast('已恢复原始顺序');
             break;
     }
-
-    // 如果不是恢复原始顺序，则需要将排序后的行重新插入
+ 
+    // 如果不是恢复原始顺序，则需要将排序后的行重新插入 
     if (STATE.sortState !== 'original') {
         rows.forEach(row => tbody.appendChild(row));
     }
