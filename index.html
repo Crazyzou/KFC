@@ -1362,6 +1362,15 @@
             font-weight: 600;
         }
 
+        .youtube-badge.copied {
+            background: #e0f0ff !important;
+            /* 淡蓝底（与主色 #4361ee 同系） */
+            color: #1a3a6b !important;
+            /* 深蓝字体 */
+            border: 1px solid #a3c9f0;
+            transition: all 0.2s ease;
+        }
+
         /* 操作按钮组 */
         .youtube-link-btns {
             display: flex;
@@ -1494,6 +1503,57 @@
             display: none;
             z-index: 1000;
             border: 1px solid #e5e7eb;
+        }
+
+        .back-to-top-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(67, 97, 238, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 46px;
+            height: 46px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-to-top-btn:hover {
+            background: rgba(67, 97, 238, 1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.45);
+        }
+
+        .back-to-top-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .back-to-top-btn.show {
+            display: flex;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* 响应式 */
@@ -1892,6 +1952,10 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                             <p>查询结果将显示在这里</p>
                         </div>
                     </div>
+
+                    <button class="back-to-top-btn" id="backToTopBtn" title="回到顶部">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -2424,6 +2488,8 @@ ${text}`;
                 const convertBtn = document.getElementById('convertToShortBtn');
                 const closePlayerBtn = document.getElementById('closePlayer');
                 const clearInputBtn = document.getElementById('clearYoutubeInputBtn');
+                const ytResultsArea = document.getElementById('youtubeResultsArea');
+                const backToTopBtn = document.getElementById('backToTopBtn');
 
                 // 挂载全局函数
                 window.showVideoPlayer = this.showVideoPlayer.bind(this);
@@ -2462,6 +2528,20 @@ ${text}`;
                         showToast(`✅ 已复制 ${selected.length} 个链接到剪贴板`);
                     });
                 };
+
+                // 监听表格区域滚动 
+                ytResultsArea.addEventListener('scroll', () => {
+                    if (ytResultsArea.scrollTop > 300) {
+                        backToTopBtn.classList.add('show');
+                    } else {
+                        backToTopBtn.classList.remove('show');
+                    }
+                });
+
+                // 点击回到顶部 
+                backToTopBtn.addEventListener('click', () => {
+                    ytResultsArea.scrollTo({ top: 0, behavior: 'smooth' });
+                });
 
                 // 更新选中计数（可选，显示在按钮上）
                 function updateSelectedCount() {
@@ -2659,27 +2739,27 @@ ${text}`;
             },
 
             copyYoutubeColumn(colIndex) {
-    const table = document.querySelector('.youtube-table');
-    if (!table) return;
-    const rows = table.querySelectorAll('tbody tr');
-    const textList = [];
-    rows.forEach(row => {
-        const cell = row.cells[colIndex];
-        if (!cell) return;
-        let val;
-        // 第一列（视频链接）只提取链接文本，忽略按钮 
-        if (colIndex === 1) {
-            const linkDiv = cell.querySelector('.link-url-text');
-            val = linkDiv ? linkDiv.textContent.trim() : '';
-        } else {
-            val = cell.innerText.trim().replace(/^获取失败$/, '');
-        }
-        if (!val) return;
-        if (colIndex === 4) val = `播放量：${val}`;
-        textList.push(val);
-    });
-    if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
-},
+                const table = document.querySelector('.youtube-table');
+                if (!table) return;
+                const rows = table.querySelectorAll('tbody tr');
+                const textList = [];
+                rows.forEach(row => {
+                    const cell = row.cells[colIndex];
+                    if (!cell) return;
+                    let val;
+                    // 第一列（视频链接）只提取链接文本，忽略按钮 
+                    if (colIndex === 1) {
+                        const linkDiv = cell.querySelector('.link-url-text');
+                        val = linkDiv ? linkDiv.textContent.trim() : '';
+                    } else {
+                        val = cell.innerText.trim().replace(/^获取失败$/, '');
+                    }
+                    if (!val) return;
+                    if (colIndex === 4) val = `播放量：${val}`;
+                    textList.push(val);
+                });
+                if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
+            },
 
             parseViewCount(str) {
                 if (!str || str.includes('失败')) return 0;
@@ -2887,6 +2967,7 @@ ${text}`;
                     img.onclick = async () => {
                         await this.copyImage(img);
                         badge.innerText = "已复制";
+                        badge.classList.add('copied');            // 添加淡绿色样式 
                     };
 
                     // 异步拉取数据并回填
