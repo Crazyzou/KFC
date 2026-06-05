@@ -2659,20 +2659,27 @@ ${text}`;
             },
 
             copyYoutubeColumn(colIndex) {
-                const table = document.querySelector('.youtube-table');
-                if (!table) return;
-                const rows = table.querySelectorAll('tbody tr');
-                const textList = [];
-                rows.forEach(row => {
-                    const cell = row.cells[colIndex];
-                    if (!cell) return;
-                    let val = cell.innerText.trim().replace(/^获取失败$/, '');
-                    if (!val) return;
-                    if (colIndex === 4) val = `播放量：${val}`;
-                    textList.push(val);
-                });
-                if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
-            },
+    const table = document.querySelector('.youtube-table');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr');
+    const textList = [];
+    rows.forEach(row => {
+        const cell = row.cells[colIndex];
+        if (!cell) return;
+        let val;
+        // 第一列（视频链接）只提取链接文本，忽略按钮 
+        if (colIndex === 1) {
+            const linkDiv = cell.querySelector('.link-url-text');
+            val = linkDiv ? linkDiv.textContent.trim() : '';
+        } else {
+            val = cell.innerText.trim().replace(/^获取失败$/, '');
+        }
+        if (!val) return;
+        if (colIndex === 4) val = `播放量：${val}`;
+        textList.push(val);
+    });
+    if (textList.length) copyToClipboard(textList.join('\n')).then(() => showToast(`已复制该列共 ${textList.length} 条数据`));
+},
 
             parseViewCount(str) {
                 if (!str || str.includes('失败')) return 0;
@@ -2842,12 +2849,12 @@ ${text}`;
                     // 1. 链接
                     const td1 = document.createElement("td");
                     td1.innerHTML = `
-                        <div style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
-                        <div class="youtube-link-btns">
-                            <button class="youtube-link-btn play" onclick="window.showVideoPlayer('${url}')"><i class="fas fa-play"></i>播放</button>
-                            <button class="youtube-link-btn jump" onclick="window.open('${url}','_blank')"><i class="fas fa-external-link-alt"></i>打开</button>
-                            <button class="youtube-link-btn copy" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('链接已复制'))"><i class="fas fa-copy"></i>复制</button>
-                        </div>`;
+    <div class="link-url-text" style="font-size:12px;word-break:break-all;margin-bottom:6px;">${url}</div>
+    <div class="youtube-link-btns">
+        <button class="youtube-link-btn play" onclick="window.showVideoPlayer('${url}')"><i class="fas fa-play"></i>播放</button>
+        <button class="youtube-link-btn jump" onclick="window.open('${url}','_blank')"><i class="fas fa-external-link-alt"></i>打开</button>
+        <button class="youtube-link-btn copy" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('链接已复制'))"><i class="fas fa-copy"></i>复制</button>
+    </div>`;
                     tr.appendChild(td1);
 
                     // 2-7. 占位
