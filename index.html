@@ -1245,6 +1245,396 @@
             animation: popIn 0.25s ease;
         }
 
+        /* ========== Shorts 播放器遮罩（紧凑版） ========== */
+        .shorts-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .shorts-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .shorts-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 430px;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .shorts-video-wrapper {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .shorts-video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .shorts-thumb-bg {
+            position: absolute;
+            inset: 0;
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        /* 顶部渐变 + 信息（更紧凑） */
+        .shorts-top-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .shorts-top-info {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            right: 56px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .shorts-top-info .shorts-channel-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .shorts-top-info .shorts-video-title {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+        }
+
+        /* 底部渐变 */
+        .shorts-bottom-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 右侧操作栏：增大按钮、加半透明底色、更清晰 */
+        .shorts-action-bar {
+            position: absolute;
+            right: 10px;
+            bottom: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 4;
+        }
+
+        .shorts-action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .shorts-action-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .shorts-action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.08);
+        }
+
+        .shorts-action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .shorts-action-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #fff;
+        }
+
+        .shorts-action-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* 底部信息面板（紧凑） */
+        .shorts-info-panel {
+            position: absolute;
+            left: 14px;
+            right: 80px;
+            bottom: 30px;
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .shorts-channel-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shorts-channel-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .shorts-channel-name-bottom {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .shorts-subscribe-btn {
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: #fff;
+            color: #000;
+            border: none;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .shorts-subscribe-btn.subscribed {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        /* 播放量 / 点赞数 徽标行 */
+        .shorts-stats-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .shorts-stat-badge {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 播放提示 */
+        .shorts-play-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            pointer-events: none;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .shorts-play-hint.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .shorts-play-hint svg {
+            width: 28px;
+            height: 28px;
+            fill: #fff;
+        }
+
+        /* 进度条 */
+        .shorts-progress-bar {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            z-index: 4;
+            overflow: hidden;
+        }
+
+        .shorts-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #fff;
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        /* 关闭按钮 */
+        .shorts-close-btn {
+            position: absolute;
+            top: 14px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.45);
+            border: none;
+            color: #fff;
+            font-size: 26px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            transition: background 0.2s;
+            line-height: 1;
+        }
+
+        .shorts-close-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        @keyframes spinDisc {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .shorts-audio-label {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .shorts-progress-bar {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            bottom: 10px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            z-index: 4;
+            overflow: hidden;
+        }
+
+        .shorts-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #fff;
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        .shorts-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: #fff;
+            font-size: 28px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+
+        .shorts-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         @keyframes popIn {
             0% {
                 transform: scale(0.5);
@@ -1683,6 +2073,160 @@
                 color: #ff0000;
             }
         }
+
+        /* 历史记录弹窗 */
+        .history-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10001;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeIn 0.25s ease;
+        }
+
+        .history-modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .history-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6b7280;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .history-close-btn:hover {
+            color: #111827;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: #f9fafb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #f3f4f6;
+        }
+
+        .history-item:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .history-item-time {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .history-item-count {
+            font-size: 13px;
+            color: #6b7280;
+            background: #e5e7eb;
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        .history-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .history-item-actions button {
+            padding: 4px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .history-item-actions button:hover {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        .history-detail {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .history-back-btn {
+            margin-bottom: 12px;
+            background: #f3f4f6;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .history-back-btn:hover {
+            background: #e5e7eb;
+        }
+
+        /* 历史详情中的表格复用 youtube-table 样式，但需要更紧凑 */
+        .history-detail .youtube-table {
+            font-size: 13px;
+        }
+
+        .history-detail .youtube-table th,
+        .history-detail .youtube-table td {
+            padding: 8px 6px;
+        }
     </style>
 </head>
 
@@ -1933,6 +2477,10 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                             <i class="fas fa-trash-alt"></i>
                             清空
                         </button>
+                        <button class="youtube-btn" id="historyBtn" style="background:#3b82f6;margin-left:8px;">
+                            <i class="fas fa-history"></i>
+                            历史查询
+                        </button>
                         <div class="youtube-progress-container" id="youtubeProgressContainer">
                             <div class="youtube-progress-info">
                                 <span id="youtubeProgressText">准备查询</span>
@@ -1985,6 +2533,87 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
         <span id="toastMessage">已复制到剪贴板</span>
     </div>
 
+    <!-- Shorts 风格播放器遮罩 -->
+    <div id="shortsPlayerOverlay" class="shorts-overlay">
+        <div class="shorts-container">
+            <!-- 视频层 -->
+            <div class="shorts-video-wrapper">
+                <div id="shortsPlayerIframe"></div>
+                <img id="shortsThumbBackground" class="shorts-thumb-bg" src="" style="display: none;">
+                <div class="shorts-play-hint" id="shortsPlayHint">
+                    <svg viewBox="0 0 24 24">
+                        <polygon points="5,3 19,12 5,21" fill="#fff" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 底部渐变 -->
+            <div class="shorts-bottom-gradient"></div>
+
+            <!-- 右侧操作栏（增大、加底色） -->
+            <div class="shorts-action-bar">
+                <div class="shorts-action-item">
+                    <button class="shorts-action-btn" id="shortsLikeBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z" />
+                        </svg>
+                    </button>
+                    <span class="shorts-action-label" id="shortsLikeCount">0</span>
+                </div>
+                <div class="shorts-action-item">
+                    <button class="shorts-action-btn" id="shortsCommentBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M20,2H4C2.9,2,2,2.9,2,4v12c0,1.1,0.9,2,2,2h14l4,4V4C22,2.9,21.1,2,20,2z M18,14H6v-2h12V14z M18,11H6V9h12V11z M18,8H6V6h12V8z" />
+                        </svg>
+                    </button>
+                    <span class="shorts-action-label" id="shortsCommentCount">0</span>
+                </div>
+                <div class="shorts-action-item">
+                    <button class="shorts-action-btn" id="shortsShareBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M18,16.08c-0.76,0-1.44,0.3-1.96,0.77L8.91,12.7c0.05-0.23,0.09-0.46,0.09-0.7s-0.04-0.47-0.09-0.7l7.05-4.11c0.54,0.5,1.25,0.81,2.04,0.81c1.66,0,3-1.34,3-3s-1.34-3-3-3s-3,1.34-3,3c0,0.24,0.04,0.47,0.09,0.7L8.04,9.81C7.5,9.31,6.79,9,6,9c-1.66,0-3,1.34-3,3s1.34,3,3,3c0.79,0,1.5-0.31,2.04-0.81l7.12,4.16c-0.05,0.21-0.08,0.43-0.08,0.65c0,1.61,1.31,2.92,2.92,2.92s2.92-1.31,2.92-2.92S19.61,16.08,18,16.08z" />
+                        </svg>
+                    </button>
+                    <span class="shorts-action-label">分享</span>
+                </div>
+            </div>
+
+            <!-- 底部信息（播放量 + 频道行） -->
+            <div class="shorts-info-panel">
+                <div class="shorts-channel-row">
+                    <div class="shorts-channel-avatar" id="shortsChannelAvatar"></div>
+                    <span class="shorts-channel-name-bottom" id="shortsChannelNameBottom"></span>
+                    <button class="shorts-subscribe-btn" id="shortsSubscribeBtn">订阅</button>
+                </div>
+                <div class="shorts-stats-row">
+                    <span id="shortsViewCountBadge" class="shorts-stat-badge">👁 0</span>
+                    <span id="shortsLikeCountBadge" class="shorts-stat-badge">👍 0</span>
+                </div>
+            </div>
+
+
+            <!-- 关闭按钮 -->
+            <button class="shorts-close-btn" onclick="closeShortsPlayer()">×</button>
+        </div>
+    </div>
+    <!-- 历史查询弹窗 -->
+    <div id="historyOverlay" class="history-overlay" style="display:none;">
+        <div class="history-modal">
+            <div class="history-header">
+                <h3><i class="fas fa-history"></i> 查询历史</h3>
+                <button class="history-close-btn" onclick="closeHistory()">×</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <!-- 动态生成历史记录列表 -->
+            </div>
+            <div class="history-detail" id="historyDetail" style="display:none;">
+                <!-- 点击某条记录后展示的详情表格 -->
+            </div>
+        </div>
+    </div>
     <script>
         // ================== 全局配置与工具类 ==================
         const CONFIG = {
@@ -2047,6 +2676,243 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             });
         }
 
+        function openShortsPlayer(videoUrl, videoData) {
+            const overlay = document.getElementById('shortsPlayerOverlay');
+
+
+            // 底部频道行
+            document.getElementById('shortsChannelNameBottom').innerText = videoData.channel || '频道名称';
+            const avatar = document.getElementById('shortsChannelAvatar');
+            if (videoData.channel) {
+                avatar.style.backgroundColor = stringToColor(videoData.channel);
+                avatar.innerText = videoData.channel.charAt(0).toUpperCase();
+            }
+
+            // 数据徽标
+            document.getElementById('shortsLikeCount').innerText = videoData.likeCount || '0';
+            document.getElementById('shortsCommentCount').innerText = videoData.commentCount || '0';
+            document.getElementById('shortsViewCountBadge').innerText = '👁 ' + (videoData.viewCount || '0');
+            document.getElementById('shortsLikeCountBadge').innerText = '👍 ' + (videoData.likeCount || '0');
+
+            // 创建 iframe 
+            const vid = extractVideoIdSimple(videoUrl);
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&playsinline=1`;
+            iframe.allow = 'autoplay; encrypted-media';
+            iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;border:none;';
+
+            const wrapper = document.getElementById('shortsPlayerIframe');
+            wrapper.innerHTML = '';
+            wrapper.appendChild(iframe);
+
+            overlay.classList.add('show');
+            startShortsProgress();
+        }
+        function closeShortsPlayer() {
+            const overlay = document.getElementById('shortsPlayerOverlay');
+            overlay.classList.remove('show');
+            // 清除 iframe 
+            document.getElementById('shortsPlayerIframe').innerHTML = '';
+            stopShortsProgress();
+        }
+
+        // 辅助：提取视频ID 
+        function extractVideoIdSimple(url) {
+            try {
+                if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
+                if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
+                if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
+            } catch (e) { }
+            return '';
+        }
+
+        // 简单头像颜色生成 
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + '00000'.substring(0, 6 - c.length) + c;
+        }
+
+        let progressInterval;
+        function startShortsProgress() {
+            const fill = document.getElementById('shortsProgressFill');
+            fill.style.width = '0%';
+            let progress = 0;
+            if (progressInterval) clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                progress += 0.5;
+                fill.style.width = Math.min(progress, 100) + '%';
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 200);
+        }
+        function stopShortsProgress() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            document.getElementById('shortsProgressFill').style.width = '0%';
+        }
+        // 存储历史记录 
+        function saveHistory(urls, tableData) {
+            const history = JSON.parse(localStorage.getItem('youtubeQueryHistory') || '[]');
+            history.unshift({
+                timestamp: Date.now(),
+                timeStr: new Date().toLocaleString('zh-CN'),
+                urls: urls,
+                tableData: tableData
+            });
+            // 最多保留20条 
+            if (history.length > 20) history.pop();
+            localStorage.setItem('youtubeQueryHistory', JSON.stringify(history));
+        }
+
+        // 读取历史 
+        function getHistory() {
+            return JSON.parse(localStorage.getItem('youtubeQueryHistory') || '[]');
+        }
+
+        // 删除某条历史 
+        function deleteHistory(index) {
+            const history = getHistory();
+            history.splice(index, 1);
+            localStorage.setItem('youtubeQueryHistory', JSON.stringify(history));
+            renderHistoryList();
+        }
+        function renderHistoryList() {
+            const listEl = document.getElementById('historyList');
+            const detailEl = document.getElementById('historyDetail');
+            const history = getHistory();
+
+            if (history.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px;">暂无查询历史</div>';
+                return;
+            }
+
+            let html = '';
+            history.forEach((item, index) => {
+                html += `
+        <div class="history-item">
+            <div style="flex:1;">
+                <div class="history-item-time">${item.timeStr}</div>
+                <div style="font-size:13px;color:#6b7280;margin-top:4px;">${item.urls.length} 个链接</div>
+            </div>
+            <div class="history-item-actions">
+                <button class="btn-copy-selected" onclick="fillAndQueryHistory(${index})" style="background: #3b82f6;">
+                <i class="fas fa-arrow-left"></i> 填充当前表 
+            </button>
+                <button onclick="viewHistoryDetail(${index})">查看详情</button>
+                <button onclick="deleteHistory(${index})">删除</button>
+            </div>
+        </div>`;
+            });
+            listEl.innerHTML = html;
+            detailEl.style.display = 'none';
+        }
+        function viewHistoryDetail(index) {
+            const history = getHistory();
+            const item = history[index];
+            if (!item) return;
+
+            const detailEl = document.getElementById('historyDetail');
+            const listEl = document.getElementById('historyList');
+            listEl.style.display = 'none';
+            detailEl.style.display = 'block';
+
+            let tableHtml = `
+        <button class="history-back-btn" onclick="backToHistoryList()">← 返回列表</button>
+        <div style="font-size:14px;color:#374151;margin-bottom:12px;">查询时间：${item.timeStr}（${item.urls.length} 个视频）</div>
+        <button class="btn-copy-selected" onclick="copyHistoryUrls(${index})" style="margin-bottom:12px;">
+            <i class="fas fa-copy"></i> 复制全部链接 
+        </button>
+        <button class="btn-copy-selected" onclick="fillAndQueryHistory(${index})" style="background: #3b82f6;">
+                <i class="fas fa-arrow-left"></i> 填充当前表 
+            </button>
+        <table class="youtube-table">
+            <thead>
+                <tr>
+                    <th>链接</th>
+                    <th>标题</th>
+                    <th>频道</th>
+                    <th>播放量</th>
+                    <th>评论</th>
+                    <th>发布</th>
+                    <th>时长</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+            item.tableData.forEach(row => {
+                tableHtml += `
+            <tr>
+                <td style="max-width:180px;word-break:break-all;font-size:12px;">${row.url}</td>
+                <td>${row.title || '—'}</td>
+                <td>${row.channel || '—'}</td>
+                <td>${row.viewCount || '—'}</td>
+                <td>${row.commentCount || '—'}</td>
+                <td>${row.published || '—'}</td>
+                <td>${row.duration || '—'}</td>
+            </tr>`;
+            });
+
+            tableHtml += '</tbody></table>';
+            detailEl.innerHTML = tableHtml;
+        }
+
+        function backToHistoryList() {
+            document.getElementById('historyDetail').style.display = 'none';
+            document.getElementById('historyList').style.display = 'flex';
+        }
+
+        function copyHistoryUrls(index) {
+            const history = getHistory();
+            const urls = history[index]?.tableData?.map(r => r.url) || [];
+            if (urls.length) {
+                copyToClipboard(urls.join('\n'));
+                showToast(`已复制 ${urls.length} 个链接`);
+            }
+        }
+        function openHistory() {
+            document.getElementById('historyOverlay').style.display = 'flex';
+            renderHistoryList();
+        }
+
+        function closeHistory() {
+            document.getElementById('historyOverlay').style.display = 'none';
+        }
+
+        // 点击遮罩关闭 
+        document.addEventListener('click', function (e) {
+            if (e.target.id === 'historyOverlay') {
+                closeHistory();
+            }
+        });
+
+        function fillAndQueryHistory(index) {
+            const history = getHistory();
+            const item = history[index];
+            if (!item || !item.urls || !item.urls.length) {
+                showToast('没有可填充的链接');
+                return;
+            }
+
+            // 1. 将链接填入输入框 
+            document.getElementById('youtubeUrls').value = item.urls.join('\n');
+
+            // 2. 关闭历史弹窗 
+            closeHistory();
+
+            // 3. 自动触发查询 
+            if (window.Modules && typeof window.Modules.processYoutubeUrls === 'function') {
+                window.Modules.processYoutubeUrls();
+            } else {
+                console.error('查询模块未就绪');
+            }
+
+            showToast('已填充链接并开始查询');
+        }
         // ================== AI 处理器 (优化版) ==================
         class AITitleProcessor {
             constructor() {
@@ -2561,6 +3427,7 @@ ${text}`;
                     document.getElementById('youtubeUrls').value = '';
                     showToast('输入框已清空');
                 });
+                document.getElementById('historyBtn').addEventListener('click', openHistory);
             },
 
             // YouTube 辅助方法
@@ -2717,21 +3584,42 @@ ${text}`;
                 dp.style.display = "none";
                 showToast("全部缩略图已打包下载");
             },
-
             showVideoPlayer(url) {
-                const vid = this.extractVideoId(url);
-                if (!vid) return;
-                STATE.currentVideoId = vid;
-                const o = document.getElementById("videoPlayerOverlay");
-                o.classList.add("show");
-                if (STATE.youtubeApiReady && STATE.ytPlayer) {
-                    setTimeout(() => {
-                        STATE.ytPlayer.loadVideoById(vid);
-                        STATE.ytPlayer.playVideo();
-                    }, 100);
+                const tr = event.target.closest('tr');
+                if (!tr) {
+                    openShortsPlayer(url, {
+                        title: '未知标题',
+                        channel: '未知频道',
+                        likeCount: '0',
+                        commentCount: '0',
+                        viewCount: '0',                        // 新增 
+                        thumbnail: `https://i.ytimg.com/vi/${extractVideoIdSimple(url)}/mqdefault.jpg`
+                    });
+                    return;
                 }
-            },
 
+                const cells = tr.cells;
+                let title = '', channel = '', likeCount = '0', commentCount = '0', viewCount = '0', thumbnail = '';
+
+                if (cells.length >= 9) {
+                    title = cells[2]?.innerText.trim() || '未知标题';
+                    channel = cells[3]?.innerText.trim() || '未知频道';
+                    likeCount = tr.getAttribute('data-likecount') || '0';
+                    commentCount = cells[5]?.innerText.trim() || '0';
+                    viewCount = cells[4]?.innerText.trim() || '0';   // 播放量（第4列）
+                    const img = cells[8]?.querySelector('img');
+                    if (img) thumbnail = img.src;
+                }
+
+                openShortsPlayer(url, {
+                    title,
+                    channel,
+                    likeCount,
+                    commentCount,
+                    viewCount,           // 新增 
+                    thumbnail
+                });
+            },
             hideVideoPlayer() {
                 const o = document.getElementById("videoPlayerOverlay");
                 o.classList.remove("show");
@@ -2981,7 +3869,7 @@ ${text}`;
                         td5.innerText = this.formatNumber(data.statistics.commentCount || 0);
                         td6.innerText = this.formatUploadDate(data.snippet.publishedAt);
                         td7.innerText = this.parseDuration(data.contentDetails.duration);
-
+                        tr.setAttribute('data-likecount', data.statistics.likeCount || '0');
                         if (isShort) {
                             this.getLosslessShortThumbnail(vid).then(u => img.src = u);
                         } else {
@@ -2998,6 +3886,24 @@ ${text}`;
                 btn.disabled = false;
                 pText.innerText = "查询完成";
                 showToast("YouTube 数据查询完成");
+                // 构造 tableData 用于保存 
+                const tableData = [];
+                this.validUrls.forEach((url, idx) => {
+                    const row = tbody.children[idx];
+                    if (!row) return;
+                    const cells = row.cells;
+                    tableData.push({
+                        url: url,
+                        title: cells[2]?.innerText || '',
+                        channel: cells[3]?.innerText || '',
+                        viewCount: cells[4]?.innerText || '',
+                        commentCount: cells[5]?.innerText || '',
+                        published: cells[6]?.innerText || '',
+                        duration: cells[7]?.innerText || '',
+                        likeCount: row.getAttribute('data-likecount') || '0'
+                    });
+                });
+                saveHistory(this.validUrls, tableData);
             }
         };
 
@@ -3024,7 +3930,7 @@ ${text}`;
             const ai = new AITitleProcessor();
             UIController.init();
             Modules.init(ai);
-            // hljs.highlightAll(); // 初始页面无代码块，按需高亮
+            window.Modules = Modules;
         });
     </script>
 </body>
