@@ -1242,13 +1242,15 @@
         }
 
         .shorts-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            max-width: 430px;
-            background: #000;
-            overflow: hidden;
-        }
+    position: relative;
+    width: 100vw;
+    max-width: 430px;
+    max-height: 95vh;       /* 防止超出屏幕高度 */
+    aspect-ratio: 9 / 16;   /* ✅ 高度自动按宽度的 16/9 计算 */
+    background: #000;
+    overflow: hidden;
+    margin: 0 auto;         /* 水平居中（可选） */
+}
 
         .shorts-video-wrapper {
             position: absolute;
