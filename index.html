@@ -1848,20 +1848,6 @@
             }
         }
 
-        .sort-btn {
-            background: none;
-            border: none;
-            color: #666;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 4px;
-            padding: 2px;
-        }
-
-        .sort-btn:hover {
-            color: #ff0000;
-        }
-
         /* 并发速度标签 */
         .speed-badge {
             display: inline-block;
@@ -2114,20 +2100,6 @@
                 border-radius: 6px;
                 cursor: pointer;
             }
-
-            .sort-btn {
-            background: none;
-            border: none;
-            color: #666;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 4px;
-            padding: 2px;
-        }
-
-        .sort-btn:hover {
-            color: #ff0000;
-        }
         }
     </style>
 </head>
@@ -3330,7 +3302,12 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             <th onclick="window.copyYoutubeColumn(1)">视频链接<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制整列</small></th>
             <th onclick="window.copyYoutubeColumn(2)">标题<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
             <th onclick="window.copyYoutubeColumn(3)">频道<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">播放<button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;"><i id="sortIcon" class="fas fa-sort"></i></button></th>
+            <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">
+                播放
+                <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;">
+                    <i id="sortIcon" class="fas fa-sort"></i>
+                </button>
+            </th>
             <th onclick="window.copyYoutubeColumn(5)">评论<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
             <th onclick="window.copyYoutubeColumn(6)">发布<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
             <th onclick="window.copyYoutubeColumn(7)">时长<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
