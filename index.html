@@ -1242,15 +1242,18 @@
         }
 
         .shorts-container {
-    position: relative;
-    width: 100vw;
-    max-width: 430px;
-    max-height: 95vh;       /* 防止超出屏幕高度 */
-    aspect-ratio: 9 / 16;   /* ✅ 高度自动按宽度的 16/9 计算 */
-    background: #000;
-    overflow: hidden;
-    margin: 0 auto;         /* 水平居中（可选） */
-}
+            position: relative;
+            width: 100vw;
+            max-width: 430px;
+            max-height: 95vh;
+            /* 防止超出屏幕高度 */
+            aspect-ratio: 9 / 16;
+            /* ✅ 高度自动按宽度的 16/9 计算 */
+            background: #000;
+            overflow: hidden;
+            margin: 0 auto;
+            /* 水平居中（可选） */
+        }
 
         .shorts-video-wrapper {
             position: absolute;
@@ -2592,6 +2595,13 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             showToast('已填充链接并开始查询');
         }
 
+        function saveSortPreference(state) {
+            localStorage.setItem('youtubeSortPreference', state);
+        }
+        function loadSortPreference() {
+            return localStorage.getItem('youtubeSortPreference') || null;
+        }
+
         class AITitleProcessor {
             constructor() {
                 this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
@@ -2945,6 +2955,37 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                     showToast('输入框已清空');
                 });
                 document.getElementById('historyBtn').addEventListener('click', openHistory);
+                const resultsArea = document.getElementById('youtubeResultsArea');
+                let pressTimer = null;
+                let isLongPress = false;
+
+                resultsArea.addEventListener('pointerdown', (e) => {
+                    const btn = e.target.closest('#sortViewsBtn');
+                    if (!btn) return;
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        saveSortPreference(STATE.sortState);
+                        showToast(`已将“${STATE.sortState === 'desc' ? '降序' : STATE.sortState === 'asc' ? '升序' : '原始顺序'}”设为默认排序`);
+                    }, 800);
+                });
+
+                resultsArea.addEventListener('pointerup', () => {
+                    clearTimeout(pressTimer);
+                });
+
+                resultsArea.addEventListener('pointerleave', () => {
+                    clearTimeout(pressTimer);
+                });
+
+                // 点击排序（防止长按误触发点击）
+                resultsArea.addEventListener('click', (e) => {
+                    const btn = e.target.closest('#sortViewsBtn');
+                    if (!btn || isLongPress) return;
+                    e.stopPropagation();
+                    window.toggleSortViews();
+                });
+
             },
 
             extractVideoId(url) {
@@ -3291,7 +3332,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
             <th onclick="window.copyYoutubeColumn(3)">频道<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
             <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">
                 播放
-                <button id="sortViewsBtn" class="sort-btn" onclick="event.stopPropagation(); window.toggleSortViews();" style="margin-left:5px;">
+                <button id="sortViewsBtn" class="sort-btn" style="margin-left:5px;">
                     <i id="sortIcon" class="fas fa-sort"></i>
                 </button>
             </th>
@@ -3482,6 +3523,24 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                     });
                 });
                 saveHistory(validUrls, tableData);
+
+                // 应用本地保存的排序偏好
+                const savedPref = loadSortPreference();
+                if (savedPref === 'desc' || savedPref === 'asc') {
+                    const tbody = document.querySelector('.youtube-table tbody');
+                    if (tbody) {
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        rows.sort((a, b) => {
+                            const viewA = Modules.parseViewCount(a.cells[4].innerText);
+                            const viewB = Modules.parseViewCount(b.cells[4].innerText);
+                            return savedPref === 'desc' ? viewB - viewA : viewA - viewB;
+                        });
+                        rows.forEach(row => tbody.appendChild(row));
+                        STATE.sortState = savedPref;
+                        const icon = document.getElementById('sortIcon');
+                        if (icon) icon.className = savedPref === 'desc' ? 'fas fa-sort-amount-down' : 'fas fa-sort-amount-up';
+                    }
+                }
             }
         };
 
