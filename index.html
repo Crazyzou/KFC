@@ -357,6 +357,311 @@
             }
         }
 
+        /* ====================== 密语编码器样式 ====================== */
+        .cipher-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: 100%;
+        }
+
+        /* 顶部Tab切换栏 */
+        .cipher-tab-bar {
+            display: flex;
+            gap: 0;
+            background: #f1f5f9;
+            border-radius: 14px;
+            padding: 5px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .cipher-tab {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px 16px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.02em;
+        }
+
+        .cipher-tab:hover {
+            color: #334155;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .cipher-tab.active {
+            background: #fff;
+            color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .cipher-tab i {
+            font-size: 0.9rem;
+        }
+
+        /* 面板容器 */
+        .cipher-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* 卡片 */
+        .cipher-card {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 14px;
+            padding: 16px 18px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            transition: all 0.25s ease;
+        }
+
+        .cipher-card:hover {
+            border-color: #d0d5dd;
+        }
+
+        /* 卡片头部 */
+        .cipher-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: #1e293b;
+        }
+
+        .cipher-step-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .cipher-step-badge.done {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .cipher-badge-tag {
+            margin-left: auto;
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            background: #ede9fe;
+            color: #7c3aed;
+            letter-spacing: 0.03em;
+        }
+
+        /* 文本域 */
+        .cipher-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 80px;
+            background: #fafbfc;
+            color: #1e293b;
+            transition: all 0.25s ease;
+        }
+
+        .cipher-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .cipher-textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        .cipher-textarea.cipher-mono {
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+            font-size: 0.88rem;
+        }
+
+        /* 卡片内操作按钮 */
+        .cipher-card-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .cipher-btn-paste {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.78rem;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+        }
+
+        .cipher-btn-paste:hover {
+            background: #f1f5f9;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .cipher-btn-paste i {
+            font-size: 0.75rem;
+        }
+
+        /* 主要操作按钮 */
+        .cipher-btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 13px 20px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: linear-gradient(135deg, #4361ee, #3a56d4);
+            color: #fff;
+            letter-spacing: 0.03em;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(67, 97, 238, 0.3);
+        }
+
+        .cipher-btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+
+        .cipher-btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
+        }
+
+        .cipher-btn-primary:disabled {
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .cipher-btn-primary i {
+            font-size: 0.9rem;
+        }
+
+        /* 输出框 */
+        .cipher-output-box {
+            position: relative;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            padding-right: 70px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            word-break: break-all;
+            line-height: 1.9;
+            color: #1e293b;
+            min-height: 50px;
+            letter-spacing: 0.07em;
+            transition: all 0.25s ease;
+        }
+
+        .cipher-output-box.decrypted {
+            font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            letter-spacing: 0.02em;
+            line-height: 1.7;
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
+            padding-right: 16px;
+        }
+
+        .cipher-output-text {
+            word-break: break-all;
+        }
+
+        .cipher-copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.73rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .cipher-copy-btn:hover {
+            background: #22c55e;
+            color: #fff;
+            border-color: #22c55e;
+        }
+
+        .cipher-copy-btn i {
+            font-size: 0.7rem;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .cipher-tab {
+                font-size: 0.78rem;
+                padding: 10px 12px;
+            }
+
+            .cipher-output-box {
+                font-size: 0.8rem;
+                letter-spacing: 0.04em;
+                padding-right: 60px;
+            }
+
+            .cipher-copy-btn {
+                padding: 5px 10px;
+                font-size: 0.7rem;
+                top: 8px;
+                right: 8px;
+            }
+        }
+
         .result-container {
             margin-top: 1.75rem;
             border-radius: var(--radius-sm);
@@ -2122,8 +2427,8 @@
             </div>
             <div class="tool-card" data-target="panel4">
                 <div class="card-header">
-                    <div class="card-title"><span class="icon"><i class="fas fa-palette"></i></span>AI绘画预设优化</div>
-                    <div class="card-desc">输入文本，自动优化3次高质量提示词</div>
+                    <div class="card-title"><span class="icon"><i class="fas fa-lock"></i></span>密语编码器</div>
+                    <div class="card-desc">明文 ↔ 密文 · 汉字伪装 · 无痕加密</div>
                 </div>
             </div>
             <div class="tool-card" data-target="panel5">
@@ -2217,19 +2522,69 @@ https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
             </div>
 
             <div class="function-panel" id="panel4">
-                <div class="paint-container">
-                    <div class="paint-result-box" id="paint-result-box">
-                        <div style="text-align:center; color:#64748b; padding:20px;">输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）
+                <div class="cipher-wrapper">
+                    <!-- 顶部切换栏 -->
+                    <div class="cipher-tab-bar">
+                        <button class="cipher-tab active" data-cipher-tab="encrypt">
+                            <i class="fas fa-lock"></i><span>明文 → 密文</span>
+                        </button>
+                        <button class="cipher-tab" data-cipher-tab="decrypt">
+                            <i class="fas fa-unlock"></i><span>密文 → 明文</span>
+                        </button>
+                    </div>
+
+                    <!-- 加密面板 -->
+                    <div class="cipher-panel active" id="cipher-encrypt-panel">
+                        <div class="cipher-card">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge">1</div>
+                                <span>输入明文内容</span>
+                            </div>
+                            <textarea id="cipher-encrypt-input" class="cipher-textarea"
+                                placeholder="输入要加密的内容（支持中文、英文、emoji、特殊符号）…" rows="3"></textarea>
+                        </div>
+                        <button class="cipher-btn-primary" id="cipher-encrypt-btn" disabled>
+                            <i class="fas fa-lock"></i> 加密生成密文
+                        </button>
+                        <div class="cipher-card" id="cipher-encrypt-result-area" style="display:none;">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge done">✓</div>
+                                <span>密文结果</span>
+                                <span class="cipher-badge-tag">古文伪装</span>
+                            </div>
+                            <div class="cipher-output-box">
+                                <div class="cipher-output-text" id="cipher-encrypt-output"></div>
+                                <button class="cipher-copy-btn" id="cipher-copy-btn">
+                                    <i class="far fa-copy"></i> 复制
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="paint-input-container">
-                        <textarea class="paint-input" id="paint-input"
-                            placeholder="输入简单描述，例如：一只可爱的白色小猫，坐在花园里"></textarea>
-                        <div class="button-group">
-                            <button class="paint-btn" id="paint-generate-btn"><i class="fas fa-magic"></i><span
-                                    class="btn-text">生成</span></button>
-                            <button class="paint-clear-btn" id="paint-clear-btn"><i class="fas fa-trash-alt"></i><span
-                                    class="btn-text">清空</span></button>
+
+                    <!-- 解密面板 -->
+                    <div class="cipher-panel" id="cipher-decrypt-panel" style="display:none;">
+                        <div class="cipher-card">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge">1</div>
+                                <span>输入密文</span>
+                            </div>
+                            <textarea id="cipher-decrypt-input" class="cipher-textarea cipher-mono"
+                                placeholder="在此粘贴密文（自动过滤标点、空格等无关字符）…" rows="3"></textarea>
+                            <div class="cipher-card-actions">
+                                <button class="cipher-btn-paste" id="cipher-paste-btn">
+                                    <i class="fas fa-paste"></i> 从剪贴板粘贴
+                                </button>
+                            </div>
+                        </div>
+                        <button class="cipher-btn-primary" id="cipher-decrypt-btn" disabled>
+                            <i class="fas fa-unlock"></i> 解密密文
+                        </button>
+                        <div class="cipher-card" id="cipher-decrypt-result-area" style="display:none;">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge done">✓</div>
+                                <span>解密结果</span>
+                            </div>
+                            <div class="cipher-output-box decrypted" id="cipher-decrypt-output"></div>
                         </div>
                     </div>
                 </div>
@@ -2388,7 +2743,74 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
         CONFIG.YT_API_KEYS.forEach(key => {
             STATE.ytApiKeyStatus[key] = { lastUsed: null, errorCount: 0, isActive: true, quotaExceeded: false };
         });
+        // ================== 密语编码器核心函数 ==================
+        const HANZI = [
+            '天', '地', '玄', '黄', '宇', '宙', '洪', '荒', '日', '月', '盈', '昃', '辰', '宿', '列', '张',
+            '寒', '来', '暑', '往', '秋', '收', '冬', '藏', '闰', '余', '成', '岁', '律', '吕', '调', '阳',
+            '云', '腾', '致', '雨', '露', '结', '为', '霜', '金', '生', '丽', '水', '玉', '出', '昆', '冈',
+            '剑', '号', '巨', '阙', '珠', '称', '夜', '光', '果', '珍', '李', '柰', '菜', '重', '芥', '姜',
+            '海', '咸', '河', '淡', '鳞', '潜', '羽', '翔', '龙', '师', '火', '帝', '鸟', '官', '人', '皇',
+            '始', '制', '文', '字', '乃', '服', '衣', '裳', '推', '位', '让', '国', '有', '虞', '陶', '唐',
+            '吊', '民', '伐', '罪', '周', '发', '殷', '汤', '坐', '朝', '问', '道', '垂', '拱', '平', '章',
+            '爱', '育', '黎', '首', '臣', '伏', '戎', '羌', '遐', '迩', '一', '体', '率', '宾', '归', '王',
+            '鸣', '凤', '在', '树', '白', '驹', '食', '场', '化', '被', '草', '木', '赖', '及', '万', '方',
+            '盖', '此', '身', '发', '四', '大', '五', '常', '恭', '惟', '鞠', '养', '岂', '敢', '毁', '伤',
+            '女', '慕', '贞', '洁', '男', '效', '才', '良', '知', '过', '必', '改', '得', '能', '莫', '忘',
+            '罔', '谈', '彼', '短', '靡', '恃', '己', '长', '信', '使', '可', '覆', '器', '欲', '难', '量',
+            '墨', '悲', '丝', '染', '诗', '赞', '羔', '羊', '景', '行', '维', '贤', '克', '念', '作', '圣',
+            '德', '建', '名', '立', '形', '端', '表', '正', '空', '谷', '传', '声', '虚', '堂', '习', '听',
+            '祸', '因', '恶', '积', '福', '缘', '善', '庆', '尺', '璧', '非', '宝', '寸', '阴', '是', '竞',
+            '资', '父', '事', '君', '曰', '严', '与', '敬', '孝', '当', '竭', '力', '忠', '则', '尽', '命'
+        ];
+        const HANZI_TO_BYTE = {};
+        HANZI.forEach((h, i) => { HANZI_TO_BYTE[h] = i; });
 
+        function getTodayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        async function deriveKey(dateStr) {
+            const enc = new TextEncoder();
+            const km = await crypto.subtle.importKey('raw', enc.encode(dateStr), { name: 'PBKDF2' }, false, ['deriveKey']);
+            const salt = enc.encode('MiYu2025_SecureSalt_!@#%^');
+            return crypto.subtle.deriveKey({
+                name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256'
+            }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+
+        async function encryptBytes(plainBytes, key) {
+            const nonce = crypto.getRandomValues(new Uint8Array(12));
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, key, plainBytes);
+            const result = new Uint8Array(12 + ct.byteLength);
+            result.set(nonce, 0);
+            result.set(new Uint8Array(ct), 12);
+            return result;
+        }
+
+        async function decryptBytes(combined, key) {
+            if (combined.length < 28) throw new Error('数据不完整');
+            const nonce = combined.slice(0, 12);
+            const ct = combined.slice(12);
+            const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, key, ct);
+            return new Uint8Array(pt);
+        }
+
+        function bytesToHanzi(bytes) {
+            let result = '';
+            for (let i = 0; i < bytes.length; i++) result += HANZI[bytes[i]];
+            return result;
+        }
+
+        function hanziToBytes(hanziStr) {
+            const bytes = [];
+            for (const ch of hanziStr) {
+                const b = HANZI_TO_BYTE[ch];
+                if (b !== undefined) bytes.push(b);
+            }
+            if (bytes.length === 0) throw new Error('未识别到有效密文字符');
+            return new Uint8Array(bytes);
+        }
         function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
         function showToast(msg = "已复制到剪贴板") {
@@ -2671,7 +3093,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                 this.initTextSeparator();
                 this.initLinkLangExtractor();
                 this.initAdOptimizer();
-                this.initPaintOptimizer();
+                this.initCipherModule();
                 this.initYoutubeModule();
             },
             initTextSeparator() {
@@ -2828,63 +3250,112 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                     } finally { UIController.setLoading(btn, loading, false); }
                 });
             },
-            initPaintOptimizer() {
-                const resultBox = document.getElementById('paint-result-box');
-                const input = document.getElementById('paint-input');
-                const genBtn = document.getElementById('paint-generate-btn');
-                const clearBtn = document.getElementById('paint-clear-btn');
-                window.copySinglePrompt = (text) => copyToClipboard(text);
-                const generate = async () => {
-                    const userText = input.value.trim();
-                    if (!userText) return alert('请输入绘画需求');
-                    genBtn.disabled = true;
-                    let fullHtml = '';
-                    try {
-                        for (let i = 1; i <= 3; i++) {
-                            resultBox.innerHTML = fullHtml +
-                                `<div class="typing-indicator">正在生成第 ${i} 版预设，请稍候...</div>`;
-                            const prompt = `你是专业AI绘画提示词架构师，精通Midjourney与Stable Diffusion。\n\n用户输入：${userText}\n\n第一步：自动解析用户真实用意\n用户输入可能非常简短、模糊、口语化，你需要智能推断：\n- 主体是什么\n- 场景/环境\n- 风格倾向（写实、动漫、科幻、国风、治愈、赛博、复古等）\n- 氛围、色调、情绪\n- 构图与画质偏好\n\n第二步：基于解析结果，生成第 ${i} 版专业英文提示词\n要求：\n- 结构完整：主体 + 场景 + 光影 + 材质 + 画质 + 构图 + 色彩\n- 专业、精准、画面感极强\n- 适配MJ/SD，可直接使用\n- 只输出最终英文提示词，不解释、不分析、不输出中文`;
-                            const opt = await this.aiProcessor.getAIResponse(prompt);
-                            const finalPrompt =
-                                `${opt.trim()}, ${CONFIG.POSITIVE_PROMPT} --no ${CONFIG.NEGATIVE_PROMPT}`;
-                            const transPrompt = `请将以下英文绘画提示词翻译成通顺的中文：\n${finalPrompt}`;
-                            const trans = await this.aiProcessor.getAIResponse(transPrompt);
-                            const safePrompt = finalPrompt.replace(/`/g, "\\`").replace(/'/g, "\\'").replace(/"/g,
-                                "&quot;");
-                            fullHtml += `
-                            <div class="paint-version">
-                                <div class="paint-version-header"><h4><i class="fas fa-palette"></i> 第${i}版优化</h4><button class="paint-copy-btn" onclick='copySinglePrompt("${safePrompt.replace(/'/g, "\\'")}")'><i class="far fa-copy"></i>一键复制</button></div>
-                                <div class="paint-prompt">${finalPrompt}</div>
-                                <div class="paint-translate"><strong>中文参考：</strong>${trans}</div>
-                            </div>`;
-                            resultBox.innerHTML = fullHtml;
-                            await delay(300);
-                        }
-                        fullHtml +=
-                            `<div class="paint-success"><i class="fas fa-check-circle"></i> 3版提示词优化完成！</div>`;
-                        resultBox.innerHTML = fullHtml;
-                    } catch (err) {
-                        console.error(err);
-                        resultBox.innerHTML = `<div style="color:red; padding:10px;">优化失败，请重试</div>`;
-                    } finally {
-                        genBtn
-                            .disabled = false;
-                    }
+            initCipherModule() {
+                const tabBtns = document.querySelectorAll('[data-cipher-tab]');
+                const panels = {
+                    encrypt: document.getElementById('cipher-encrypt-panel'),
+                    decrypt: document.getElementById('cipher-decrypt-panel')
                 };
-                genBtn.addEventListener('click', generate);
-                clearBtn.addEventListener('click', () => {
-                    resultBox.innerHTML =
-                        `<div style="text-align:center; color:#64748b; padding:20px;">输入你的绘画需求，点击生成，自动优化3版专业提示词（带中文翻译）</div>`;
-                    input.value = '';
+                const encryptInput = document.getElementById('cipher-encrypt-input');
+                const encryptBtn = document.getElementById('cipher-encrypt-btn');
+                const encryptResultArea = document.getElementById('cipher-encrypt-result-area');
+                const encryptOutput = document.getElementById('cipher-encrypt-output');
+                const copyBtn = document.getElementById('cipher-copy-btn');
+                const decryptInput = document.getElementById('cipher-decrypt-input');
+                const decryptBtn = document.getElementById('cipher-decrypt-btn');
+                const decryptResultArea = document.getElementById('cipher-decrypt-result-area');
+                const decryptOutput = document.getElementById('cipher-decrypt-output');
+                const pasteBtn = document.getElementById('cipher-paste-btn');
+
+                tabBtns.forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        tabBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        const tab = this.dataset.cipherTab;
+                        panels.encrypt.style.display = tab === 'encrypt' ? 'flex' : 'none';
+                        panels.decrypt.style.display = tab === 'decrypt' ? 'flex' : 'none';
+                    });
                 });
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        generate();
+
+                function updateEncryptBtn() { encryptBtn.disabled = !encryptInput.value.trim(); }
+                function updateDecryptBtn() { decryptBtn.disabled = !decryptInput.value.trim(); }
+                encryptInput.addEventListener('input', updateEncryptBtn);
+                decryptInput.addEventListener('input', updateDecryptBtn);
+
+                encryptBtn.addEventListener('click', async function () {
+                    if (encryptBtn.disabled) return;
+                    encryptBtn.disabled = true;
+                    encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 加密中…</span>';
+                    encryptResultArea.style.display = 'none';
+                    try {
+                        const plaintext = encryptInput.value.trim();
+                        const plainBytes = new TextEncoder().encode(plaintext);
+                        const key = await deriveKey(getTodayKey());
+                        const encrypted = await encryptBytes(plainBytes, key);
+                        const hanzi = bytesToHanzi(encrypted);
+                        encryptOutput.textContent = hanzi;
+                        encryptResultArea.style.display = 'block';
+                        showToast('密文已生成，可复制发送');
+                    } catch (err) {
+                        showToast('加密失败：' + err.message);
+                    } finally {
+                        encryptBtn.disabled = false;
+                        encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密</span>';
+                        updateEncryptBtn();
                     }
                 });
-            },
 
+                copyBtn.addEventListener('click', async function () {
+                    const text = encryptOutput.textContent;
+                    if (!text) return;
+                    await copyToClipboard(text);
+                    showToast('密文已复制');
+                });
+
+                decryptBtn.addEventListener('click', async function () {
+                    if (decryptBtn.disabled) return;
+                    decryptBtn.disabled = true;
+                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
+                    decryptResultArea.style.display = 'none';
+                    try {
+                        const hanziStr = decryptInput.value.trim();
+                        const combined = hanziToBytes(hanziStr);
+                        const key = await deriveKey(getTodayKey());
+                        const plainBytes = await decryptBytes(combined, key);
+                        const plaintext = new TextDecoder().decode(plainBytes);
+                        decryptOutput.textContent = plaintext;
+                        decryptResultArea.style.display = 'block';
+                        showToast('解密成功');
+                    } catch (err) {
+                        let msg = err.message;
+                        if (msg.includes('decrypt') || msg.includes('operation')) msg = '解密失败：密文已过期或密钥不匹配。';
+                        else if (msg.includes('有效密文字符')) msg = '未识别到有效密文，请完整复制。';
+                        showToast('❌ ' + msg);
+                    } finally {
+                        decryptBtn.disabled = false;
+                        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+                        updateDecryptBtn();
+                    }
+                });
+
+                pasteBtn.addEventListener('click', async function () {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (text && text.trim()) {
+                            decryptInput.value = text.trim();
+                            updateDecryptBtn();
+                            showToast('已粘贴密文，点击解密按钮');
+                        } else {
+                            showToast('剪贴板为空');
+                        }
+                    } catch {
+                        showToast('无法读取剪贴板，请手动粘贴');
+                    }
+                });
+
+                updateEncryptBtn();
+                updateDecryptBtn();
+            },
             // ⚡ ====================== YouTube 查询模块（并发优化版） ======================
             initYoutubeModule() {
                 const fetchBtn = document.getElementById('youtubeFetchBtn');
