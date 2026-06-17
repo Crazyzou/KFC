@@ -3267,6 +3267,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                 const decryptOutput = document.getElementById('cipher-decrypt-output');
                 const pasteBtn = document.getElementById('cipher-paste-btn');
 
+                // Tab 切换
                 tabBtns.forEach(btn => {
                     btn.addEventListener('click', function () {
                         tabBtns.forEach(b => b.classList.remove('active'));
@@ -3282,6 +3283,7 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                 encryptInput.addEventListener('input', updateEncryptBtn);
                 decryptInput.addEventListener('input', updateDecryptBtn);
 
+                // ========== 加密：生成密文后自动复制到剪贴板 ==========
                 encryptBtn.addEventListener('click', async function () {
                     if (encryptBtn.disabled) return;
                     encryptBtn.disabled = true;
@@ -3295,68 +3297,90 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                         const hanzi = bytesToHanzi(encrypted);
                         encryptOutput.textContent = hanzi;
                         encryptResultArea.style.display = 'block';
-                        showToast('密文已生成，可复制发送');
+
+                        // ★ 自动复制到剪贴板
+                        await navigator.clipboard.writeText(hanzi);
+                        showToast('✅ 密文已生成并自动复制到剪贴板');
                     } catch (err) {
                         showToast('加密失败：' + err.message);
                     } finally {
                         encryptBtn.disabled = false;
-                        encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密</span>';
+                        encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
                         updateEncryptBtn();
                     }
                 });
 
+                // 手动复制按钮（保留，以防自动复制失败）
                 copyBtn.addEventListener('click', async function () {
-                    const text = encryptOutput.textContent;
+                    const text = encryptOutput.textContent.trim();
                     if (!text) return;
-                    await copyToClipboard(text);
+                    await navigator.clipboard.writeText(text);
                     showToast('密文已复制');
                 });
 
-                decryptBtn.addEventListener('click', async function () {
+                // ========== 解密核心函数（复用） ==========
+                async function performDecrypt() {
                     if (decryptBtn.disabled) return;
                     decryptBtn.disabled = true;
                     decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
                     decryptResultArea.style.display = 'none';
                     try {
-                        const hanziStr = decryptInput.value.trim();
-                        const combined = hanziToBytes(hanziStr);
+                        const rawStr = decryptInput.value;
+                        let cleanedStr = '';
+                        for (const ch of rawStr) {
+                            if (HANZI_TO_BYTE[ch] !== undefined) cleanedStr += ch;
+                        }
+                        if (cleanedStr.length === 0) throw new Error('未识别到有效密文字符');
+
+                        const combined = hanziToBytes(cleanedStr);
                         const key = await deriveKey(getTodayKey());
                         const plainBytes = await decryptBytes(combined, key);
                         const plaintext = new TextDecoder().decode(plainBytes);
                         decryptOutput.textContent = plaintext;
                         decryptResultArea.style.display = 'block';
-                        showToast('解密成功');
+                        showToast('✅ 解密成功');
                     } catch (err) {
                         let msg = err.message;
-                        if (msg.includes('decrypt') || msg.includes('operation')) msg = '解密失败：密文已过期或密钥不匹配。';
-                        else if (msg.includes('有效密文字符')) msg = '未识别到有效密文，请完整复制。';
+                        if (msg.includes('decrypt') || msg.includes('operation')) {
+                            msg = '解密失败：密文可能已过期或密钥不匹配';
+                        } else if (msg.includes('有效密文字符')) {
+                            msg = '未检测到有效密文，请确保完整复制';
+                        }
                         showToast('❌ ' + msg);
                     } finally {
                         decryptBtn.disabled = false;
                         decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
                         updateDecryptBtn();
                     }
-                });
+                }
 
+                // 解密按钮点击 
+                decryptBtn.addEventListener('click', performDecrypt);
+
+                // ========== 粘贴：粘贴后自动解密 ==========
                 pasteBtn.addEventListener('click', async function () {
                     try {
                         const text = await navigator.clipboard.readText();
                         if (text && text.trim()) {
                             decryptInput.value = text.trim();
                             updateDecryptBtn();
-                            showToast('已粘贴密文，点击解密按钮');
+                            showToast('📥 已粘贴，自动解密中…');
+                            // ★ 粘贴后自动解密
+                            await performDecrypt();
                         } else {
                             showToast('剪贴板为空');
                         }
                     } catch {
-                        showToast('无法读取剪贴板，请手动粘贴');
+                        showToast('无法读取剪贴板，请手动粘贴后点击解密');
                     }
                 });
 
+                // 加密按钮文字更新
+                encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
+
                 updateEncryptBtn();
                 updateDecryptBtn();
-            },
-            // ⚡ ====================== YouTube 查询模块（并发优化版） ======================
+            }, // ⚡ ====================== YouTube 查询模块（并发优化版） ======================
             initYoutubeModule() {
                 const fetchBtn = document.getElementById('youtubeFetchBtn');
                 const urlInput = document.getElementById('youtubeUrls');
