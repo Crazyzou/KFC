@@ -3403,7 +3403,7 @@ updateTimeWindow();
         }
  
         if (plaintext === null) {
-            throw new Error('解密失败：密文已过期或密钥不匹配（超过40分钟）');
+            throw new Error('解密失败：该密钥已销毁）');
         }
  
         decryptOutput.textContent = plaintext;
