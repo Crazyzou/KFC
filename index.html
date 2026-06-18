@@ -2428,7 +2428,7 @@
             <div class="tool-card" data-target="panel4">
                 <div class="card-header">
                     <div class="card-title"><span class="icon"><i class="fas fa-lock"></i></span>密语编码器</div>
-                    <div class="card-desc">明文 ↔ 密文 · 汉字伪装 · 无痕加密</div>
+                    <div class="card-desc">明文 ↔ 密文</div>
                 </div>
             </div>
             <div class="tool-card" data-target="panel5">
@@ -2796,7 +2796,7 @@ function getKeyForTime(date) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
-    const block = Math.floor(date.getMinutes() / 20) * 20;
+    const block = Math.floor(date.getMinutes() / 10) * 10;  // ← 改为 10 
     const mins = String(block).padStart(2, '0');
     return `${year}-${month}-${day}-${hours}-${mins}`;
 }
@@ -3312,22 +3312,20 @@ function getKeyForTime(date) {
                 function updateEncryptBtn() { encryptBtn.disabled = !encryptInput.value.trim(); }
                 function updateDecryptBtn() { decryptBtn.disabled = !decryptInput.value.trim(); }
 
-// 更新时间窗口显示 
 function updateTimeWindow() {
     const d = new Date();
     const h = String(d.getHours()).padStart(2, '0');
-    const block = Math.floor(d.getMinutes() / 20) * 20;
+    const block = Math.floor(d.getMinutes() / 10) * 10;  // ← 10 分钟窗口 
     const m = String(block).padStart(2, '0');
-    const nextBlock = (block + 20) % 60;
-    const nextH = block + 20 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
+    const nextBlock = (block + 10) % 60;                 // ← 下一个 10 分钟 
+    const nextH = block + 10 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
     const nextM = String(nextBlock).padStart(2, '0');
     const text = `${h}:${m} → ${nextH}:${nextM}`;
     const elEncrypt = document.getElementById('cipher-key-window-encrypt');
     const elDecrypt = document.getElementById('cipher-key-window-decrypt');
     if (elEncrypt) elEncrypt.textContent = text;
     if (elDecrypt) elDecrypt.textContent = text;
-    // 计算剩余秒数，到点自动刷新
-    const remaining = ((20 - (d.getMinutes() % 20)) * 60) - d.getSeconds();
+    const remaining = ((10 - (d.getMinutes() % 10)) * 60) - d.getSeconds();  // ← 10 分钟周期 
     setTimeout(updateTimeWindow, (remaining + 1) * 1000);
 }
 updateTimeWindow();
@@ -3384,14 +3382,13 @@ updateTimeWindow();
         if (cleanedStr.length === 0) throw new Error('未识别到有效密文字符');
  
         const combined = hanziToBytes(cleanedStr);
- 
-        // 尝试多个时间窗口：当前、前20分钟、后20分钟 
+
         const now = new Date();
         const candidateKeys = [
-            getKeyForTime(now),
-            getKeyForTime(new Date(now.getTime() - 20 * 60 * 1000)),
-            getKeyForTime(new Date(now.getTime() + 20 * 60 * 1000))
-        ];
+    getKeyForTime(now),
+    getKeyForTime(new Date(now.getTime() - 10 * 60 * 1000)),  // ← 前 10 分钟 
+    getKeyForTime(new Date(now.getTime() + 10 * 60 * 1000))   // ← 后 10 分钟 
+];
  
         let plaintext = null;
         for (const dateStr of candidateKeys) {
