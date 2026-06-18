@@ -2535,6 +2535,9 @@ https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
 
                     <!-- 加密面板 -->
                     <div class="cipher-panel active" id="cipher-encrypt-panel">
+                        <div class="cipher-time-hint" id="cipher-time-hint-encrypt">
+    ⏱ 当前密钥窗口：<strong id="cipher-key-window-encrypt"></strong>
+</div>
                         <div class="cipher-card">
                             <div class="cipher-card-header">
                                 <div class="cipher-step-badge">1</div>
@@ -2563,6 +2566,9 @@ https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
 
                     <!-- 解密面板 -->
                     <div class="cipher-panel" id="cipher-decrypt-panel" style="display:none;">
+                        <div class="cipher-time-hint" id="cipher-time-hint-decrypt">
+    ⏱ 当前密钥窗口：<strong id="cipher-key-window-decrypt"></strong>
+</div>
                         <div class="cipher-card">
                             <div class="cipher-card-header">
                                 <div class="cipher-step-badge">1</div>
@@ -2782,9 +2788,18 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
         HANZI.forEach((h, i) => { HANZI_TO_BYTE[h] = i; });
 
         function getTodayKey() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+    return getKeyForTime(new Date());
+}
+ 
+function getKeyForTime(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const block = Math.floor(date.getMinutes() / 20) * 20;
+    const mins = String(block).padStart(2, '0');
+    return `${year}-${month}-${day}-${hours}-${mins}`;
+}
 
         async function deriveKey(dateStr) {
             const enc = new TextEncoder();
@@ -3296,6 +3311,27 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
 
                 function updateEncryptBtn() { encryptBtn.disabled = !encryptInput.value.trim(); }
                 function updateDecryptBtn() { decryptBtn.disabled = !decryptInput.value.trim(); }
+
+// 更新时间窗口显示 
+function updateTimeWindow() {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const block = Math.floor(d.getMinutes() / 20) * 20;
+    const m = String(block).padStart(2, '0');
+    const nextBlock = (block + 20) % 60;
+    const nextH = block + 20 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
+    const nextM = String(nextBlock).padStart(2, '0');
+    const text = `${h}:${m} → ${nextH}:${nextM}`;
+    const elEncrypt = document.getElementById('cipher-key-window-encrypt');
+    const elDecrypt = document.getElementById('cipher-key-window-decrypt');
+    if (elEncrypt) elEncrypt.textContent = text;
+    if (elDecrypt) elDecrypt.textContent = text;
+    // 计算剩余秒数，到点自动刷新
+    const remaining = ((20 - (d.getMinutes() % 20)) * 60) - d.getSeconds();
+    setTimeout(updateTimeWindow, (remaining + 1) * 1000);
+}
+updateTimeWindow();
+                
                 encryptInput.addEventListener('input', updateEncryptBtn);
                 decryptInput.addEventListener('input', updateDecryptBtn);
 
@@ -3334,41 +3370,56 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                     showToast('密文已复制');
                 });
 
-                // ========== 解密核心函数（复用） ==========
                 async function performDecrypt() {
-                    if (decryptBtn.disabled) return;
-                    decryptBtn.disabled = true;
-                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
-                    decryptResultArea.style.display = 'none';
-                    try {
-                        const rawStr = decryptInput.value;
-                        let cleanedStr = '';
-                        for (const ch of rawStr) {
-                            if (HANZI_TO_BYTE[ch] !== undefined) cleanedStr += ch;
-                        }
-                        if (cleanedStr.length === 0) throw new Error('未识别到有效密文字符');
-
-                        const combined = hanziToBytes(cleanedStr);
-                        const key = await deriveKey(getTodayKey());
-                        const plainBytes = await decryptBytes(combined, key);
-                        const plaintext = new TextDecoder().decode(plainBytes);
-                        decryptOutput.textContent = plaintext;
-                        decryptResultArea.style.display = 'block';
-                        showToast('✅ 解密成功');
-                    } catch (err) {
-                        let msg = err.message;
-                        if (msg.includes('decrypt') || msg.includes('operation')) {
-                            msg = '解密失败：密文可能已过期或密钥不匹配';
-                        } else if (msg.includes('有效密文字符')) {
-                            msg = '未检测到有效密文，请确保完整复制';
-                        }
-                        showToast('❌ ' + msg);
-                    } finally {
-                        decryptBtn.disabled = false;
-                        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-                        updateDecryptBtn();
-                    }
-                }
+    if (decryptBtn.disabled) return;
+    decryptBtn.disabled = true;
+    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
+    decryptResultArea.style.display = 'none';
+    try {
+        const rawStr = decryptInput.value;
+        let cleanedStr = '';
+        for (const ch of rawStr) {
+            if (HANZI_TO_BYTE[ch] !== undefined) cleanedStr += ch;
+        }
+        if (cleanedStr.length === 0) throw new Error('未识别到有效密文字符');
+ 
+        const combined = hanziToBytes(cleanedStr);
+ 
+        // 尝试多个时间窗口：当前、前20分钟、后20分钟 
+        const now = new Date();
+        const candidateKeys = [
+            getKeyForTime(now),
+            getKeyForTime(new Date(now.getTime() - 20 * 60 * 1000)),
+            getKeyForTime(new Date(now.getTime() + 20 * 60 * 1000))
+        ];
+ 
+        let plaintext = null;
+        for (const dateStr of candidateKeys) {
+            try {
+                const key = await deriveKey(dateStr);
+                const plainBytes = await decryptBytes(combined, key);
+                plaintext = new TextDecoder().decode(plainBytes);
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+ 
+        if (plaintext === null) {
+            throw new Error('解密失败：密文已过期或密钥不匹配（超过40分钟）');
+        }
+ 
+        decryptOutput.textContent = plaintext;
+        decryptResultArea.style.display = 'block';
+        showToast('✅ 解密成功');
+    } catch (err) {
+        showToast('❌ ' + err.message);
+    } finally {
+        decryptBtn.disabled = false;
+        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+        updateDecryptBtn();
+    }
+}
 
                 // 解密按钮点击 
                 decryptBtn.addEventListener('click', performDecrypt);
