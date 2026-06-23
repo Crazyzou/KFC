@@ -1,6 +1,6 @@
-@echo off 
-cd /d "C:\Users\Tower\Documents\工具箱"
+@echo off
+cd "C:\Users\Tower\Documents\工具箱"
 git add .
 git commit -m "update %date% %time%"
-git push origin main 
-pause 
+git push origin main
+pause
