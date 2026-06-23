@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wow工具箱</title>
+    <link rel="icon" href="https://i.pinimg.com/originals/5c/2b/20/5c2b2023053650ec890d690da18880fa.jpg"
+        type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js">
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- ========== 左侧功能选择区 ========== -->
+        <div class="function-area">
+            <header>
+                <h1>Wow工具集合</h1>
+                <p class="subtitle">常用的一些工具的集合</p>
+            </header>
+            <div class="tool-card" data-target="panel1">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon"><i class="fas fa-align-left"></i></span>翻译结果分行</div>
+                    <div class="card-desc">识别语言并分行</div>
+                </div>
+            </div>
+            <div class="tool-card" data-target="panel2">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon"><i class="fas fa-link"></i></span>Wow链接填表</div>
+                    <div class="card-desc">把发给运营的发给我</div>
+                </div>
+            </div>
+            <div class="tool-card" data-target="panel3">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon"><i class="fas fa-magic"></i></span>广告文案优化</div>
+                    <div class="card-desc">把文案给我(仅限青少年)</div>
+                </div>
+            </div>
+            <div class="tool-card" data-target="panel4">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon"><i class="fas fa-lock"></i></span>密语编码器</div>
+                    <div class="card-desc">明文 ↔ 密文</div>
+                </div>
+            </div>
+            <div class="tool-card" data-target="panel5">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon" style="background: linear-gradient(135deg, #ff0000, #FF8E8E);"><i
+                                class="fab fa-youtube"></i></span>
+                        YouTube数据查询<span class="speed-badge">⚡极速版</span>
+                    </div>
+                    <div class="card-desc">批量查询视频播放量、缩略图等数据</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 右侧结果展示区 ========== -->
+        <div class="result-area" id="resultArea">
+            <div class="empty-tip" id="emptyTip">
+                <i class="fas fa-hand-pointer"></i>
+                请选择左侧的功能开始操作
+            </div>
+
+            <!-- 面板1：翻译结果分行 -->
+            <div class="function-panel" id="panel1">
+                <div class="input-group">
+                    <label for="text-separator-input"><i class="fas fa-info-circle"></i>输入需要分隔的文本</label>
+                    <textarea id="text-separator-input" placeholder="例如: 你好,世界"></textarea>
+                </div>
+                <button class="btn" id="text-separator-btn">
+                    <span class="btn-content"><i class="fas fa-cut"></i>分隔文本并识别语言</span>
+                </button>
+                <div class="loading" id="separator-loading">
+                    <div class="spinner"></div>正在全速处理中...
+                </div>
+                <div class="lang-result-box" id="lang-detection-result-container" style="display: none;">
+                    <div class="lang-result-label"><i class="fas fa-language"></i>识别到的语言</div>
+                    <div class="lang-result-value" id="lang-detection-result"></div>
+                </div>
+                <div class="result-container" id="text-separator-result-container" style="display: none;">
+                    <div class="result-header">分隔结果<button class="copy-btn"
+                            onclick="copyToClipboard('text-separator-result')"><i class="far fa-copy"></i>复制全部</button>
+                    </div>
+                    <div class="result-content" id="text-separator-result"></div>
+                </div>
+            </div>
+
+            <!-- 面板2：Wow链接填表 -->
+            <div class="function-panel" id="panel2">
+                <div class="input-group">
+                    <label for="link-lang-input"><i class="fas fa-info-circle"></i>输入包含链接的文本</label>
+                    <textarea id="link-lang-input"
+                        placeholder="例如: zoo  译  @孟详皓（复活吧我的频道）&#10;ro&#10;https://youtube.com/shorts/3VCOED36B58&#10;ar&#10;https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; margin-bottom: 10px;">
+                    <button class="btn" id="link-lang-btn" style="flex: 1;"><span class="btn-content"><i
+                                class="fas fa-extract"></i>提取链接和语言</span></button>
+                    <button class="btn" id="sort-link-lang-btn" style="flex: 1;"><span class="btn-content"><i
+                                class="fas fa-sort"></i>一键整理</span></button>
+                </div>
+                <div class="loading" id="link-lang-loading">
+                    <div class="spinner"></div>正在提取...
+                </div>
+                <div class="result-container" id="link-lang-result-container" style="display: none;">
+                    <div class="result-header">提取结果</div>
+                    <div class="result-content" style="padding:0;">
+                        <table class="link-lang-table" id="link-lang-table">
+                            <thead>
+                                <tr>
+                                    <th>链接<button class="header-copy-btn" id="copy-all-links"><i
+                                                class="far fa-copy"></i>复制</button></th>
+                                    <th>语言<button class="header-copy-btn" id="copy-all-langs"><i
+                                                class="far fa-copy"></i>复制</button></th>
+                                </tr>
+                            </thead>
+                            <tbody id="link-lang-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 面板3：广告文案优化 -->
+            <div class="function-panel" id="panel3">
+                <div class="input-group">
+                    <label for="ad-text-input"><i class="fas fa-info-circle"></i>输入需要优化的广告文案</label>
+                    <textarea id="ad-text-input" placeholder="例如: design your skin for roblox"></textarea>
+                </div>
+                <button class="btn" id="ad-text-btn"><span class="btn-content"><i
+                            class="fas fa-wand-magic-sparkles"></i>优化文案</span></button>
+                <div class="loading" id="ad-text-loading">
+                    <div class="spinner"></div>正在优化...
+                </div>
+                <div id="ad-text-results-container" style="display: none;margin-top: 1.5em;"></div>
+            </div>
+
+            <!-- 面板4：密语编码器 -->
+            <div class="function-panel" id="panel4">
+                <div class="cipher-wrapper">
+                    <div class="cipher-tab-bar">
+                        <button class="cipher-tab active" data-cipher-tab="encrypt"><i class="fas fa-lock"></i><span>明文
+                                → 密文</span></button>
+                        <button class="cipher-tab" data-cipher-tab="decrypt"><i class="fas fa-unlock"></i><span>密文 →
+                                明文</span></button>
+                    </div>
+                    <div class="cipher-panel active" id="cipher-encrypt-panel">
+                        <div class="cipher-time-hint" id="cipher-time-hint-encrypt">⏱ 当前密钥窗口：<strong
+                                id="cipher-key-window-encrypt"></strong></div>
+                        <div class="cipher-card">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge">1</div><span>输入明文内容</span>
+                            </div>
+                            <textarea id="cipher-encrypt-input" class="cipher-textarea"
+                                placeholder="输入要加密的内容（支持中文、英文、emoji、特殊符号）…" rows="3"></textarea>
+                        </div>
+                        <button class="cipher-btn-primary" id="cipher-encrypt-btn" disabled><i class="fas fa-lock"></i>
+                            加密生成密文</button>
+                        <div class="cipher-card" id="cipher-encrypt-result-area" style="display:none;">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge done">✓</div><span>密文结果</span><span
+                                    class="cipher-badge-tag">古文伪装</span>
+                            </div>
+                            <div class="cipher-output-box">
+                                <div class="cipher-output-text" id="cipher-encrypt-output"></div><button
+                                    class="cipher-copy-btn" id="cipher-copy-btn"><i class="far fa-copy"></i> 复制</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cipher-panel" id="cipher-decrypt-panel" style="display:none;">
+                        <div class="cipher-time-hint" id="cipher-time-hint-decrypt">⏱ 当前密钥窗口：<strong
+                                id="cipher-key-window-decrypt"></strong></div>
+                        <div class="cipher-card">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge">1</div><span>输入密文</span>
+                            </div>
+                            <textarea id="cipher-decrypt-input" class="cipher-textarea cipher-mono"
+                                placeholder="在此粘贴密文（自动过滤标点、空格等无关字符）…" rows="3"></textarea>
+                            <div class="cipher-card-actions"><button class="cipher-btn-paste" id="cipher-paste-btn"><i
+                                        class="fas fa-paste"></i> 从剪贴板粘贴</button></div>
+                        </div>
+                        <button class="cipher-btn-primary" id="cipher-decrypt-btn" disabled><i
+                                class="fas fa-unlock"></i> 解密密文</button>
+                        <div class="cipher-card" id="cipher-decrypt-result-area" style="display:none;">
+                            <div class="cipher-card-header">
+                                <div class="cipher-step-badge done">✓</div><span>解密结果</span>
+                            </div>
+                            <div class="cipher-output-box decrypted" id="cipher-decrypt-output"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 面板5：YouTube数据查询 -->
+            <div class="function-panel" id="panel5">
+                <div class="youtube-container">
+                    <div class="youtube-input-area">
+                        <div class="input-group">
+                            <label><i class="fab fa-youtube" style="color: #ff0000;"></i>输入 YouTube 视频链接（每行一个）</label>
+                            <textarea class="youtube-textarea" id="youtubeUrls"
+                                placeholder="支持格式：&#10;普通视频: https://www.youtube.com/watch?v=dQw4w9WgXcQ&#10; 短链接: https://youtu.be/dQw4w9WgXcQ&#10;Shorts:  https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
+                        </div>
+                        <button class="youtube-btn" id="youtubeFetchBtn"><i class="fas fa-search"></i>批量查询</button>
+                        <button class="youtube-btn youtube-btn-convert" id="convertToShortBtn"><i
+                                class="fab fa-youtube"></i>一键转 Shorts</button>
+                        <button class="youtube-btn youtube-btn-clear" id="clearYoutubeInputBtn"><i
+                                class="fas fa-trash-alt"></i>清空</button>
+                        <button class="youtube-btn youtube-btn-history" id="historyBtn"><i
+                                class="fas fa-history"></i>历史查询</button>
+                        <div class="youtube-progress-container" id="youtubeProgressContainer">
+                            <div class="youtube-progress-info"><span id="youtubeProgressText">准备查询</span><span
+                                    id="youtubeProgressCount">0/0</span></div>
+                            <div class="youtube-progress-bar">
+                                <div class="youtube-progress" id="youtubeProgressBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="youtube-results-area" id="youtubeResultsArea">
+                        <div class="empty-state"
+                            style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fab fa-youtube"
+                                style="font-size: 3rem; margin-bottom: 15px; color: var(--border-color);"></i>
+                            <p>查询结果将显示在这里</p>
+                        </div>
+                    </div>
+                    <button class="back-to-top-btn" id="backToTopBtn" title="回到顶部"><i
+                            class="fas fa-arrow-up"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 叠加层：视频播放器 ========== -->
+    <div id="videoPlayerOverlay">
+        <div style="position: relative; width: 80%; max-width: 900px;">
+            <button class="youtube-close-btn" id="closePlayer">×</button>
+            <div id="playerContainer"></div>
+        </div>
+    </div>
+
+    <!-- ========== 叠加层：下载进度 ========== -->
+    <div class="youtube-download-progress" id="downloadProgress">
+        <div class="youtube-progress-info"><span id="downloadProgressText">准备下载</span><span
+                id="downloadProgressPercent">0%</span></div>
+        <div class="youtube-progress-bar">
+            <div class="youtube-progress" id="downloadProgressBar" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- ========== Toast提示 ========== -->
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMessage">已复制到剪贴板</span></div>
+
+    <!-- ========== Shorts播放器叠加层 ========== -->
+    <div id="shortsPlayerOverlay" class="shorts-overlay">
+        <div class="shorts-container">
+            <div class="shorts-video-wrapper">
+                <div id="shortsPlayerIframe"></div>
+                <img id="shortsThumbBackground" class="shorts-thumb-bg" src="" style="display: none;">
+                <div class="shorts-play-hint" id="shortsPlayHint"><svg viewBox="0 0 24 24">
+                        <polygon points="5,3 19,12 5,21" fill="#fff" />
+                    </svg></div>
+            </div>
+            <div class="shorts-bottom-gradient"></div>
+            <div class="shorts-action-bar">
+                <div class="shorts-action-item"><button class="shorts-action-btn" id="shortsLikeBtn"><svg
+                            viewBox="0 0 24 24">
+                            <path
+                                d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z" />
+                        </svg></button><span class="shorts-action-label" id="shortsLikeCount">0</span></div>
+                <div class="shorts-action-item"><button class="shorts-action-btn" id="shortsCommentBtn"><svg
+                            viewBox="0 0 24 24">
+                            <path
+                                d="M20,2H4C2.9,2,2,2.9,2,4v12c0,1.1,0.9,2,2,2h14l4,4V4C22,2.9,21.1,2,20,2z M18,14H6v-2h12V14z M18,11H6V9h12V11z M18,8H6V6h12V8z" />
+                        </svg></button><span class="shorts-action-label" id="shortsCommentCount">0</span></div>
+                <div class="shorts-action-item"><button class="shorts-action-btn" id="shortsShareBtn"><svg
+                            viewBox="0 0 24 24">
+                            <path
+                                d="M18,16.08c-0.76,0-1.44,0.3-1.96,0.77L8.91,12.7c0.05-0.23,0.09-0.46,0.09-0.7s-0.04-0.47-0.09-0.7l7.05-4.11c0.54,0.5,1.25,0.81,2.04,0.81c1.66,0,3-1.34,3-3s-1.34-3-3-3s-3,1.34-3,3c0,0.24,0.04,0.47,0.09,0.7L8.04,9.81C7.5,9.31,6.79,9,6,9c-1.66,0-3,1.34-3,3s1.34,3,3,3c0.79,0,1.5-0.31,2.04-0.81l7.12,4.16c-0.05,0.21-0.08,0.43-0.08,0.65c0,1.61,1.31,2.92,2.92,2.92s2.92-1.31,2.92-2.92S19.61,16.08,18,16.08z" />
+                        </svg></button><span class="shorts-action-label">分享</span></div>
+            </div>
+            <div class="shorts-info-panel">
+                <div class="shorts-channel-row">
+                    <div class="shorts-channel-avatar" id="shortsChannelAvatar"></div><span
+                        class="shorts-channel-name-bottom" id="shortsChannelNameBottom"></span><button
+                        class="shorts-subscribe-btn" id="shortsSubscribeBtn">订阅</button>
+                </div>
+                <div class="shorts-stats-row"><span id="shortsViewCountBadge" class="shorts-stat-badge">👁 0</span><span
+                        id="shortsLikeCountBadge" class="shorts-stat-badge">👍 0</span></div>
+            </div>
+            <button class="shorts-close-btn" onclick="closeShortsPlayer()">×</button>
+        </div>
+    </div>
+
+    <!-- ========== 历史记录弹窗 ========== -->
+    <div id="historyOverlay" class="history-overlay" style="display:none;">
+        <div class="history-modal">
+            <div class="history-header">
+                <h3><i class="fas fa-history"></i> 查询历史</h3><button class="history-close-btn"
+                    onclick="closeHistory()">×</button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+            <div class="history-detail" id="historyDetail" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- ========== JS 模块（按依赖顺序加载） ========== -->
+    <script src="./js/config.js"></script>
+    <script src="./js/cipher.js"></script>
+    <script src="./js/youtube.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+
+</html>
