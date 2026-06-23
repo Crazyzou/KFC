@@ -2536,8 +2536,8 @@ https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
                     <!-- 加密面板 -->
                     <div class="cipher-panel active" id="cipher-encrypt-panel">
                         <div class="cipher-time-hint" id="cipher-time-hint-encrypt">
-    ⏱ 当前密钥窗口：<strong id="cipher-key-window-encrypt"></strong>
-</div>
+                            ⏱ 当前密钥窗口：<strong id="cipher-key-window-encrypt"></strong>
+                        </div>
                         <div class="cipher-card">
                             <div class="cipher-card-header">
                                 <div class="cipher-step-badge">1</div>
@@ -2567,8 +2567,8 @@ https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
                     <!-- 解密面板 -->
                     <div class="cipher-panel" id="cipher-decrypt-panel" style="display:none;">
                         <div class="cipher-time-hint" id="cipher-time-hint-decrypt">
-    ⏱ 当前密钥窗口：<strong id="cipher-key-window-decrypt"></strong>
-</div>
+                            ⏱ 当前密钥窗口：<strong id="cipher-key-window-decrypt"></strong>
+                        </div>
                         <div class="cipher-card">
                             <div class="cipher-card-header">
                                 <div class="cipher-step-badge">1</div>
@@ -2788,18 +2788,18 @@ Shorts: https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
         HANZI.forEach((h, i) => { HANZI_TO_BYTE[h] = i; });
 
         function getTodayKey() {
-    return getKeyForTime(new Date());
-}
- 
-function getKeyForTime(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const block = Math.floor(date.getMinutes() / 10) * 10;  // ← 改为 10 
-    const mins = String(block).padStart(2, '0');
-    return `${year}-${month}-${day}-${hours}-${mins}`;
-}
+            return getKeyForTime(new Date());
+        }
+
+        function getKeyForTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const block = Math.floor(date.getMinutes() / 10) * 10;  // ← 改为 10 
+            const mins = String(block).padStart(2, '0');
+            return `${year}-${month}-${day}-${hours}-${mins}`;
+        }
 
         async function deriveKey(dateStr) {
             const enc = new TextEncoder();
@@ -3282,6 +3282,8 @@ function getKeyForTime(date) {
                 });
             },
             initCipherModule() {
+                const API_BASE = 'https://tower-pc.tail3cd725.ts.net';  // 你的 Tailscale 地址 
+
                 const tabBtns = document.querySelectorAll('[data-cipher-tab]');
                 const panels = {
                     encrypt: document.getElementById('cipher-encrypt-panel'),
@@ -3298,7 +3300,137 @@ function getKeyForTime(date) {
                 const decryptOutput = document.getElementById('cipher-decrypt-output');
                 const pasteBtn = document.getElementById('cipher-paste-btn');
 
-                // Tab 切换
+                // ========== 本地备用汉字集（百家姓，与云端千字文完全不相交） ==========
+                const LOCAL_HANZI = [
+                    '赵', '钱', '孙', '吴', '郑', '冯', '陈', '褚', '卫', '蒋',
+                    '沈', '韩', '杨', '朱', '秦', '尤', '许', '何', '施', '曹',
+                    '华', '魏', '戚', '谢', '邹', '喻', '柏', '窦', '苏', '潘',
+                    '葛', '奚', '范', '彭', '郎', '鲁', '韦', '昌', '苗', '花',
+                    '俞', '任', '袁', '柳', '鲍', '费', '廉', '岑', '薛', '雷',
+                    '贺', '滕', '罗', '毕', '郝', '邬', '安', '乐', '于', '傅',
+                    '皮', '卞', '齐', '康', '伍', '卜', '顾', '孟', '和', '穆',
+                    '萧', '尹', '姚', '邵', '湛', '汪', '祁', '狄', '米', '贝',
+                    '明', '臧', '计', '戴', '宋', '茅', '庞', '熊', '纪', '舒',
+                    '屈', '项', '祝', '董', '梁', '杜', '阮', '闵', '季', '麻',
+                    '强', '贾', '路', '危', '江', '童', '颜', '郭', '梅', '盛',
+                    '林', '刁', '钟', '徐', '邱', '骆', '高', '夏', '蔡', '田',
+                    '樊', '胡', '凌', '霍', '支', '柯', '管', '卢', '经', '房',
+                    '裘', '缪', '解', '应', '宗', '丁', '宣', '贲', '邓', '单',
+                    '杭', '包', '诸', '左', '石', '崔', '吉', '钮', '龚', '程',
+                    '邢', '滑', '裴', '陆', '荣', '翁', '荀', '惠', '甄', '家',
+                    '封', '芮', '羿', '储', '靳', '汲', '邴', '糜', '松', '井',
+                    '段', '富', '巫', '乌', '焦', '巴', '弓', '牧', '隗', '山',
+                    '车', '侯', '宓', '蓬', '全', '郗', '班', '仰', '仲', '伊',
+                    '宫', '宁', '仇', '栾', '暴', '甘', '钭', '祖', '武', '符',
+                    '刘', '詹', '束', '叶', '幸', '司', '韶', '郜', '薄', '印',
+                    '怀', '蒲', '台', '鄂', '索', '卓', '蔺', '屠', '蒙', '池',
+                    '乔', '胥', '苍', '双', '莘', '党', '翟', '谭', '贡', '劳',
+                    '逄', '姬', '申', '扶', '堵', '冉', '郦', '雍', '桑', '桂',
+                    '濮', '牛', '寿', '通', '边', '扈', '燕', '冀', '郏', '浦',
+                    '尚', '农', '温', '别', '庄', '晏', '柴', '瞿', '阎', '充'
+                ];
+                const LOCAL_HANZI_TO_BYTE = {};
+                LOCAL_HANZI.forEach((h, i) => { LOCAL_HANZI_TO_BYTE[h] = i; });
+
+                // 判断密文属于哪套汉字集 
+                function detectCipherSet(text) {
+                    let allInLocal = true;
+                    let allInCloud = true;
+                    for (const ch of text) {
+                        if (LOCAL_HANZI_TO_BYTE[ch] === undefined) allInLocal = false;
+                        if (HANZI_TO_BYTE[ch] === undefined) allInCloud = false;
+                    }
+                    if (allInLocal) return 'local';
+                    if (allInCloud) return 'cloud';
+                    return 'unknown';
+                }
+
+                // ========== 本地备用加解密（AES-CBC + 三字经） ==========
+                const LOCAL_PASSWORD_SUFFIX = 'LocalFallback2025!#$';
+                const LOCAL_SALT_STR = 'LocalSalt_Xyz_2025';
+
+                async function deriveLocalKey(dateStr) {
+                    const enc = new TextEncoder();
+                    const password = enc.encode(dateStr + LOCAL_PASSWORD_SUFFIX);
+                    const salt = enc.encode(LOCAL_SALT_STR);
+                    const km = await crypto.subtle.importKey('raw', password, { name: 'PBKDF2' }, false, ['deriveKey']);
+                    return crypto.subtle.deriveKey(
+                        { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+                        km,
+                        { name: 'AES-CBC', length: 256 },
+                        false,
+                        ['encrypt', 'decrypt']
+                    );
+                }
+
+                async function localEncrypt(plaintext) {
+                    const key = await deriveLocalKey(getTodayKey());
+                    const enc = new TextEncoder();
+                    const plainBytes = enc.encode(plaintext);
+                    const iv = crypto.getRandomValues(new Uint8Array(16));
+                    const ct = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, plainBytes);
+                    const combined = new Uint8Array(iv.length + ct.byteLength);
+                    combined.set(iv, 0);
+                    combined.set(new Uint8Array(ct), iv.length);
+                    let result = '';
+                    for (let i = 0; i < combined.length; i++) {
+                        result += LOCAL_HANZI[combined[i]];
+                    }
+                    return result;
+                }
+
+                async function localDecrypt(ciphertext) {
+                    const bytes = [];
+                    for (const ch of ciphertext) {
+                        const b = LOCAL_HANZI_TO_BYTE[ch];
+                        if (b !== undefined) bytes.push(b);
+                    }
+                    if (bytes.length < 16) throw new Error('数据不完整（本地密文）');
+                    const combined = new Uint8Array(bytes);
+                    const iv = combined.slice(0, 16);
+                    const ct = combined.slice(16);
+
+                    // 尝试多个时间窗口的密钥（当前、前10分钟、后10分钟）
+                    const dateKeys = [
+                        getTodayKey(),
+                        getKeyForTime(new Date(Date.now() - 10 * 60 * 1000)),  // 前一个窗口 
+                        getKeyForTime(new Date(Date.now() + 10 * 60 * 1000))   // 后一个窗口 
+                    ];
+
+                    for (const dateStr of dateKeys) {
+                        try {
+                            const key = await deriveLocalKey(dateStr);
+                            const plainBytes = await crypto.subtle.decrypt(
+                                { name: 'AES-CBC', iv },
+                                key,
+                                ct
+                            );
+                            return new TextDecoder().decode(plainBytes);
+                        } catch (e) {
+                            continue; // 尝试下一个密钥 
+                        }
+                    }
+                    throw new Error('本地解密失败，所有时间窗口密钥均无效');
+                }
+                // ========== 云端解密（千字文 + AES-GCM，含多时间窗口尝试） ==========
+                async function cloudDecrypt(ciphertext) {
+                    const dateKeys = [
+                        getTodayKey(),
+                        getKeyForTime(new Date(Date.now() - 10 * 60 * 1000)),
+                        getKeyForTime(new Date(Date.now() + 10 * 60 * 1000))
+                    ];
+                    const combined = hanziToBytes(ciphertext); // 全局函数，过滤千字文 
+                    for (const dateStr of dateKeys) {
+                        try {
+                            const key = await deriveKey(dateStr);
+                            const plainBytes = await decryptBytes(combined, key);
+                            return new TextDecoder().decode(plainBytes);
+                        } catch (e) { continue; }
+                    }
+                    throw new Error('云端解密失败，所有密钥均无效');
+                }
+
+                // Tab 切换 
                 tabBtns.forEach(btn => {
                     btn.addEventListener('click', function () {
                         tabBtns.forEach(b => b.classList.remove('active'));
@@ -3312,55 +3444,76 @@ function getKeyForTime(date) {
                 function updateEncryptBtn() { encryptBtn.disabled = !encryptInput.value.trim(); }
                 function updateDecryptBtn() { decryptBtn.disabled = !decryptInput.value.trim(); }
 
-function updateTimeWindow() {
-    const d = new Date();
-    const h = String(d.getHours()).padStart(2, '0');
-    const block = Math.floor(d.getMinutes() / 10) * 10;  // ← 10 分钟窗口 
-    const m = String(block).padStart(2, '0');
-    const nextBlock = (block + 10) % 60;                 // ← 下一个 10 分钟 
-    const nextH = block + 10 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
-    const nextM = String(nextBlock).padStart(2, '0');
-    const text = `${h}:${m} → ${nextH}:${nextM}`;
-    const elEncrypt = document.getElementById('cipher-key-window-encrypt');
-    const elDecrypt = document.getElementById('cipher-key-window-decrypt');
-    if (elEncrypt) elEncrypt.textContent = text;
-    if (elDecrypt) elDecrypt.textContent = text;
-    const remaining = ((10 - (d.getMinutes() % 10)) * 60) - d.getSeconds();  // ← 10 分钟周期 
-    setTimeout(updateTimeWindow, (remaining + 1) * 1000);
-}
-updateTimeWindow();
-                
+                // 时间窗口显示（保留原有逻辑）
+                function updateTimeWindow() {
+                    const d = new Date();
+                    const h = String(d.getHours()).padStart(2, '0');
+                    const block = Math.floor(d.getMinutes() / 10) * 10;
+                    const m = String(block).padStart(2, '0');
+                    const nextBlock = (block + 10) % 60;
+                    const nextH = block + 10 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
+                    const nextM = String(nextBlock).padStart(2, '0');
+                    const text = `${h}:${m} → ${nextH}:${nextM}`;
+                    document.getElementById('cipher-key-window-encrypt').textContent = text;
+                    document.getElementById('cipher-key-window-decrypt').textContent = text;
+                    const remaining = ((10 - (d.getMinutes() % 10)) * 60) - d.getSeconds();
+                    setTimeout(updateTimeWindow, (remaining + 1) * 1000);
+                }
+                updateTimeWindow();
+
                 encryptInput.addEventListener('input', updateEncryptBtn);
                 decryptInput.addEventListener('input', updateDecryptBtn);
 
-                // ========== 加密：生成密文后自动复制到剪贴板 ==========
+                // ========== 加密按钮：API 优先 → 本地备用 ==========
                 encryptBtn.addEventListener('click', async function () {
                     if (encryptBtn.disabled) return;
                     encryptBtn.disabled = true;
                     encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 加密中…</span>';
                     encryptResultArea.style.display = 'none';
-                    try {
-                        const plaintext = encryptInput.value.trim();
-                        const plainBytes = new TextEncoder().encode(plaintext);
-                        const key = await deriveKey(getTodayKey());
-                        const encrypted = await encryptBytes(plainBytes, key);
-                        const hanzi = bytesToHanzi(encrypted);
-                        encryptOutput.textContent = hanzi;
-                        encryptResultArea.style.display = 'block';
+                    const plaintext = encryptInput.value.trim();
+                    let ciphertext = null;
+                    let usedMethod = '';
 
-                        // ★ 自动复制到剪贴板
-                        await navigator.clipboard.writeText(hanzi);
-                        showToast('✅ 密文已生成并自动复制到剪贴板');
-                    } catch (err) {
-                        showToast('加密失败：' + err.message);
-                    } finally {
-                        encryptBtn.disabled = false;
-                        encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
-                        updateEncryptBtn();
+                    // 1. 优先调用本地服务 
+                    try {
+                        const response = await fetch(`${API_BASE}/encrypt`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ plaintext })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.error || '服务端加密失败');
+                        ciphertext = data.ciphertext;
+                        usedMethod = 'cloud';
+                    } catch (apiErr) {
+                        console.warn('API加密失败，切换前端本地加密：', apiErr.message);
+                        // 2. 前端本地备用加密 
+                        try {
+                            ciphertext = await localEncrypt(plaintext);
+                            usedMethod = 'local';
+                        } catch (localErr) {
+                            showToast('加密失败：' + localErr.message);
+                            encryptBtn.disabled = false;
+                            encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
+                            updateEncryptBtn();
+                            return;
+                        }
                     }
+
+                    if (ciphertext) {
+                        encryptOutput.textContent = ciphertext;
+                        encryptResultArea.style.display = 'block';
+                        const methodText = usedMethod === 'cloud' ? '（云）' : '（本地）';
+                        await navigator.clipboard.writeText(ciphertext);
+                        showToast('✅ 密文已生成并复制' + methodText);
+                    }
+
+                    encryptBtn.disabled = false;
+                    encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
+                    updateEncryptBtn();
                 });
 
-                // 手动复制按钮（保留，以防自动复制失败）
+                // 手动复制按钮 
                 copyBtn.addEventListener('click', async function () {
                     const text = encryptOutput.textContent.trim();
                     if (!text) return;
@@ -3368,60 +3521,92 @@ updateTimeWindow();
                     showToast('密文已复制');
                 });
 
+                // ========== 解密核心函数（API 优先 → 自动识别本地兜底） ==========
                 async function performDecrypt() {
-    if (decryptBtn.disabled) return;
-    decryptBtn.disabled = true;
-    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
-    decryptResultArea.style.display = 'none';
-    try {
-        const rawStr = decryptInput.value;
-        let cleanedStr = '';
-        for (const ch of rawStr) {
-            if (HANZI_TO_BYTE[ch] !== undefined) cleanedStr += ch;
-        }
-        if (cleanedStr.length === 0) throw new Error('未识别到有效密文字符');
- 
-        const combined = hanziToBytes(cleanedStr);
+                    if (decryptBtn.disabled) return;
+                    decryptBtn.disabled = true;
+                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
+                    decryptResultArea.style.display = 'none';
 
-        const now = new Date();
-        const candidateKeys = [
-    getKeyForTime(now),
-    getKeyForTime(new Date(now.getTime() - 10 * 60 * 1000)),  // ← 前 10 分钟 
-    getKeyForTime(new Date(now.getTime() + 10 * 60 * 1000))   // ← 后 10 分钟 
-];
- 
-        let plaintext = null;
-        for (const dateStr of candidateKeys) {
-            try {
-                const key = await deriveKey(dateStr);
-                const plainBytes = await decryptBytes(combined, key);
-                plaintext = new TextDecoder().decode(plainBytes);
-                break;
-            } catch (e) {
-                continue;
-            }
-        }
- 
-        if (plaintext === null) {
-            throw new Error('解密失败：该密钥已销毁）');
-        }
- 
-        decryptOutput.textContent = plaintext;
-        decryptResultArea.style.display = 'block';
-        showToast('✅ 解密成功');
-    } catch (err) {
-        showToast('❌ ' + err.message);
-    } finally {
-        decryptBtn.disabled = false;
-        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-        updateDecryptBtn();
-    }
-}
+                    const rawStr = decryptInput.value;
+                    // 过滤：保留两套汉字集的字符 
+                    let cleaned = '';
+                    for (const ch of rawStr) {
+                        if (HANZI_TO_BYTE[ch] !== undefined || LOCAL_HANZI_TO_BYTE[ch] !== undefined) {
+                            cleaned += ch;
+                        }
+                    }
+                    if (cleaned.length === 0) {
+                        showToast('❌ 未识别到有效密文字符');
+                        decryptBtn.disabled = false;
+                        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+                        updateDecryptBtn();
+                        return;
+                    }
+
+                    let plaintext = null;
+                    let usedMethod = '';
+
+                    // 1. 优先调用本地服务解密 
+                    try {
+                        const response = await fetch(`${API_BASE}/decrypt`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ciphertext: cleaned })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.error || '服务端解密失败');
+                        plaintext = data.plaintext;
+                        usedMethod = 'cloud';
+                    } catch (apiErr) {
+                        console.warn('API解密失败，切换前端本地解密：', apiErr.message);
+                        // 2. 前端本地解密，根据汉字集自动选择 
+                        const cipherSet = detectCipherSet(cleaned);
+                        try {
+                            if (cipherSet === 'local') {
+                                plaintext = await localDecrypt(cleaned);
+                                usedMethod = 'local';
+                            } else {
+                                // 可能是云端密文，尝试云端解密（会试试多个时间窗口）
+                                plaintext = await cloudDecrypt(cleaned);
+                                usedMethod = 'local-cloud';
+                            }
+                        } catch (localErr) {
+                            // 如果主方案失败，尝试另一种 
+                            try {
+                                if (cipherSet === 'cloud') {
+                                    plaintext = await localDecrypt(cleaned);
+                                    usedMethod = 'local-fallback';
+                                } else {
+                                    plaintext = await cloudDecrypt(cleaned);
+                                    usedMethod = 'local-cloud-fallback';
+                                }
+                            } catch (finalErr) {
+                                showToast('❌ 解密失败：密文可能已损坏或超出密钥窗口');
+                                decryptBtn.disabled = false;
+                                decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+                                updateDecryptBtn();
+                                return;
+                            }
+                        }
+                    }
+
+                    if (plaintext) {
+                        decryptOutput.textContent = plaintext;
+                        decryptResultArea.style.display = 'block';
+                        const methodText = usedMethod.startsWith('cloud') ? '（云）' : '（本地）';
+                        showToast('✅ 解密成功' + methodText);
+                    }
+
+                    decryptBtn.disabled = false;
+                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+                    updateDecryptBtn();
+                }
 
                 // 解密按钮点击 
                 decryptBtn.addEventListener('click', performDecrypt);
 
-                // ========== 粘贴：粘贴后自动解密 ==========
+                // ========== 粘贴后自动解密 ==========
                 pasteBtn.addEventListener('click', async function () {
                     try {
                         const text = await navigator.clipboard.readText();
@@ -3429,7 +3614,6 @@ updateTimeWindow();
                             decryptInput.value = text.trim();
                             updateDecryptBtn();
                             showToast('📥 已粘贴，自动解密中…');
-                            // ★ 粘贴后自动解密
                             await performDecrypt();
                         } else {
                             showToast('剪贴板为空');
@@ -3439,12 +3623,11 @@ updateTimeWindow();
                     }
                 });
 
-                // 加密按钮文字更新
                 encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
-
                 updateEncryptBtn();
                 updateDecryptBtn();
-            }, // ⚡ ====================== YouTube 查询模块（并发优化版） ======================
+            },
+
             initYoutubeModule() {
                 const fetchBtn = document.getElementById('youtubeFetchBtn');
                 const urlInput = document.getElementById('youtubeUrls');
