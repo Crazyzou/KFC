@@ -223,7 +223,6 @@ const Modules = {
     },
 
     initCipherModule() {
-        const API_BASE = 'https://tower-pc.tail3cd725.ts.net';
         const tabBtns = document.querySelectorAll('[data-cipher-tab]');
         const panels = {
             encrypt: document.getElementById('cipher-encrypt-panel'),
@@ -274,7 +273,7 @@ const Modules = {
         encryptInput.addEventListener('input', updateEncryptBtn);
         decryptInput.addEventListener('input', updateDecryptBtn);
 
-        // ====================== 加密 ======================
+        // ====================== 加密 调用CloudCipher（自动ECDH协商） ======================
         encryptBtn.addEventListener('click', async () => {
             if (encryptBtn.disabled) return;
             const plaintext = encryptInput.value.trim();
@@ -284,53 +283,22 @@ const Modules = {
             encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 加密中…</span>';
             encryptResultArea.style.display = 'none';
 
-            let ciphertext = null;
-            let method = '';
-
-            // 1. 优先尝试云端加密（安全等级更高）
             try {
-                const res = await fetch(`${API_BASE}/encrypt`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': '9108zoufengjun'   // ← 添加这行
-                    },
-                    body: JSON.stringify({ plaintext })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    ciphertext = data.ciphertext;
-                    method = 'cloud';
-                }
+                // 统一使用封装好的ECDH加密工具，自动完成握手
+                const ciphertext = await CloudCipher.encrypt(plaintext);
+
+                encryptOutput.textContent = ciphertext;
+                encryptResultArea.style.display = 'block';
+                await navigator.clipboard.writeText(ciphertext);
+                showToast('✅ 密文已生成并复制（云加密）');
             } catch (e) {
-                console.warn('云端加密不可用，切回本地加密');
+                console.error('加密失败', e);
+                showToast('❌ 加密失败：' + e.message);
+            } finally {
+                encryptBtn.disabled = false;
+                encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
+                updateEncryptBtn();
             }
-
-            // 2. 云端不可用时，使用本地加密（完全离线）
-            if (!ciphertext) {
-                try {
-                    ciphertext = await localEncrypt(plaintext);
-                    method = 'local';
-                } catch (e) {
-                    console.error('本地加密失败:', e);
-                    showToast('加密失败：' + e.message);
-                    encryptBtn.disabled = false;
-                    encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
-                    updateEncryptBtn();
-                    return;
-                }
-            }
-
-            // 显示结果并复制 
-            encryptOutput.textContent = ciphertext;
-            encryptResultArea.style.display = 'block';
-            await navigator.clipboard.writeText(ciphertext);
-            const tag = method === 'cloud' ? '（云加密）' : '（本地加密）';
-            showToast('✅ 密文已生成并复制' + tag);
-
-            encryptBtn.disabled = false;
-            encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
-            updateEncryptBtn();
         });
 
         copyBtn.addEventListener('click', async () => {
@@ -340,18 +308,12 @@ const Modules = {
             showToast('密文已复制');
         });
 
-        // ====================== 解密 ======================
+        // ====================== 解密 调用CloudCipher ======================
         async function performDecrypt() {
             if (decryptBtn.disabled) return;
-            const rawStr = decryptInput.value;
-
-            // 过滤：仅保留千字文和百家姓字符 
-            let cleaned = '';
-            for (const ch of rawStr) {
-                if (CLOUD_TO_BYTE[ch] !== undefined || LOCAL_TO_BYTE[ch] !== undefined) cleaned += ch;
-            }
-            if (cleaned.length === 0) {
-                showToast('❌ 未识别到有效密文字符');
+            const rawStr = decryptInput.value.trim();
+            if (!rawStr) {
+                showToast('请输入密文');
                 return;
             }
 
@@ -359,116 +321,19 @@ const Modules = {
             decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
             decryptResultArea.style.display = 'none';
 
-            const type = detectCipherType(cleaned);
-            let plaintext = null;
-            let method = '';
-
-            // 千字文密文 → 必须调用云端解密（本地无法解密）
-            if (type === 'cloud') {
-                try {
-                    const res = await fetch(`${API_BASE}/decrypt`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-API-Key': '9108zoufengjun'   // ← 添加这行
-                        },
-                        body: JSON.stringify({ ciphertext: cleaned })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        plaintext = data.plaintext;
-                        method = 'cloud';
-                    } else {
-                        // 服务端返回了错误，解析具体原因
-                        let errMsg = '云端解密失败';
-                        try {
-                            const errData = await res.json();
-                            errMsg = errData.error || errMsg;
-                        } catch { }
-                        throw new Error(errMsg);
-                    }
-                } catch (e) {
-                    // 区分网络错误和服务端错误
-                    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-                        showToast('❌ 无法连接云端服务，请检查网络');
-                    } else {
-                        showToast('❌ ' + e.message);
-                    }
-                    decryptBtn.disabled = false;
-                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-                    updateDecryptBtn();
-                    return;
-                }
-            }
-            // 百家姓密文 → 本地解密（完全离线）
-            else if (type === 'local') {
-                try {
-                    plaintext = await localDecrypt(cleaned);
-                    method = 'local';
-                } catch (e) {
-                    console.error('本地解密失败:', e);
-                    if (e.message.includes('过期')) {
-                        showToast('❌ 密文已过期（超出密钥窗口）');
-                    } else {
-                        showToast('❌ 解密失败：密文可能已损坏');
-                    }
-                    decryptBtn.disabled = false;
-                    decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-                    updateDecryptBtn();
-                    return;
-                }
-            }
-            // 混合或未知 → 先尝试本地，再云端 
-            else {
-                try {
-                    plaintext = await localDecrypt(cleaned);
-                    method = 'local';
-                } catch {
-                    try {
-                        const res = await fetch(`${API_BASE}/decrypt`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-API-Key': '9108zoufengjun'   // ← 添加这行
-                            },
-                            body: JSON.stringify({ ciphertext: cleaned })
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            plaintext = data.plaintext;
-                            method = 'cloud';
-                        } else {
-                            let errMsg = '云端解密失败';
-                            try {
-                                const errData = await res.json();
-                                errMsg = errData.error || errMsg;
-                            } catch { }
-                            throw new Error(errMsg);
-                        }
-                    } catch (e2) {
-                        if (e2.message.includes('Failed to fetch') || e2.message.includes('NetworkError')) {
-                            showToast('❌ 无法连接云端服务，请检查网络');
-                        } else {
-                            showToast('❌ ' + e2.message);
-                        }
-                        decryptBtn.disabled = false;
-                        decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-                        updateDecryptBtn();
-                        return;
-                    }
-                }
-            }
-
-            if (plaintext) {
+            try {
+                const plaintext = await CloudCipher.decrypt(rawStr);
                 decryptOutput.textContent = plaintext;
                 decryptResultArea.style.display = 'block';
-                const tag = method === 'cloud' ? '（云解密）' : '（本地解密）';
-                showToast('✅ 解密成功' + tag);
+                showToast('✅ 解密成功（云解密）');
+            } catch (e) {
+                console.error('解密失败', e);
+                showToast('❌ 解密失败：' + e.message);
+            } finally {
+                decryptBtn.disabled = false;
+                decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
+                updateDecryptBtn();
             }
-
-            decryptBtn.disabled = false;
-            decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
-            updateDecryptBtn();
         }
 
         decryptBtn.addEventListener('click', performDecrypt);
