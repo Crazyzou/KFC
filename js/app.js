@@ -291,7 +291,10 @@ const Modules = {
             try {
                 const res = await fetch(`${API_BASE}/encrypt`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': '9108zoufengjun'   // ← 添加这行
+                    },
                     body: JSON.stringify({ plaintext })
                 });
                 if (res.ok) {
@@ -365,7 +368,10 @@ const Modules = {
                 try {
                     const res = await fetch(`${API_BASE}/decrypt`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': '9108zoufengjun'   // ← 添加这行
+                        },
                         body: JSON.stringify({ ciphertext: cleaned })
                     });
                     if (res.ok) {
@@ -421,7 +427,10 @@ const Modules = {
                     try {
                         const res = await fetch(`${API_BASE}/decrypt`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-API-Key': '9108zoufengjun'   // ← 添加这行
+                            },
                             body: JSON.stringify({ ciphertext: cleaned })
                         });
                         if (res.ok) {
