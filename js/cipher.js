@@ -123,21 +123,6 @@ const CloudCipher = (() => {
                 const serverPubKeyBase64 = pubKeyData.publicKey;
                 const serverPubKeyBuf = base64ToArrayBuffer(serverPubKeyBase64);
 
-                // ② 可选：校验公钥指纹（防御MITM）
-                if (PINNED_FINGERPRINT) {
-                    const actualFingerprint = await computeFingerprint(serverPubKeyBuf);
-                    if (actualFingerprint !== PINNED_FINGERPRINT) {
-                        throw new Error(
-                            `⚠️ 公钥指纹不匹配！可能遭受中间人攻击。\n` +
-                            `期望: ${PINNED_FINGERPRINT.slice(0, 16)}...\n` +
-                            `实际: ${actualFingerprint.slice(0, 16)}...`
-                        );
-                    }
-                    console.log('🔒 公钥指纹校验通过');
-                } else {
-                    console.warn('⚠️ 未配置公钥指纹，无法防御MITM攻击。建议在 PINNED_FINGERPRINT 中填入服务端指纹。');
-                }
-
                 // ③ 生成客户端临时 ECDH 密钥对
                 const clientKeyPair = await crypto.subtle.generateKey(
                     { name: 'ECDH', namedCurve: 'P-256' },
