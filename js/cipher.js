@@ -1,13 +1,17 @@
-// cloud-cipher.js —— ECDH密钥协商 + 信道加密客户端（无长期密钥，移除公钥指纹校验）
+// cloud-cipher.js —— ECDH密钥协商 + 信道加密客户端（安全优化版）
+// 修复：sessionId与共享秘密分离，密钥与IV独立派生，可选公钥指纹校验
 const CloudCipher = (() => {
     const API_BASE = 'https://tower-pc.tail3cd725.ts.net';
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
     // 内部状态
-    let sessionToken = null;
+    let sessionId = null;           // 不透明会话标识符（非密钥）
+    let sharedSecretHex = null;     // ECDH共享秘密（仅存内存，永不发送）
     let sessionExpiresAt = 0;
-    let tokenLock = null; // ECDH协商并发锁
+    let tokenLock = null;           // ECDH协商并发锁
+
+    const PINNED_FINGERPRINT = '';
 
     // ————— 工具函数 —————
     function arrayBufferToBase64(buffer) {
@@ -27,36 +31,58 @@ const CloudCipher = (() => {
             .map(b => b.toString(16).padStart(2, '0'))
             .join('');
     }
+    function hexToBytes(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+        }
+        return bytes;
+    }
 
-    // ————— 信道加密工具（与后端完全对齐） —————
+    // ————— 信道加密工具（安全优化：密钥与IV独立派生） —————
+    async function hkdfExpand(secretHex, info, length) {
+        const secretBytes = hexToBytes(secretHex);
+        const baseKey = await crypto.subtle.importKey(
+            'raw', secretBytes,
+            { name: 'HMAC', hash: 'SHA-256' },
+            false, ['sign']
+        );
+        const signature = await crypto.subtle.sign('HMAC', baseKey, info);
+        return new Uint8Array(signature).slice(0, length);
+    }
+
     async function deriveSessionKeys(secretHex, nonceBase64, direction) {
         const nonce = Uint8Array.from(atob(nonceBase64), c => c.charCodeAt(0));
-        // hex字符串转字节数组
-        const secretBytes = new Uint8Array(secretHex.length / 2);
-        for (let i = 0; i < secretHex.length; i += 2) {
-            secretBytes[i / 2] = parseInt(secretHex.substring(i, i + 2), 16);
-        }
-        const baseKey = await crypto.subtle.importKey(
-            'raw', secretBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-        );
-        const info = encoder.encode(direction);
-        const combined = new Uint8Array(nonce.length + info.length);
-        combined.set(nonce);
-        combined.set(info, nonce.length);
-        const hmacRaw = await crypto.subtle.sign('HMAC', baseKey, combined);
-        const raw = new Uint8Array(hmacRaw);
+        const directionBytes = encoder.encode(direction);
+        const infoPrefix = new Uint8Array(nonce.length + directionBytes.length);
+        infoPrefix.set(nonce);
+        infoPrefix.set(directionBytes, nonce.length);
+
+        // 分别为 AES 密钥和 IV 派生独立的密钥材料
+        const keyInfo = new Uint8Array(infoPrefix.length + 8);
+        keyInfo.set(infoPrefix);
+        keyInfo.set(encoder.encode('-aes-key'), infoPrefix.length);
+
+        const ivInfo = new Uint8Array(infoPrefix.length + 7);
+        ivInfo.set(infoPrefix);
+        ivInfo.set(encoder.encode('-aes-iv'), infoPrefix.length);
+
+        const aesKeyRaw = await hkdfExpand(secretHex, keyInfo, 32);
+        const iv = await hkdfExpand(secretHex, ivInfo, 12);
 
         const aesKey = await crypto.subtle.importKey(
-            'raw', raw.slice(0, 32), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']
+            'raw', aesKeyRaw,
+            { name: 'AES-GCM' },
+            false, ['encrypt', 'decrypt']
         );
-        return { aesKey, iv: raw.slice(0, 12) };
+        return { aesKey, iv };
     }
 
     async function encryptPayload(secretHex, payloadObj, nonceBase64, direction) {
         const { aesKey, iv } = await deriveSessionKeys(secretHex, nonceBase64, direction);
         const plain = encoder.encode(JSON.stringify(payloadObj));
         const encFullBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv, tagLength: 128 },  // ✅ 128 位 = 16 字节
+            { name: 'AES-GCM', iv, tagLength: 128 },
             aesKey,
             plain
         );
@@ -65,16 +91,24 @@ const CloudCipher = (() => {
 
     async function decryptPayload(secretHex, cipherBuf, nonceBase64, direction) {
         const { aesKey, iv } = await deriveSessionKeys(secretHex, nonceBase64, direction);
-        const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, cipherBuf);
+        const plain = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv },
+            aesKey,
+            cipherBuf
+        );
         return JSON.parse(decoder.decode(plain));
     }
 
-    // ————— ECDH 密钥协商（获取会话令牌，自动加锁防并发，移除指纹校验） —————
+    // ————— 计算 SHA-256 指纹（用于公钥校验） —————
+    async function computeFingerprint(buffer) {
+        const hash = await crypto.subtle.digest('SHA-256', buffer);
+        return arrayBufferToHex(hash);
+    }
+
+    // ————— ECDH 密钥协商（安全优化：服务端返回sessionId，客户端保存共享秘密） —————
     async function ensureToken() {
-        // 已有协商进行中，等待锁
         if (tokenLock) return tokenLock;
-        // 令牌有效，无需重协商
-        if (sessionToken && Date.now() < sessionExpiresAt - 60000) {
+        if (sharedSecretHex && sessionId && Date.now() < sessionExpiresAt - 60000) {
             return Promise.resolve();
         }
 
@@ -85,23 +119,37 @@ const CloudCipher = (() => {
                 // ① 获取服务端 ECDH 公钥
                 const pubKeyRes = await fetch(`${API_BASE}/public-key`);
                 if (!pubKeyRes.ok) throw new Error('无法获取服务端公钥');
-                const { publicKey: serverPubKeyBase64 } = await pubKeyRes.json();
+                const pubKeyData = await pubKeyRes.json();
+                const serverPubKeyBase64 = pubKeyData.publicKey;
                 const serverPubKeyBuf = base64ToArrayBuffer(serverPubKeyBase64);
 
-                // 已删除公钥指纹校验代码，不再需要配置指纹
+                // ② 可选：校验公钥指纹（防御MITM）
+                if (PINNED_FINGERPRINT) {
+                    const actualFingerprint = await computeFingerprint(serverPubKeyBuf);
+                    if (actualFingerprint !== PINNED_FINGERPRINT) {
+                        throw new Error(
+                            `⚠️ 公钥指纹不匹配！可能遭受中间人攻击。\n` +
+                            `期望: ${PINNED_FINGERPRINT.slice(0, 16)}...\n` +
+                            `实际: ${actualFingerprint.slice(0, 16)}...`
+                        );
+                    }
+                    console.log('🔒 公钥指纹校验通过');
+                } else {
+                    console.warn('⚠️ 未配置公钥指纹，无法防御MITM攻击。建议在 PINNED_FINGERPRINT 中填入服务端指纹。');
+                }
 
-                // ② 生成客户端临时 ECDH 密钥对
+                // ③ 生成客户端临时 ECDH 密钥对
                 const clientKeyPair = await crypto.subtle.generateKey(
                     { name: 'ECDH', namedCurve: 'P-256' },
                     true,
                     ['deriveBits']
                 );
 
-                // ③ 导出客户端公钥 raw 65字节
+                // ④ 导出客户端公钥
                 const clientPubKeyBuf = await crypto.subtle.exportKey('raw', clientKeyPair.publicKey);
                 const clientPubKeyBase64 = arrayBufferToBase64(clientPubKeyBuf);
 
-                // ④ 导入服务端公钥
+                // ⑤ 导入服务端公钥
                 const importedServerPubKey = await crypto.subtle.importKey(
                     'raw', serverPubKeyBuf,
                     { name: 'ECDH', namedCurve: 'P-256' },
@@ -109,25 +157,25 @@ const CloudCipher = (() => {
                     []
                 );
 
-                // ⑤ 计算256bit共享密钥
+                // ⑥ 计算256bit共享密钥 
                 const sharedBits = await crypto.subtle.deriveBits(
                     { name: 'ECDH', public: importedServerPubKey },
                     clientKeyPair.privateKey,
                     256
                 );
-                const sharedSecretHex = arrayBufferToHex(sharedBits);
+                const newSharedSecretHex = arrayBufferToHex(sharedBits);
 
-                // ⑥ 加密验证载荷
+                // ⑦ 加密验证载荷
                 const nonce = generateNonce();
                 const encBuf = await encryptPayload(
-                    sharedSecretHex,
+                    newSharedSecretHex,
                     { clientPublicKey: clientPubKeyBase64 },
                     nonce,
                     'c2s'
                 );
                 const data = arrayBufferToBase64(encBuf);
 
-                // ⑦ 发起会话创建请求
+                // ⑧ 发起会话创建请求
                 const authRes = await fetch(`${API_BASE}/auth/session`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -143,15 +191,17 @@ const CloudCipher = (() => {
                     throw new Error(err.error || 'ECDH 会话建立失败');
                 }
 
-                // ⑧ 解密响应拿到sessionToken
+                // ⑨ 解密响应拿到 sessionId（不透明标识符，非密钥）
                 const resJson = await authRes.json();
                 const resBuf = base64ToArrayBuffer(resJson.data);
-                const result = await decryptPayload(sharedSecretHex, resBuf, nonce, 's2c');
+                const result = await decryptPayload(newSharedSecretHex, resBuf, nonce, 's2c');
 
-                sessionToken = result.sessionToken;
+                // ✅ 安全优化：分别保存 sessionId 和共享秘密
+                sessionId = result.sessionId;           // 仅标识符，后续请求中发送
+                sharedSecretHex = newSharedSecretHex;   // 密钥，永不发送
                 sessionExpiresAt = result.expiresAt;
 
-                console.log(`✅ ECDH 会话建立成功，令牌有效期至: ${new Date(sessionExpiresAt).toLocaleTimeString()}`);
+                console.log(`✅ ECDH 会话建立成功，会话ID: ${sessionId.slice(0, 8)}...，有效期至: ${new Date(sessionExpiresAt).toLocaleTimeString()}`);
                 resolve();
             } catch (err) {
                 reject(err);
@@ -163,26 +213,28 @@ const CloudCipher = (() => {
         return tokenLock;
     }
 
-    // ————— 发送加密业务请求（限制1次401重试，防止死递归） —————
+    // ————— 发送加密业务请求（限制1次401重试） —————
     async function request(method, path, payloadObj, retryCount = 0) {
         await ensureToken();
 
         const nonce = generateNonce();
-        const encBuf = await encryptPayload(sessionToken, payloadObj, nonce, 'c2s');
+
+        // ✅ 安全优化：使用共享秘密加密，发送 sessionId（非密钥）
+        const encBuf = await encryptPayload(sharedSecretHex, payloadObj, nonce, 'c2s');
         const data = arrayBufferToBase64(encBuf);
 
         const res = await fetch(`${API_BASE}${path}`, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nonce, data, sessionToken })
+            body: JSON.stringify({ nonce, data, sessionId })  // 只发送 sessionId
         });
 
         if (!res.ok) {
             const err = await res.json().catch(() => ({ error: '请求失败' }));
-            // 仅允许重试1次
             if (res.status === 401 && retryCount < 1) {
-                console.log('⚠️ 令牌过期，重新协商...');
-                sessionToken = null;
+                console.log('⚠️ 会话过期，重新协商...');
+                sessionId = null;
+                sharedSecretHex = null;
                 sessionExpiresAt = 0;
                 await ensureToken();
                 return request(method, path, payloadObj, retryCount + 1);
@@ -192,7 +244,7 @@ const CloudCipher = (() => {
 
         const resJson = await res.json();
         const resBuf = base64ToArrayBuffer(resJson.data);
-        return decryptPayload(sessionToken, resBuf, nonce, 's2c');
+        return decryptPayload(sharedSecretHex, resBuf, nonce, 's2c');
     }
 
     // ————— 对外暴露接口 —————
@@ -206,5 +258,16 @@ const CloudCipher = (() => {
         return res.plaintext;
     }
 
-    return { encrypt, decrypt };
+    // 暴露公钥指纹配置和健康检查
+    async function getServerFingerprint() {
+        try {
+            const res = await fetch(`${API_BASE}/public-key`);
+            const data = await res.json();
+            return data.fingerprint || null;
+        } catch {
+            return null;
+        }
+    }
+
+    return { encrypt, decrypt, getServerFingerprint };
 })();
