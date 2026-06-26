@@ -116,26 +116,77 @@ async function getLosslessShortThumbnail(videoId) {
     }
 }
 
-async function copyImage(img) {
+async function copyImageToClipboard(originalUrl, imgElement) {
+    const proxyUrl = getProxiedImgUrl(originalUrl);
+
+    // 将任意图片 blob 转为 PNG blob（用于降级）
+    async function convertBlobToPng(blob) {
+        if (blob.type === 'image/png') return blob;
+        try {
+            const bitmap = await createImageBitmap(blob);
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        } catch {
+            // createImageBitmap 失败时用 Image 元素兜底 
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(blob);
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob(resolve, 'image/png');
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('图片解码失败'));
+                };
+                img.src = url;
+            });
+        }
+    }
+
     try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const tempImg = new Image();
-        tempImg.crossOrigin = 'anonymous';
-        tempImg.src = img.src;
-        await new Promise((resolve, reject) => {
-            tempImg.onload = resolve;
-            tempImg.onerror = reject;
-        });
-        canvas.width = tempImg.naturalWidth;
-        canvas.height = tempImg.naturalHeight;
-        ctx.drawImage(tempImg, 0, 0);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        showToast("缩略图已复制");
-    } catch (error) {
-        await copyToClipboard(img.src);
-        showToast("复制失败，已复制图片链接");
+        const res = await fetchWithTimeout(proxyUrl, 12000);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0 || !blob.type.startsWith('image/')) {
+            throw new Error('无效图片');
+        }
+
+        // 初次尝试：原格式写入（保留 GIF 动画）
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({ [blob.type]: blob })
+            ]);
+            return 'blob'; // 成功写入动画/原图 
+        } catch (firstErr) {
+            // 浏览器不支持原格式（如 Firefox 不支持 image/gif）
+            console.warn('[BQB] 原格式无法写入剪贴板，转为 PNG:', firstErr);
+            const pngBlob = await convertBlobToPng(blob);
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': pngBlob })
+            ]);
+            return 'blob'; // 降级为静态 PNG 成功 
+        }
+    } catch (e) {
+        console.warn('[BQB] 代理下载失败，回退到复制链接:', e);
+    }
+
+    // 最终兜底：复制原始链接 
+    try {
+        await navigator.clipboard.writeText(originalUrl);
+        return 'url';
+    } catch {
+        return null;
     }
 }
 

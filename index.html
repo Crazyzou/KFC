@@ -40,8 +40,10 @@
             </div>
             <div class="tool-card" data-target="panel3">
                 <div class="card-header">
-                    <div class="card-title"><span class="icon"><i class="fas fa-magic"></i></span>广告文案优化</div>
-                    <div class="card-desc">把文案给我(仅限青少年)</div>
+                    <div class="card-title"><span class="icon"
+                            style="background: linear-gradient(135deg, #f093fb, #f5576c);"><i
+                                class="fas fa-face-smile"></i></span>emoji</div>
+                    <div class="card-desc">今天你抽象了吗</div>
                 </div>
             </div>
             <div class="tool-card" data-target="panel4">
@@ -127,18 +129,31 @@
                 </div>
             </div>
 
-            <!-- 面板3：广告文案优化 -->
+            <!-- 面板3：表情包仓库 -->
             <div class="function-panel" id="panel3">
-                <div class="input-group">
-                    <label for="ad-text-input"><i class="fas fa-info-circle"></i>输入需要优化的广告文案</label>
-                    <textarea id="ad-text-input" placeholder="例如: design your skin for roblox"></textarea>
+                <div class="bqb-container">
+                    <div class="bqb-hero">
+                        <div class="bqb-hero-emoji">😎</div>
+                        <h2 class="bqb-hero-title">今天你抽象了吗？</h2>
+                        <p class="bqb-hero-desc">随机获取或搜索关键词<br>点击图片即可复制到剪贴板</p>
+                        <div class="bqb-search-row">
+                            <input type="text" class="bqb-search-input" id="bqbSearchInput" placeholder="输入关键词搜索表情包...">
+                            <button type="button" class="bqb-search-btn" id="bqbSearchBtn">
+                                <i class="fas fa-search"></i> 搜索
+                            </button>
+                        </div>
+                        <button type="button" class="bqb-fetch-btn" id="bqbFetchBtn">
+                            <span class="btn-content"><i class="fas fa-shuffle"></i> 随机获取表情包</span>
+                        </button>
+                    </div>
+                    <div class="bqb-loading" id="bqbLoading">
+                        <div class="spinner"></div><span id="bqbLoadingText">正在抓取表情包...</span>
+                    </div>
+                    <div class="bqb-stats" id="bqbStats" style="display:none;">
+                        <span><i class="fas fa-check-circle"></i> 已加载 <strong id="bqbCount">0</strong> 张</span>
+                    </div>
+                    <div class="bqb-grid" id="bqbGrid"></div>
                 </div>
-                <button class="btn" id="ad-text-btn"><span class="btn-content"><i
-                            class="fas fa-wand-magic-sparkles"></i>优化文案</span></button>
-                <div class="loading" id="ad-text-loading">
-                    <div class="spinner"></div>正在优化...
-                </div>
-                <div id="ad-text-results-container" style="display: none;margin-top: 1.5em;"></div>
             </div>
 
             <!-- 面板4：密语编码器 -->
@@ -312,6 +327,7 @@
     <!-- ========== JS 模块（按依赖顺序加载） ========== -->
     <script src="./js/config.js"></script>
     <script src="./js/cipher.js"></script>
+    <script src="./js/bqb.js"></script>
     <script src="./js/youtube.js"></script>
     <script src="./js/app.js"></script>
 </body>
