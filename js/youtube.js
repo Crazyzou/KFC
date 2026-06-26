@@ -190,6 +190,29 @@ async function copyImageToClipboard(originalUrl, imgElement) {
     }
 }
 
+async function copyImage(img) {
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const tempImg = new Image();
+        tempImg.crossOrigin = 'anonymous';
+        tempImg.src = img.src;
+        await new Promise((resolve, reject) => {
+            tempImg.onload = resolve;
+            tempImg.onerror = reject;
+        });
+        canvas.width = tempImg.naturalWidth;
+        canvas.height = tempImg.naturalHeight;
+        ctx.drawImage(tempImg, 0, 0);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        showToast("缩略图已复制");
+    } catch (error) {
+        await copyToClipboard(img.src);
+        showToast("复制失败，已复制图片链接");
+    }
+}
+
 async function downloadAllThumbnails() {
     const imgs = document.querySelectorAll(".youtube-thumbnail");
     if (!imgs.length) return;
