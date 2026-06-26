@@ -80,7 +80,6 @@ const Modules = {
         this.aiProcessor = aiProcessor;
         this.initTextSeparator();
         this.initLinkLangExtractor();
-        this.initAdOptimizer();
         this.initCipherModule();
         this.initYoutubeModule();
     },
@@ -195,45 +194,6 @@ const Modules = {
             if (STATE.extractedLangs.length) copyToClipboard(STATE.extractedLangs.join('\n'));
         });
     },
-    initAdOptimizer() {
-        const input = document.getElementById('ad-text-input');
-        const btn = document.getElementById('ad-text-btn');
-        const loading = document.getElementById('ad-text-loading');
-        const container = document.getElementById('ad-text-results-container');
-        window.copyOptimizedText = (button) => {
-            const div = button.closest('.ad-optimization-result');
-            const text = div.querySelector('.ad-optimization-text').textContent;
-            copyToClipboard(text);
-        };
-        btn.addEventListener('click', async () => {
-            const text = input.value.trim();
-            if (!text) return alert('请输入广告文案');
-            UIController.setLoading(btn, loading, true);
-            container.style.display = 'none';
-            try {
-                const prompt = `任务：欧美青少年广告文案优化。\n原始文案：${text}\n目标受众：欧美 13-19 岁青少年。\n\n要求：\n1. 生成 3 种不同风格的版本。\n2. 语言要地道、符合 Z 世代习惯，不要用 Emoji。\n3. 每个版本包含：优化文案、中文翻译。\n4. 严格按以下 JSON 格式输出（只输出 JSON，不要其他文字）：\n\n{\n  "versions": [\n    { "opt": "优化文案1", "trans": "中文翻译1" },\n    { "opt": "优化文案2", "trans": "中文翻译2" },\n    { "opt": "优化文案3", "trans": "中文翻译3" }\n  ]\n}`;
-                const result = await this.aiProcessor.getAIResponse(prompt);
-                const jsonMatch = result.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) throw new Error("JSON not found");
-                const data = JSON.parse(jsonMatch[0]);
-                let html = '';
-                (data.versions || []).forEach((v, i) => {
-                    html += `
-                    <div class="ad-optimization-result">
-                        <div class="ad-optimization-header">优化版本 ${i + 1}<button class="copy-btn" onclick="copyOptimizedText(this)" title="复制优化文案"><i class="far fa-copy"></i> 复制</button></div>
-                        <div class="ad-optimization-content"><div class="ad-optimization-version">优化文案:</div><div class="ad-optimization-text">${v.opt}</div><div class="ad-optimization-translation"><div class="ad-optimization-translation-label">中文翻译:</div><div>${v.trans}</div></div></div>
-                    </div>`;
-                });
-                container.innerHTML = html || '<div class="result-line">生成失败</div>';
-                container.style.display = 'block';
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = '<div class="result-line">优化失败，请重试</div>';
-                container.style.display = 'block';
-            } finally { UIController.setLoading(btn, loading, false); }
-        });
-    },
-
     initCipherModule() {
         const tabBtns = document.querySelectorAll('[data-cipher-tab]');
         const panels = {
