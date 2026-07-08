@@ -7,49 +7,34 @@
     <title>视频人声转文本工具</title>
     <style>
         :root {
-            /* 基础配色 - 实色高性能方案 */
-            --bg: #f5f7fb;
+            --bg: #f5f6f8;
             --surface: #ffffff;
-            --surface-alt: #f8f9fd;
-            --surface-hover: #fbfcff;
-            --border: #e5e9f2;
-            --border-hover: #d4dae8;
-            --border-active: #c7cfe0;
-            --text-primary: #1a1d2e;
-            --text-secondary: #565b70;
-            --text-tertiary: #8a90a6;
-            --text-muted: #b0b6c9;
-
-            /* 主题色 */
-            --accent: #5b5bf0;
-            --accent-light: #eef0ff;
-            --accent-hover: #4a4ae6;
-            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --accent-glow: rgba(99, 102, 241, 0.12);
-
-            /* 状态色 */
-            --success: #10b981;
-            --success-light: #ecfdf5;
-            --danger: #ef4444;
-            --danger-light: #fef2f2;
-            --warning: #f59e0b;
-            --warning-light: #fffbeb;
-
-            /* 阴影系统 - 轻量柔和 */
-            --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.04);
-            --shadow-sm: 0 2px 8px rgba(17, 24, 39, 0.04), 0 1px 3px rgba(17, 24, 39, 0.03);
-            --shadow-md: 0 4px 16px rgba(17, 24, 39, 0.06);
-
-            /* 圆角系统 */
-            --radius-lg: 14px;
-            --radius-md: 10px;
-            --radius-sm: 8px;
-            --radius-xs: 6px;
-
-            /* 字体与动效 - 精简过渡 */
-            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            --transition-fast: 0.15s ease;
-            --transition-base: 0.2s ease;
+            --surface-alt: #f9fafb;
+            --surface-hover: #fdfdfe;
+            --border: #e8eaef;
+            --border-hover: #d5d9e0;
+            --text-primary: #1a1d26;
+            --text-secondary: #555a68;
+            --text-tertiary: #878c99;
+            --text-muted: #b0b5c0;
+            --accent: #4f5ef0;
+            --accent-light: #f0f1ff;
+            --accent-hover: #3d4de0;
+            --success: #0fa87a;
+            --success-light: #edfaf5;
+            --danger: #e54545;
+            --danger-light: #fef5f5;
+            --warning: #d4880a;
+            --warning-light: #fffcf5;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+            --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius-lg: 12px;
+            --radius-md: 8px;
+            --radius-sm: 6px;
+            --radius-xs: 4px;
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --transition: 0.18s ease;
         }
 
         * {
@@ -61,18 +46,16 @@
         html,
         body {
             height: 100%;
-            font-family: var(--font-family);
+            font-family: var(--font);
             background: var(--bg);
             color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
-            line-height: 1.6;
-            font-size: 14px;
+            font-size: 13.5px;
+            line-height: 1.55;
         }
 
-        /* 滚动条 - 极简 */
         ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -80,12 +63,8 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #d5dae8;
-            border-radius: 20px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b9c0d4;
+            background: #d0d4de;
+            border-radius: 10px;
         }
 
         .app {
@@ -95,15 +74,14 @@
             overflow: hidden;
         }
 
-        /* ========== 顶部导航 - 纯实色无性能损耗 ========== */
         .navbar {
-            height: 54px;
+            height: 50px;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 18px;
             flex-shrink: 0;
             z-index: 20;
             box-shadow: var(--shadow-xs);
@@ -112,70 +90,62 @@
         .navbar .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 15px;
+            gap: 9px;
+            font-weight: 650;
+            font-size: 14px;
             color: var(--text-primary);
+            letter-spacing: -0.01em;
         }
 
-        .navbar .brand .icon-wrap {
-            width: 34px;
-            height: 34px;
+        .navbar .brand .icon-dot {
+            width: 30px;
+            height: 30px;
             border-radius: var(--radius-sm);
-            background: var(--accent-gradient);
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
         }
 
-        /* CSS绘制视频图标 */
-        .navbar .brand .icon-wrap::before {
+        .icon-dot::before {
             content: '';
-            width: 16px;
-            height: 12px;
+            width: 13px;
+            height: 9px;
             border: 2px solid #fff;
             border-radius: 2px;
-            display: block;
         }
 
-        .navbar .brand .icon-wrap::after {
+        .icon-dot::after {
             content: '';
             position: absolute;
-            right: 8px;
+            right: 7px;
             top: 50%;
             transform: translateY(-50%);
-            border-top: 4px solid transparent;
-            border-bottom: 4px solid transparent;
-            border-left: 5px solid #fff;
+            border-top: 3.5px solid transparent;
+            border-bottom: 3.5px solid transparent;
+            border-left: 4.5px solid #fff;
         }
 
-        .navbar .navbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* ========== 按钮系统 ========== */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 7px 14px;
+            gap: 5px;
+            padding: 6px 13px;
             border-radius: var(--radius-sm);
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             border: 1px solid transparent;
-            transition: all var(--transition-base);
-            font-family: var(--font-family);
+            transition: all var(--transition);
+            font-family: var(--font);
             white-space: nowrap;
             outline: none;
             background: #fff;
             color: var(--text-secondary);
             user-select: none;
+            letter-spacing: 0.01em;
         }
 
         .btn:hover {
@@ -188,37 +158,37 @@
         }
 
         .btn-primary {
-            background: var(--accent-gradient);
+            background: var(--accent);
             color: #fff;
             border-color: transparent;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 2px 6px rgba(79, 94, 240, 0.2);
         }
 
         .btn-primary:hover {
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-            filter: brightness(1.05);
+            background: var(--accent-hover);
+            box-shadow: 0 3px 10px rgba(79, 94, 240, 0.28);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: var(--success);
             color: #fff;
-            border-color: transparent;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 2px 6px rgba(15, 168, 122, 0.2);
         }
 
         .btn-success:hover {
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 3px 10px rgba(15, 168, 122, 0.28);
+            filter: brightness(1.06);
         }
 
         .btn-danger {
             background: #fff;
             color: var(--danger);
-            border-color: #fecaca;
+            border-color: #fcc;
         }
 
         .btn-danger:hover {
             background: var(--danger-light);
-            border-color: #fca5a5;
+            border-color: #faa;
         }
 
         .btn-outline {
@@ -230,63 +200,55 @@
         .btn-outline:hover {
             background: var(--surface-alt);
             border-color: var(--border-hover);
-            color: var(--text-primary);
         }
 
         .btn-ghost {
             background: transparent;
             border-color: transparent;
             color: var(--text-tertiary);
-            padding: 5px 9px;
+            padding: 4px 8px;
             box-shadow: none;
             transform: none;
         }
 
         .btn-ghost:hover {
-            background: #f1f3f9;
+            background: #f1f3f7;
             color: var(--text-primary);
             box-shadow: none;
             transform: none;
         }
 
         .btn-sm {
-            padding: 5px 11px;
+            padding: 4px 10px;
             font-size: 11.5px;
             border-radius: var(--radius-xs);
         }
 
         .btn-xs {
-            padding: 3px 8px;
-            font-size: 11px;
-            border-radius: 5px;
-        }
-
-        .btn-icon {
-            padding: 7px 10px;
-            gap: 4px;
+            padding: 3px 7px;
+            font-size: 10.5px;
+            border-radius: 4px;
         }
 
         .btn:disabled {
-            opacity: 0.45;
+            opacity: 0.4;
             pointer-events: none;
             cursor: not-allowed;
             box-shadow: none !important;
             transform: none !important;
         }
 
-        /* ========== 主体布局 - 四列同屏 ========== */
         .main-body {
             display: flex;
             flex: 1;
             overflow: hidden;
             min-height: 0;
-            padding: 12px;
-            gap: 12px;
+            padding: 10px;
+            gap: 10px;
         }
 
-        /* ========== 左侧边栏 - 文件管理 ========== */
         .sidebar {
-            width: 270px;
+            width: 260px;
             flex-shrink: 0;
             background: var(--surface);
             border: 1px solid var(--border);
@@ -294,77 +256,71 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
-            padding: 14px;
-            gap: 12px;
+            padding: 12px;
+            gap: 10px;
             z-index: 10;
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-xs);
         }
 
         .sidebar-section {
             background: var(--surface-alt);
             border-radius: var(--radius-md);
-            padding: 14px;
+            padding: 12px;
             border: 1px solid var(--border);
-            transition: all var(--transition-base);
         }
 
         .section-title {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
             color: var(--text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 10px;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
         }
 
-        .section-title .dot-indicator {
-            width: 6px;
-            height: 6px;
+        .section-title .dot {
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: var(--accent);
             flex-shrink: 0;
         }
 
-        /* 上传区域 */
         .upload-zone {
-            border: 2px dashed #dde2ef;
+            border: 2px dashed #dde1ea;
             border-radius: var(--radius-md);
-            padding: 24px 16px;
+            padding: 22px 14px;
             text-align: center;
             cursor: pointer;
-            transition: all var(--transition-base);
-            background: #fafbff;
+            transition: all var(--transition);
+            background: #fafbfd;
             color: var(--text-tertiary);
-            position: relative;
         }
 
         .upload-zone:hover {
             border-color: var(--accent);
             color: var(--accent);
             background: #fff;
-            box-shadow: var(--shadow-xs);
         }
 
         .upload-zone .upload-icon {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 8px;
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 6px;
+            border-radius: 8px;
+            background: var(--accent-light);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            background: var(--accent-light);
-            transition: all var(--transition-base);
             position: relative;
         }
 
-        /* CSS绘制上传图标 */
         .upload-zone .upload-icon::before {
             content: '';
-            width: 16px;
+            width: 14px;
             height: 2px;
             background: var(--accent);
             border-radius: 2px;
@@ -373,19 +329,15 @@
         .upload-zone .upload-icon::after {
             content: '';
             position: absolute;
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             border-top: 2px solid var(--accent);
             border-left: 2px solid var(--accent);
             transform: rotate(45deg) translate(2px, 2px);
         }
 
-        .upload-zone:hover .upload-icon {
-            transform: translateY(-1px);
-        }
-
         .upload-zone .upload-text {
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 500;
         }
 
@@ -397,25 +349,23 @@
         }
 
         .upload-hint {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-tertiary);
-            margin-top: 6px;
-            text-align: center;
+            margin-top: 5px;
+            opacity: 0.7;
             line-height: 1.4;
-            opacity: 0.75;
         }
 
-        /* 文件列表 */
         .file-item {
             display: flex;
             align-items: center;
-            gap: 9px;
-            padding: 9px 11px;
+            gap: 8px;
+            padding: 8px 10px;
             background: #fff;
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
-            margin-bottom: 5px;
-            transition: all var(--transition-fast);
+            margin-bottom: 4px;
+            transition: all var(--transition);
         }
 
         .file-item:hover {
@@ -424,16 +374,16 @@
         }
 
         .file-item .fi-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 7px;
-            background: var(--accent-light);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: #eef0f8;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
             color: var(--accent);
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
         }
 
@@ -443,29 +393,26 @@
         }
 
         .file-item .fi-name {
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 500;
-            color: var(--text-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .file-item .fi-size {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-tertiary);
-            margin-top: 1px;
         }
 
         .file-item .fi-del {
             cursor: pointer;
             color: var(--text-muted);
-            font-size: 15px;
-            padding: 3px 7px;
-            border-radius: 5px;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
             background: none;
             border: none;
-            transition: all var(--transition-fast);
             flex-shrink: 0;
             line-height: 1;
         }
@@ -475,77 +422,64 @@
             background: var(--danger-light);
         }
 
-        /* 进度条 */
-        .progress-wrap {
-            margin-top: 3px;
-        }
-
         .progress-bar {
             width: 100%;
-            height: 5px;
-            background: #e8ecf6;
-            border-radius: 20px;
+            height: 4px;
+            background: #e8ecf4;
+            border-radius: 10px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
-            background: var(--accent-gradient);
-            border-radius: 20px;
+            background: var(--accent);
+            border-radius: 10px;
             transition: width 0.3s ease;
         }
 
         .progress-indeterminate {
-            animation: indeterminate 1.6s infinite ease-in-out;
-            width: 35%;
+            animation: indeterminate 1.5s infinite ease-in-out;
+            width: 30%;
         }
 
         @keyframes indeterminate {
             0% {
-                transform: translateX(-120%);
+                transform: translateX(-130%);
             }
 
             100% {
-                transform: translateX(420%);
+                transform: translateX(430%);
             }
         }
 
         .progress-text {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-secondary);
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             font-weight: 500;
         }
 
-        /* ========== 主面板 - 三列并列 ========== */
         .main-panel {
             flex: 1;
             display: flex;
             flex-direction: row;
             overflow: hidden;
             min-width: 0;
-            gap: 12px;
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            margin: 0;
-            border-radius: 0;
+            gap: 10px;
         }
 
-        /* 隐藏原Tab导航栏 */
         .tab-nav {
             display: none;
         }
 
-        /* 三个面板常驻显示 */
         .tab-content {
             display: flex;
             flex-direction: column;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            padding: 14px;
+            box-shadow: var(--shadow-xs);
+            padding: 12px;
             overflow: hidden;
             min-width: 0;
         }
@@ -554,7 +488,6 @@
             display: flex;
         }
 
-        /* 面板宽度分配：原始文案最宽，方便编辑 */
         #tab-text {
             flex: 2;
         }
@@ -572,9 +505,9 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
@@ -583,42 +516,40 @@
         .toolbar-right {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             flex-wrap: wrap;
         }
 
-        /* 面板标题 - 替代原Tab文字 */
         .tab-content::before {
             content: attr(data-panel-title);
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 10px;
-            padding-bottom: 10px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
             display: flex;
+            letter-spacing: 0.01em;
         }
 
-        /* 列表容器 - 占满剩余空间滚动 */
         #textListContainer,
         #transListContainer,
         #audioListContainer {
             flex: 1;
             overflow-y: auto;
             min-height: 0;
-            padding-right: 4px;
+            padding-right: 3px;
         }
 
-        /* ========== 文案卡片 - 优化编辑体验 ========== */
         .card {
             background: var(--surface-alt);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            transition: all var(--transition-fast);
-            position: relative;
+            padding: 10px 12px;
+            margin-bottom: 7px;
+            transition: all var(--transition);
+            border-left: 3px solid transparent;
         }
 
         .card:hover {
@@ -627,11 +558,10 @@
             background: var(--surface-hover);
         }
 
-        /* 选中高亮 */
         .card:has(input[type="checkbox"]:checked) {
             border-color: var(--accent);
             background: #fafbff;
-            box-shadow: 0 0 0 3px var(--accent-glow);
+            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.08);
         }
 
         .card-header {
@@ -639,100 +569,113 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 8px;
+            gap: 5px;
+            margin-bottom: 6px;
         }
 
         .ch-left {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             flex-wrap: wrap;
             min-width: 0;
         }
 
         .ch-right {
             display: flex;
-            gap: 3px;
+            gap: 2px;
             flex-wrap: wrap;
             flex-shrink: 0;
         }
 
         .badge {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 10.5px;
+            padding: 2px 7px;
+            border-radius: 14px;
+            font-size: 10px;
             font-weight: 600;
             flex-shrink: 0;
+            letter-spacing: 0.02em;
         }
 
         .badge-gray {
-            background: #eceff7;
-            color: #5a5f72;
+            background: #eef0f5;
+            color: #5a5f6e;
         }
 
         .badge-blue {
-            background: var(--accent-light);
-            color: var(--accent);
+            background: #eef0ff;
+            color: #4f5ef0;
         }
 
         .badge-green {
-            background: var(--success-light);
-            color: #059669;
+            background: #edfaf5;
+            color: #0a8a62;
         }
 
         .badge-orange {
-            background: var(--warning-light);
-            color: #c27803;
+            background: #fff9f0;
+            color: #b87a0a;
         }
 
         .badge-red {
-            background: var(--danger-light);
+            background: #fef5f5;
             color: #c53030;
         }
 
+        .badge-source {
+            background: #f5f5ff;
+            color: #5558c0;
+            font-size: 9.5px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            max-width: 110px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid #e0e0f5;
+            cursor: default;
+        }
+
         .source-tag {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-tertiary);
-            max-width: 120px;
+            max-width: 100px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             display: inline-block;
         }
 
-        /* 文本编辑框 - 加大高度，优化编辑体验 */
         textarea.card-textarea {
             width: 100%;
-            min-height: 75px;
-            padding: 9px 12px;
+            min-height: 68px;
+            padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            font-size: 12.5px;
-            font-family: var(--font-family);
+            font-size: 12px;
+            font-family: var(--font);
             resize: vertical;
             background: #fff;
             color: var(--text-primary);
-            transition: all var(--transition-fast);
-            line-height: 1.6;
+            transition: all var(--transition);
+            line-height: 1.5;
         }
 
         textarea.card-textarea:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
+            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.08);
             background: #fff;
         }
 
-        /* ========== 音频卡片 ========== */
         .audio-card {
             background: var(--surface-alt);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            transition: all var(--transition-fast);
+            padding: 10px 12px;
+            margin-bottom: 7px;
+            transition: all var(--transition);
         }
 
         .audio-card:hover {
@@ -743,141 +686,118 @@
         .ac-top {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .ac-name {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 180px;
+            max-width: 160px;
             font-weight: 500;
         }
 
         .ac-row {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
         .audio-progress-wrap {
-            margin-top: 7px;
+            margin-top: 6px;
         }
 
         .audio-progress-bar {
             width: 100%;
-            height: 5px;
+            height: 4px;
             background: #e2e6f0;
-            border-radius: 20px;
+            border-radius: 10px;
             cursor: pointer;
             overflow: hidden;
-            transition: height var(--transition-fast);
         }
 
         .audio-progress-bar:hover {
-            height: 7px;
+            height: 6px;
         }
 
         .audio-progress-fill {
             height: 100%;
-            background: var(--accent-gradient);
-            border-radius: 20px;
-            transition: width 0.08s linear;
+            background: var(--accent);
+            border-radius: 10px;
+            transition: width 0.06s linear;
             pointer-events: none;
         }
 
         .audio-time {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-tertiary);
             text-align: right;
             margin-top: 2px;
             font-variant-numeric: tabular-nums;
         }
 
-        /* ========== 空状态 ========== */
         .empty-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 16px;
+            padding: 36px 14px;
             color: var(--text-tertiary);
             text-align: center;
-            gap: 8px;
+            gap: 6px;
             height: 100%;
         }
 
         .empty-state .empty-icon {
-            width: 52px;
-            height: 52px;
-            margin-bottom: 4px;
-            border-radius: 14px;
-            background: var(--surface-alt);
+            width: 44px;
+            height: 44px;
+            margin-bottom: 2px;
+            border-radius: 10px;
+            background: #f5f6fa;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0.7;
             border: 1px solid var(--border);
-            position: relative;
-        }
-
-        /* 空状态文档图标 */
-        #tab-text .empty-icon::before {
-            content: '';
-            width: 22px;
-            height: 28px;
-            border: 2px solid var(--text-muted);
-            border-radius: 3px;
-        }
-
-        #tab-text .empty-icon::after {
-            content: '';
-            position: absolute;
-            width: 12px;
-            height: 2px;
-            background: var(--text-muted);
-            margin-top: -8px;
-            box-shadow: 0 5px 0 var(--text-muted), 0 10px 0 var(--text-muted);
+            font-size: 18px;
+            color: var(--text-muted);
         }
 
         .empty-state .empty-text {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 500;
             color: var(--text-secondary);
         }
 
         .empty-state .empty-sub {
-            font-size: 11px;
-            opacity: 0.7;
-            max-width: 220px;
-            line-height: 1.5;
+            font-size: 10.5px;
+            opacity: 0.65;
+            max-width: 210px;
+            line-height: 1.4;
         }
 
-        /* ========== 复选框 ========== */
         .checkbox-wrap {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--text-secondary);
             user-select: none;
         }
 
         .checkbox-wrap input[type="checkbox"] {
             accent-color: var(--accent);
-            width: 15px;
-            height: 15px;
+            width: 14px;
+            height: 14px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
-        /* ========== 模态框 - 无模糊纯实色 ========== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -885,11 +805,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 18, 30, 0.5);
+            background: rgba(12, 14, 24, 0.45);
             z-index: 100;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.15s ease;
+            animation: fadeIn 0.14s ease;
         }
 
         .modal-overlay.show {
@@ -910,18 +830,18 @@
             background: #fff;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
-            width: 460px;
+            width: 440px;
             max-width: 93vw;
             max-height: 85vh;
             overflow-y: auto;
-            animation: modalIn 0.2s ease;
+            animation: modalIn 0.18s ease;
             border: 1px solid var(--border);
         }
 
         @keyframes modalIn {
             from {
                 opacity: 0;
-                transform: translateY(10px) scale(0.98);
+                transform: translateY(8px) scale(0.98);
             }
 
             to {
@@ -931,10 +851,10 @@
         }
 
         .modal-header {
-            padding: 15px 18px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border);
             font-weight: 600;
-            font-size: 14.5px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -945,29 +865,27 @@
             cursor: pointer;
             background: none;
             border: none;
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-tertiary);
-            padding: 4px 9px;
-            border-radius: 5px;
-            transition: all var(--transition-fast);
-            line-height: 1;
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
         .modal-close:hover {
-            background: #f1f3f9;
+            background: #f1f3f7;
             color: var(--text-primary);
         }
 
         .modal-body {
-            padding: 18px;
+            padding: 16px;
         }
 
         .modal-footer {
-            padding: 12px 18px;
+            padding: 10px 16px;
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: flex-end;
-            gap: 8px;
+            gap: 7px;
             background: var(--surface-alt);
             border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         }
@@ -976,14 +894,14 @@
         .modal input[type="text"],
         .modal select {
             width: 100%;
-            padding: 9px 12px;
+            padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            font-size: 12.5px;
-            font-family: var(--font-family);
-            transition: all var(--transition-fast);
-            background: #fafbff;
+            font-size: 12px;
+            font-family: var(--font);
+            background: #fafbfd;
             color: var(--text-primary);
+            transition: all var(--transition);
         }
 
         .modal textarea:focus,
@@ -991,22 +909,22 @@
         .modal select:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
+            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.07);
             background: #fff;
         }
 
         .modal label {
             display: block;
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 4px;
-            margin-top: 12px;
+            margin-bottom: 3px;
+            margin-top: 10px;
         }
 
         .modal .form-row {
             display: flex;
-            gap: 8px;
+            gap: 7px;
             align-items: center;
         }
 
@@ -1015,17 +933,17 @@
         }
 
         .hint {
-            font-size: 11px;
+            font-size: 10.5px;
             color: var(--text-tertiary);
-            margin-top: 5px;
-            opacity: 0.75;
-            line-height: 1.5;
+            margin-top: 4px;
+            opacity: 0.7;
+            line-height: 1.4;
         }
 
         .slider-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .slider-row input[type="range"] {
@@ -1035,15 +953,14 @@
         }
 
         .slider-val {
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
             color: var(--text-primary);
-            min-width: 32px;
+            min-width: 28px;
             text-align: center;
             font-variant-numeric: tabular-nums;
         }
 
-        /* Toast */
         .toast-msg {
             animation: toastIn 0.3s ease;
         }
@@ -1051,7 +968,7 @@
         @keyframes toastIn {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(12px);
+                transform: translateX(-50%) translateY(10px);
             }
 
             to {
@@ -1060,28 +977,27 @@
             }
         }
 
-        /* 步骤指示器 */
         .workflow-steps {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             margin-bottom: 2px;
         }
 
         .workflow-step {
             flex: 1;
-            height: 3px;
-            border-radius: 10px;
+            height: 2.5px;
+            border-radius: 8px;
             background: #e2e6f0;
             transition: all 0.3s ease;
         }
 
         .workflow-step.done {
-            background: var(--accent-gradient);
+            background: var(--accent);
         }
 
         .workflow-step.active {
-            background: var(--accent-gradient);
-            animation: pulse-step 1.5s infinite;
+            background: var(--accent);
+            animation: pulse-step 1.4s infinite;
         }
 
         @keyframes pulse-step {
@@ -1092,11 +1008,29 @@
             }
 
             50% {
-                opacity: 0.5;
+                opacity: 0.45;
             }
         }
 
-        /* ========== 响应式适配 ========== */
+        .failed-list {
+            background: #fffafa;
+            border: 1px solid #fdd;
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            margin-top: 7px;
+            font-size: 11.5px;
+            color: #c53030;
+            max-height: 110px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .failed-list strong {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+
         @media (max-width: 1200px) {
             #tab-text {
                 flex: 1.8;
@@ -1129,7 +1063,7 @@
             }
 
             .tab-content {
-                min-height: 320px;
+                min-height: 300px;
             }
         }
     </style>
@@ -1137,48 +1071,38 @@
 
 <body>
     <div class="app">
-        <!-- 顶部导航 -->
         <nav class="navbar">
             <div class="brand">
-                <div class="icon-wrap"></div>
-                <span>视频人声转文本</span>
+                <div class="icon-dot"></div><span>视频人声转文本</span>
             </div>
-            <div class="navbar-actions">
-                <button class="btn btn-danger btn-sm" onclick="clearAllData()">清空数据</button>
+            <div class="navbar-actions"><button class="btn btn-danger btn-sm" onclick="clearAllData()">清空数据</button>
             </div>
         </nav>
-
-        <!-- 主体 -->
         <div class="main-body">
-            <!-- 左侧边栏 - 文件管理 -->
             <aside class="sidebar">
-                <!-- 步骤指示器 -->
                 <div class="workflow-steps" id="workflowSteps">
                     <div class="workflow-step" id="stepUpload"></div>
                     <div class="workflow-step" id="stepTranscribe"></div>
                     <div class="workflow-step" id="stepTranslate"></div>
                     <div class="workflow-step" id="stepAudio"></div>
                 </div>
-
                 <div class="sidebar-section">
-                    <div class="section-title"><span class="dot-indicator"></span>文件上传</div>
+                    <div class="section-title"><span class="dot"></span>文件上传</div>
                     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                         <div class="upload-icon"></div>
                         <div class="upload-text">拖拽文件到此处，或<span>点击上传</span></div>
                     </div>
-                    <div class="upload-hint">MP4 / AVI / MOV / MKV / WEBM / MP3 / M4A / AAC / OGG / FLAC / WAV · 单文件
-                        ≤1GB</div>
+                    <div class="upload-hint">MP4 / AVI / MOV / MKV / WEBM / MP3 / M4A / AAC / OGG / FLAC / WAV &middot;
+                        单文件≤1GB</div>
                     <input type="file" id="fileInput" style="display:none" multiple accept="video/*,audio/*"
                         onchange="handleFileInput(event)">
                 </div>
-
                 <div class="sidebar-section" id="fileListSection" style="display:none;">
                     <div class="section-title" id="fileListTitle">已选择文件 (0)</div>
                     <div id="fileListContainer"></div>
                     <button class="btn btn-primary" id="transcribeBtn" onclick="startTranscribe()"
-                        style="width:100%;margin-top:8px;justify-content:center;">开始转录</button>
+                        style="width:100%;margin-top:7px;justify-content:center;">开始转录</button>
                 </div>
-
                 <div class="sidebar-section" id="progressSection" style="display:none;">
                     <div class="section-title">处理进度</div>
                     <div class="progress-text" id="progressLabel">准备中...</div>
@@ -1187,8 +1111,6 @@
                     </div>
                 </div>
             </aside>
-
-            <!-- 主内容区 - 三面板并列 -->
             <div class="main-panel">
                 <div class="tab-nav">
                     <button class="tab-btn active" data-tab="tab-text"
@@ -1196,8 +1118,6 @@
                     <button class="tab-btn" data-tab="tab-trans" onclick="switchTab('tab-trans', this)">翻译结果</button>
                     <button class="tab-btn" data-tab="tab-audio" onclick="switchTab('tab-audio', this)">音频列表</button>
                 </div>
-
-                <!-- 原始文案 - 主编辑区 -->
                 <div class="tab-content active" id="tab-text" data-panel-title="原始文案">
                     <div class="tab-toolbar">
                         <div class="toolbar-left">
@@ -1214,14 +1134,12 @@
                     </div>
                     <div id="textListContainer">
                         <div class="empty-state">
-                            <div class="empty-icon"></div>
+                            <div class="empty-icon">T</div>
                             <div class="empty-text">暂无转录文案</div>
                             <div class="empty-sub">上传文件并点击开始转录后，文案会自动出现在这里</div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 翻译结果 -->
                 <div class="tab-content" id="tab-trans" data-panel-title="翻译结果">
                     <div class="tab-toolbar">
                         <div class="toolbar-left">
@@ -1240,20 +1158,16 @@
                     </div>
                     <div id="transListContainer">
                         <div class="empty-state">
-                            <div class="empty-icon"></div>
+                            <div class="empty-icon">A</div>
                             <div class="empty-text">暂无翻译内容</div>
                             <div class="empty-sub">在原始文案中勾选条目，点击翻译选中即可生成</div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 音频列表 -->
                 <div class="tab-content" id="tab-audio" data-panel-title="音频列表">
                     <div class="tab-toolbar">
-                        <div class="toolbar-left">
-                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllAudio"
-                                    onchange="toggleAllAudio()"> 全选</label>
-                        </div>
+                        <div class="toolbar-left"><label class="checkbox-wrap"><input type="checkbox"
+                                    id="selectAllAudio" onchange="toggleAllAudio()"> 全选</label></div>
                         <div class="toolbar-right">
                             <button class="btn btn-primary btn-sm" id="btnBatchDownloadAudio"
                                 onclick="batchDownloadAudio()" disabled>批量下载</button>
@@ -1263,7 +1177,7 @@
                     </div>
                     <div id="audioListContainer">
                         <div class="empty-state">
-                            <div class="empty-icon"></div>
+                            <div class="empty-icon">S</div>
                             <div class="empty-text">暂无生成音频</div>
                             <div class="empty-sub">在翻译结果中勾选条目，点击生成语音即可</div>
                         </div>
@@ -1272,102 +1186,979 @@
             </div>
         </div>
     </div>
-
-    <!-- 翻译弹窗 -->
     <div class="modal-overlay" id="modalTranslate">
         <div class="modal">
             <div class="modal-header"><span>批量翻译设置</span><button class="modal-close" id="modalTranslateClose"
-                    onclick="closeModal('modalTranslate')">✕</button></div>
+                    onclick="closeModal('modalTranslate')">&times;</button></div>
             <div class="modal-body" id="translateBody">
-                <label for="translateInput">目标语言（用逗号或换行分隔，多个语言自动识别）</label>
+                <label for="translateInput">目标语言（用逗号或换行分隔）</label>
                 <textarea id="translateInput" rows="3" placeholder="例如：葡萄牙语、英语、日语&#10;按 Ctrl+Enter 快速开始翻译"></textarea>
                 <div class="hint">系统将自动识别所有已勾选文案并翻译为指定语言</div>
-                <div id="translateProgress" style="display:none; margin-top:14px;">
+                <div id="translateProgress" style="display:none;margin-top:12px;">
                     <div class="progress-text" id="translateProgressLabel">正在翻译... 0/0</div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="translateProgressFill" style="width:0%;"></div>
                     </div>
                 </div>
+                <div id="translateFailedList" style="display:none;"></div>
             </div>
-            <div class="modal-footer" id="translateFooter">
-                <button class="btn btn-outline" onclick="closeModal('modalTranslate')">取消</button>
-                <button class="btn btn-primary" id="btnConfirmTranslate" onclick="executeTranslate()">开始翻译</button>
-            </div>
+            <div class="modal-footer" id="translateFooter"><button class="btn btn-outline"
+                    onclick="closeModal('modalTranslate')">取消</button><button class="btn btn-primary"
+                    id="btnConfirmTranslate" onclick="executeTranslate()">开始翻译</button></div>
         </div>
     </div>
-
-    <!-- TTS弹窗 -->
     <div class="modal-overlay" id="modalTts">
         <div class="modal">
             <div class="modal-header"><span>语音生成设置</span><button class="modal-close" id="modalTtsClose"
-                    onclick="closeModal('modalTts')">✕</button></div>
+                    onclick="closeModal('modalTts')">&times;</button></div>
             <div class="modal-body" id="ttsBody">
-                <label for="ttsModel">模型选择</label>
-                <select id="ttsModel" onchange="onTtsModelChange()">
+                <label for="ttsModel">模型选择</label><select id="ttsModel" onchange="onTtsModelChange()">
                     <option value="google">谷歌 (Google)</option>
                     <option value="aliyun">阿里云 (Aliyun)</option>
                 </select>
                 <label for="ttsVoice">语音音色</label>
-                <div class="form-row">
-                    <select id="ttsVoice" style="flex:1;"></select>
-                    <button class="btn btn-outline btn-sm" id="btnVoiceDemo" onclick="playVoiceDemo()">试听</button>
+                <div class="form-row"><select id="ttsVoice" style="flex:1;"></select><button
+                        class="btn btn-outline btn-sm" id="btnVoiceDemo" onclick="playVoiceDemo()">试听</button></div>
+                <div id="ttsIntervalRow"><label for="ttsInterval">段落间隔（秒）</label>
+                    <div class="slider-row"><input type="range" id="ttsInterval" min="0" max="3" step="0.1" value="0.3"
+                            oninput="document.getElementById('ttsIntervalVal').textContent=this.value"><span
+                            class="slider-val" id="ttsIntervalVal">0.3</span></div>
                 </div>
-                <div id="ttsIntervalRow">
-                    <label for="ttsInterval">段落间隔（秒）</label>
-                    <div class="slider-row">
-                        <input type="range" id="ttsInterval" min="0" max="3" step="0.1" value="0.3"
-                            oninput="document.getElementById('ttsIntervalVal').textContent=this.value">
-                        <span class="slider-val" id="ttsIntervalVal">0.3</span>
-                    </div>
-                </div>
-                <label style="margin-top:12px;"><input type="checkbox" id="ttsUseTextName"
+                <label style="margin-top:10px;"><input type="checkbox" id="ttsUseTextName"
                         style="accent-color:var(--accent);"> 使用原始文案作为文件名</label>
-                <div id="ttsProgress" style="display:none; margin-top:14px;">
+                <div id="ttsProgress" style="display:none;margin-top:12px;">
                     <div class="progress-text" id="ttsProgressLabel">正在生成... 0/0</div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="ttsProgressFill" style="width:0%;"></div>
                     </div>
                 </div>
+                <div id="ttsFailedList" style="display:none;"></div>
             </div>
-            <div class="modal-footer" id="ttsFooter">
-                <button class="btn btn-outline" onclick="closeModal('modalTts')">取消</button>
-                <button class="btn btn-primary" id="btnConfirmTts" onclick="executeTts()">确认生成</button>
-            </div>
+            <div class="modal-footer" id="ttsFooter"><button class="btn btn-outline"
+                    onclick="closeModal('modalTts')">取消</button><button class="btn btn-primary" id="btnConfirmTts"
+                    onclick="executeTts()">确认生成</button></div>
         </div>
     </div>
-
-    <!-- 手动新增文案弹窗 -->
     <div class="modal-overlay" id="modalAddText">
         <div class="modal">
             <div class="modal-header"><span>新增原始文案</span><button class="modal-close"
-                    onclick="closeModal('modalAddText')">✕</button></div>
+                    onclick="closeModal('modalAddText')">&times;</button></div>
             <div class="modal-body"><textarea id="addTextInput" rows="5" placeholder="输入文本内容..."></textarea></div>
             <div class="modal-footer"><button class="btn btn-outline"
                     onclick="closeModal('modalAddText')">取消</button><button class="btn btn-primary"
                     onclick="saveAddText()">保存</button></div>
         </div>
     </div>
-
-    <!-- 手动新增翻译弹窗 -->
     <div class="modal-overlay" id="modalAddTrans">
         <div class="modal">
             <div class="modal-header"><span>新增翻译</span><button class="modal-close"
-                    onclick="closeModal('modalAddTrans')">✕</button></div>
-            <div class="modal-body">
-                <label for="addTransLang">语言标识（可选）</label><input type="text" id="addTransLang"
-                    placeholder="zh / en / pt / jp / kr">
-                <label for="addTransText">翻译内容</label><textarea id="addTransText" rows="4"
-                    placeholder="输入翻译文本..."></textarea>
-            </div>
+                    onclick="closeModal('modalAddTrans')">&times;</button></div>
+            <div class="modal-body"><label for="addTransLang">语言标识（可选）</label><input type="text" id="addTransLang"
+                    placeholder="zh / en / pt / jp / kr"><label for="addTransText">翻译内容</label><textarea
+                    id="addTransText" rows="4" placeholder="输入翻译文本..."></textarea></div>
             <div class="modal-footer"><button class="btn btn-outline"
                     onclick="closeModal('modalAddTrans')">取消</button><button class="btn btn-primary"
                     onclick="saveAddTrans()">保存</button></div>
         </div>
     </div>
+    <audio id="demoAudio" style="display:none;"></audio>
+    <script>
+        const BASE = 'https://149.28.88.166:3005';
+        let fileList = [];
+        let textList = [];
+        let transList = [];
+        let audioList = [];
+        let isTranscribing = false;
+        let currentPlayIdx = -1;
+        let currentAudioEl = null;
+        let voiceListCache = { google: [], aliyun: [] };
+        let pendingTtsItems = [];
+        const SOURCE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6',
+            '#f97316', '#84cc16', '#a855f7', '#22d3ee', '#fb7185', '#2dd4bf', '#eab308'
+        ];
 
-    <audio id="demoAudio" style="display:none;">
+        function getSourceColor(fromTextId) {
+            if (!fromTextId) return '#c0c5d0'; let hash = 0; for (let i = 0; i < fromTextId
+                .length; i++) {
+                hash = ((hash << 5) - hash) + fromTextId.charCodeAt(i);
+                hash |= 0;
+            } return SOURCE_COLORS[Math.abs(hash) % SOURCE_COLORS.length];
+        }
 
-        <script src="trans.js"></script>
+        function getOriginSnippet(fromTextId) {
+            if (!fromTextId) return ''; const o = textList.find(t => t.id === fromTextId); if (
+                !o || !o.text) return ''; const c = o.text.replace(/\s+/g, ' ').trim(); return c.length > 25 ? c.slice(0, 25) +
+                    '...' : c;
+        }
+
+        function genId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9); }
+
+        function formatSize(b) {
+            if (!b || b === 0) return '0 B'; const k = 1024,
+                arr = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(
+                    k, i)).toFixed(2)) + ' ' + arr[i];
+        }
+
+        function formatTime(s) {
+            if (isNaN(s) || s < 0) return '0:00'; const m = Math.floor(s / 60),
+                sec = Math.floor(s % 60); return m + ':' + sec.toString().padStart(2, '0');
+        }
+
+        function getLangName(c) {
+            const m = { zh: '中文', pt: '葡萄牙语', en: '英语', jp: '日语', kr: '韩语' }; return m[c] || c ||
+                '未知';
+        }
+
+        function getBadgeClass(c) {
+            const m = {
+                zh: 'badge-blue', en: 'badge-green', pt: 'badge-orange', jp: 'badge-gray',
+                kr: 'badge-red'
+            }; return m[c] || 'badge-gray';
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s; return d.innerHTML;
+        }
+
+        function escapeAttr(s) {
+            return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g,
+                '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function showToast(msg, type = 'info') {
+            const e = document.querySelector('.toast-msg'); if (e) e.remove(); const t =
+                document.createElement('div');
+            t.className = 'toast-msg';
+            t.textContent = msg; const c = { info: '#4f5ef0', success: '#0fa87a', error: '#e54545', warning: '#d4880a' };
+            t.style.cssText =
+                `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;background:${c[type] || c.info};color:#fff;padding:10px 20px;border-radius:18px;font-size:12.5px;font-weight:500;box-shadow:0 5px 16px rgba(0,0,0,0.16);pointer-events:none;animation:toastIn 0.3s ease;max-width:88vw;text-align:center;`;
+            document.body.appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transition = 'opacity 0.3s';
+            }, 2300);
+            setTimeout(() => t.remove(), 2900);
+        }
+
+        function showConfirm(msg) {
+            return new Promise(r => {
+                const o = document.createElement('div');
+                o.className = 'modal-overlay';
+                o.style.display = 'flex';
+                o.innerHTML =
+                    `<div class="modal" style="width:350px;"><div class="modal-header"><span>确认操作</span><button class="modal-close close-confirm">&times;</button></div><div class="modal-body"><p style="font-size:13px;margin:0;line-height:1.5;">${msg}</p></div><div class="modal-footer"><button class="btn btn-outline cancel-confirm">取消</button><button class="btn btn-primary confirm-confirm">确认</button></div></div>`;
+                document.body.appendChild(o); const c = (v) => {
+                    o.style.display = 'none';
+                    setTimeout(() => o.remove(), 180);
+                    r(v);
+                };
+                o.querySelector('.close-confirm').onclick = () => c(false);
+                o.querySelector('.cancel-confirm').onclick = () => c(false);
+                o.querySelector('.confirm-confirm').onclick = () => c(true);
+                o.addEventListener('click', e => { if (e.target === o) c(false); });
+            });
+        }
+
+        function copyText(t) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(t).then(() => showToast('已复制',
+                    'success')).catch(() => showToast('复制失败', 'error'));
+            } else {
+                const ta = document.createElement(
+                    'textarea');
+                ta.value = t;
+                ta.style.cssText = 'position:fixed;left:-9999px;';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('已复制', 'success');
+            }
+        }
+
+        function downloadTxt(t, n) {
+            const b = new Blob([t], { type: 'text/plain;charset=utf-8' }); const u = URL.createObjectURL(
+                b); const a = document.createElement('a');
+            a.href = u;
+            a.download = (n || '文案') + '_' + Date.now() + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(u);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('modal-overlay')) e.target.classList
+                .remove('show');
+        });
+
+        function updateWorkflowSteps() {
+            const s = {
+                u: document.getElementById('stepUpload'), t: document.getElementById(
+                    'stepTranscribe'), r: document.getElementById('stepTranslate'), a: document.getElementById(
+                        'stepAudio')
+            };
+            Object.values(s).forEach(x => x.className = 'workflow-step'); if (fileList.length > 0) s.u.classList.add('done'); if (
+                textList.length > 0) s.t.classList.add('done'); if (transList.length > 0) s.r.classList.add('done'); if (audioList
+                    .length > 0) s.a.classList.add('done'); if (isTranscribing) s.t.classList.add('active');
+        }
+        const uploadZone = document.getElementById('uploadZone');
+        uploadZone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#4f5ef0';
+            this.style.background = '#f0f1ff';
+        });
+        uploadZone.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#d8dce8';
+            this.style.background = '#fafbfd';
+        });
+        uploadZone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#d8dce8';
+            this.style.background = '#fafbfd'; const f = e.dataTransfer.files; if (f && f.length) processFiles(Array.from(
+                f));
+        });
+
+        function handleFileInput(e) {
+            const f = e.target.files; if (f && f.length) processFiles(Array.from(f));
+            e.target.value = '';
+        }
+
+        function processFiles(files) {
+            files.forEach(f => {
+                const v = f.type.startsWith('video/'),
+                    a = f.type.startsWith('audio/'); if (!v && !a) { showToast(f.name + ' 不是音视频文件，已跳过', 'warning'); return; } if (f
+                        .size > 1073741824) { showToast(f.name + ' 超过1GB，已跳过', 'warning'); return; } if (fileList.some(i => i
+                            .name === f.name && i.size === f.size)) { showToast(f.name + ' 已存在', 'warning'); return; }
+                fileList.push({ uid: genId(), name: f.name, size: f.size, raw: f });
+            });
+            renderFileList();
+            updateWorkflowSteps();
+        }
+
+        function removeFile(i) {
+            fileList.splice(i, 1);
+            renderFileList();
+            updateWorkflowSteps();
+        }
+
+        function renderFileList() {
+            const s = document.getElementById('fileListSection'),
+                c = document.getElementById('fileListContainer'),
+                t = document.getElementById('fileListTitle'); if (fileList.length === 0) {
+                    s.style.display = 'none';
+                    updateWorkflowSteps(); return;
+                }
+            s.style.display = 'block';
+            t.textContent = '已选择文件 (' + fileList.length + ')';
+            c.innerHTML = fileList.map((f, i) =>
+                `<div class="file-item"><span class="fi-icon">F</span><div class="fi-info"><div class="fi-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div><div class="fi-size">${formatSize(f.size)}</div></div><button class="fi-del" onclick="removeFile(${i})" title="移除">&times;</button></div>`
+            ).join('');
+            updateWorkflowSteps();
+        }
+        async function startTranscribe() {
+            if (fileList.length === 0) return showToast('请先选择文件', 'warning'); if (
+                isTranscribing) return;
+            isTranscribing = true;
+            updateWorkflowSteps(); const ps = document.getElementById('progressSection'),
+                pf = document.getElementById('progressFill'),
+                pl = document.getElementById('progressLabel'),
+                btn = document.getElementById('transcribeBtn');
+            ps.style.display = 'block';
+            btn.disabled = true;
+            btn.textContent = '转录中...';
+            pf.className = 'progress-fill progress-indeterminate';
+            pl.textContent = '正在处理: ' + fileList[0].name; try {
+                for (let i = 0; i < fileList.length; i++) {
+                    const fi =
+                        fileList[i];
+                    pl.textContent = `处理中 (${i + 1}/${fileList.length}): ${fi.name}`; const fd = new FormData(); const isV = fi
+                        .raw.type.startsWith('video/'); const url = isV ? '/api/transcribe' : '/api/transcribe-audio';
+                    fd.append(isV ? 'video' : 'audio', fi.raw); const res = await fetch(BASE + url, {
+                        method: 'POST',
+                        body: fd
+                    }); if (!res.ok) throw new Error('HTTP ' + res.status); if (isV) {
+                        const reader = res.body
+                            .getReader(); const decoder = new TextDecoder(); let buf = ''; while (true) {
+                                const { done,
+                                    value } = await reader.read(); if (done) break;
+                                buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n');
+                                buf = lines.pop() || ''; for (const line of lines) {
+                                    if (line.startsWith('data: ')) {
+                                        try {
+                                            const d =
+                                                JSON.parse(line.slice(6)); if (d.type === 'complete') {
+                                                    textList.push({
+                                                        id: genId(),
+                                                        source: fi.name, origin: d.data.originalTranscription || '', text: d
+                                                            .data.chineseTranscription || '', selected: false
+                                                    });
+                                                    renderTextList();
+                                                }
+                                        } catch (e) { }
+                                    }
+                                }
+                            }
+                    } else {
+                        const json = await res.json();
+                        textList.push({
+                            id: genId(), source: fi.name, origin: json.originalTranscription || '', text: json
+                                .chineseTranscription || '', selected: false
+                        });
+                        renderTextList();
+                    }
+                }
+                pf.className = 'progress-fill';
+                pf.style.width = '100%';
+                pl.textContent = '转录完成';
+                textList.forEach(x => x.selected = true);
+                renderTextList();
+                updateWorkflowSteps(); if (textList.length > 0) switchTab('tab-text', document.querySelector(
+                    '.tab-btn[data-tab="tab-text"]'));
+                showToast('转录完成，共 ' + textList.length + ' 条文案', 'success');
+            } catch (err) {
+                pl.textContent = '转录失败: ' + err
+                    .message;
+                showToast('转录失败: ' + err.message, 'error');
+            } finally {
+                isTranscribing = false;
+                btn.disabled = false;
+                btn.textContent = '开始转录';
+                updateWorkflowSteps();
+                setTimeout(() => {
+                    ps.style.display = 'none';
+                    pf.style.width = '0%';
+                    pf.className = 'progress-fill';
+                }, 2200);
+            }
+        }
+
+        function renderTextList() {
+            const c = document.getElementById('textListContainer'),
+                bt = document.getElementById('btnTranslate'),
+                bd = document.getElementById('btnDelText'); if (textList.length === 0) {
+                    c.innerHTML =
+                        '<div class="empty-state"><div class="empty-icon">T</div><div class="empty-text">暂无转录文案</div><div class="empty-sub">上传文件并点击开始转录后，文案会自动出现在这里</div></div>';
+                    bt.disabled = true;
+                    bd.disabled = true;
+                    document.getElementById('selectAllText').checked = false; return;
+                }
+            c.innerHTML = textList.map((item, i) =>
+                `<div class="card"><div class="card-header"><div class="ch-left"><label class="checkbox-wrap"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="textList[${i}].selected=this.checked;updateToolbarText();"></label><span class="badge badge-gray">#${i + 1}</span><span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></div><div class="ch-right"><button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button><button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button><button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteText(${i})" title="删除">删除</button></div></div><textarea class="card-textarea" onchange="textList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea></div>`
+            ).join('');
+            updateToolbarText();
+        }
+
+        function updateToolbarText() {
+            const s = textList.filter(i => i.selected).length;
+            document.getElementById('btnTranslate').disabled = s === 0;
+            document.getElementById('btnDelText').disabled = s === 0;
+            document.getElementById('selectAllText').checked = textList.length > 0 && textList.every(i => i.selected);
+        }
+
+        function toggleAllText() {
+            const c = document.getElementById('selectAllText').checked;
+            textList.forEach(i => i.selected = c);
+            renderTextList();
+        }
+        async function deleteText(i) {
+            if (!await showConfirm('确定删除该条原始文案？')) return;
+            textList.splice(i, 1);
+            renderTextList();
+            updateWorkflowSteps();
+            showToast('已删除', 'success');
+        }
+        async function deleteSelectedText() {
+            const s = textList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选文案', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 条文案？`)) return; for (let i = textList.length -
+                    1; i >= 0; i--) { if (textList[i].selected) textList.splice(i, 1); }
+            renderTextList();
+            updateWorkflowSteps();
+            showToast('已批量删除', 'success');
+        }
+
+        function addTextManually() {
+            document.getElementById('addTextInput').value = '';
+            openModal('modalAddText');
+        }
+
+        function saveAddText() {
+            const v = document.getElementById('addTextInput').value.trim(); if (!v) return showToast('请输入内容',
+                'warning');
+            textList.push({ id: genId(), source: '手动输入', origin: v, text: v, selected: false });
+            closeModal('modalAddText');
+            renderTextList();
+            updateWorkflowSteps();
+            showToast('手动文案已添加', 'success');
+        }
+
+        function openTranslateDialog() {
+            const s = textList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先在原始文案中勾选需要翻译的条目', 'warning');
+            document.getElementById('translateInput').value = '';
+            document.getElementById('translateProgress').style.display = 'none';
+            document.getElementById('translateFailedList').style.display = 'none';
+            document.getElementById('translateFooter').style.display = 'flex';
+            document.getElementById('modalTranslateClose').style.display = '';
+            document.getElementById('btnConfirmTranslate').disabled = false;
+            openModal('modalTranslate');
+            document.getElementById('translateInput').focus();
+            document.getElementById('translateInput').onkeydown = function (e) {
+                if (e.key === 'Enter' && (e.ctrlKey || e
+                    .metaKey)) {
+                    e.preventDefault();
+                    executeTranslate();
+                }
+            };
+        }
+        async function executeTranslate() {
+            const input = document.getElementById('translateInput').value.trim();
+            if (!input) return showToast('请输入目标语言', 'warning');
+            const btn = document.getElementById('btnConfirmTranslate');
+            const pd = document.getElementById('translateProgress');
+            const pl = document.getElementById('translateProgressLabel');
+            const pf = document.getElementById('translateProgressFill');
+            const ft = document.getElementById('translateFooter');
+            const cb = document.getElementById('modalTranslateClose');
+            const fd = document.getElementById('translateFailedList');
+
+            btn.disabled = true;
+            ft.style.display = 'none';
+            pd.style.display = 'block';
+            fd.style.display = 'none';
+            cb.style.display = 'none';
+
+            try {
+                const lr = await fetch(BASE + '/api/extract-target-languages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ languageInstruction: input })
+                });
+                if (!lr.ok) throw new Error('语言解析失败');
+                const lj = await lr.json();
+                const langs = lj.extractedLanguages || [];
+                if (!langs.length) throw new Error('未识别到有效目标语言');
+                const sel = textList.filter(i => i.selected);
+                const total = sel.length * langs.length;
+                let done = 0;
+                const failed = [];
+
+                pl.textContent = `正在翻译... 0/${total}`;
+                pf.style.width = '0%';
+
+                // 为每一个翻译任务创建一个Promise，完成后立即更新界面 
+                const tasks = [];
+                for (const t of sel) {
+                    for (const lo of langs) {
+                        tasks.push({ ti: t, lo: lo });
+                    }
+                }
+
+                // 并行发起所有请求，并在每个完成时直接处理 
+                const promises = tasks.map(task =>
+                    fetch(BASE + '/api/translate-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: task.ti.text, targetLanguage: task.lo.language })
+                    })
+                        .then(async r => {
+                            if (!r.ok) throw new Error('HTTP ' + r.status);
+                            const json = await r.json();
+                            return { success: true, task, json };
+                        })
+                        .catch(err => {
+                            return { success: false, task, error: err.message || '未知错误' };
+                        })
+                        .then(result => {
+                            // 处理单个结果（无论成功或失败）
+                            done++;
+                            if (result.success) {
+                                const { task, json } = result;
+                                const lc = task.lo.ttsCode || task.lo.language || '';
+                                transList.push({
+                                    id: genId(),
+                                    text: json.translatedText || '',
+                                    lang: lc,
+                                    source: task.ti.source + ' - ' + getLangName(task.lo.language),
+                                    fromTextId: task.ti.id,
+                                    selected: false
+                                });
+                                renderTransList();  // 实时显示新增的翻译 
+                            } else {
+                                failed.push({
+                                    text: (result.task.ti.text || '').slice(0, 40),
+                                    lang: getLangName(result.task.lo.language),
+                                    error: result.error
+                                });
+                            }
+
+                            // 更新进度 
+                            pl.textContent = `正在翻译... ${done}/${total}`;
+                            pf.style.width = ((done / total) * 100) + '%';
+                        })
+                );
+
+                // 等待所有请求完成（只是为了确保finally执行时间正确）
+                await Promise.allSettled(promises);
+
+                // 所有请求处理完毕后的收尾 
+                transList.forEach(x => x.selected = true);
+                renderTransList();
+                updateWorkflowSteps();
+
+                if (failed.length > 0) {
+                    fd.style.display = 'block';
+                    fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 条翻译失败：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '…" → ' + f.lang + ' (' + f.error + ')').join('<br>')}</div>`;
+                    showToast(`翻译部分完成：${done - failed.length} 成功，${failed.length} 失败`, 'warning');
+                } else {
+                    closeModal('modalTranslate');
+                    showToast(`翻译完成，共 ${done} 条译文`, 'success');
+                }
+                switchTab('tab-trans', document.querySelector('.tab-btn[data-tab="tab-trans"]'));
+            } catch (err) {
+                showToast('翻译失败: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                ft.style.display = 'flex';
+                pd.style.display = 'none';
+                cb.style.display = '';
+            }
+        }
+        function addTransManually() {
+            document.getElementById('addTransLang').value = '';
+            document.getElementById('addTransText').value = '';
+            openModal('modalAddTrans');
+        }
+
+        function saveAddTrans() {
+            const l = document.getElementById('addTransLang').value.trim() || 'en'; const t = document
+                .getElementById('addTransText').value.trim(); if (!t) return showToast('请输入翻译内容', 'warning');
+            transList.push({ id: genId(), text: t, lang: l, source: '手动输入', fromTextId: null, selected: false });
+            closeModal('modalAddTrans');
+            renderTransList();
+            updateWorkflowSteps();
+            showToast('翻译已添加', 'success');
+        }
+
+        function renderTransList() {
+            const c = document.getElementById('transListContainer'),
+                bd = document.getElementById('btnDownloadTrans'),
+                bt = document.getElementById('btnTts'),
+                bdel = document.getElementById('btnDelTrans'); if (transList.length === 0) {
+                    c.innerHTML =
+                        '<div class="empty-state"><div class="empty-icon">A</div><div class="empty-text">暂无翻译内容</div><div class="empty-sub">在原始文案中勾选条目，然后点击翻译选中即可</div></div>';
+                    bd.disabled = true;
+                    bt.disabled = true;
+                    bdel.disabled = true; return;
+                }
+            c.innerHTML = transList.map((item, i) => {
+                const bc = getSourceColor(item.fromTextId); const sn =
+                    getOriginSnippet(item.fromTextId); return `<div class="card" style="border-left:3px solid ${bc};"><div class="card-header"><div class="ch-left"><label class="checkbox-wrap"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="transList[${i}].selected=this.checked;updateToolbarTrans();"></label><span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span>${sn ? `<span class="badge-source" title="${escapeHtml(sn)}">${escapeHtml(sn)}</span>` : ''}<span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></div><div class="ch-right"><button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button><button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button><button class="btn btn-primary btn-xs" onclick="singleTts(${i})" title="生成语音">语音</button><button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})" title="删除">删除</button></div></div><textarea class="card-textarea" onchange="transList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea></div>`;
+            })
+                .join('');
+            updateToolbarTrans();
+        }
+
+        function updateToolbarTrans() {
+            const s = transList.filter(i => i.selected).length;
+            document.getElementById('btnDownloadTrans').disabled = s === 0;
+            document.getElementById('btnTts').disabled = s === 0;
+            document.getElementById('btnDelTrans').disabled = s === 0;
+            document.getElementById('selectAllTrans').checked = transList.length > 0 && transList.every(i => i.selected);
+        }
+
+        function toggleAllTrans() {
+            const c = document.getElementById('selectAllTrans').checked;
+            transList.forEach(i => i.selected = c);
+            renderTransList();
+        }
+        async function deleteTrans(i) {
+            if (!await showConfirm('确定删除该条翻译？')) return;
+            transList.splice(i, 1);
+            renderTransList();
+            updateWorkflowSteps();
+            showToast('已删除', 'success');
+        }
+        async function deleteSelectedTrans() {
+            const s = transList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选翻译', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 条翻译？`)) return; for (let i = transList.length -
+                    1; i >= 0; i--) { if (transList[i].selected) transList.splice(i, 1); }
+            renderTransList();
+            updateWorkflowSteps();
+            showToast('已批量删除', 'success');
+        }
+
+        function batchDownloadTrans() {
+            const s = transList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选翻译', 'warning'); let str = '';
+            s.forEach(i => { str += '[' + getLangName(i.lang) + '] ' + i.source + '\n' + i.text + '\n\n'; }); const now = new Date();
+            downloadTxt(str, '翻译合集_' + (now.getMonth() + 1) + '月' + now.getDate() + '日');
+            showToast('翻译合集已下载', 'success');
+        }
+        async function openTtsDialog() {
+            const s = transList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选翻译条目', 'warning');
+            pendingTtsItems = [...s];
+            document.getElementById('ttsModel').value = 'google';
+            document.getElementById('ttsInterval').value = '0.3';
+            document.getElementById('ttsIntervalVal').textContent = '0.3';
+            document.getElementById('ttsUseTextName').checked = false;
+            document.getElementById('ttsProgress').style.display = 'none';
+            document.getElementById('ttsFailedList').style.display = 'none';
+            document.getElementById('ttsFooter').style.display = 'flex';
+            document.getElementById('modalTtsClose').style.display = '';
+            document.getElementById('btnConfirmTts').disabled = false; await loadVoiceOptions('google');
+            openModal('modalTts');
+        }
+
+        function singleTts(i) {
+            pendingTtsItems = [transList[i]];
+            document.getElementById('ttsModel').value = 'google';
+            document.getElementById('ttsInterval').value = '0.3';
+            document.getElementById('ttsIntervalVal').textContent = '0.3';
+            document.getElementById('ttsUseTextName').checked = false;
+            document.getElementById('ttsProgress').style.display = 'none';
+            document.getElementById('ttsFailedList').style.display = 'none';
+            document.getElementById('ttsFooter').style.display = 'flex';
+            document.getElementById('modalTtsClose').style.display = '';
+            document.getElementById('btnConfirmTts').disabled = false;
+            loadVoiceOptions('google');
+            openModal('modalTts');
+        }
+        async function onTtsModelChange() {
+            const m = document.getElementById('ttsModel').value;
+            document.getElementById('ttsIntervalRow').style.display = m === 'google' ? 'block' : 'none'; await loadVoiceOptions(
+                m);
+        }
+        async function loadVoiceOptions(m) {
+            const s = document.getElementById('ttsVoice');
+            s.innerHTML = '<option value="">加载中...</option>'; if (voiceListCache[m] && voiceListCache[m].length > 0) {
+                s.innerHTML =
+                    voiceListCache[m].map(v => `<option value="${v.name}">${v.dname}</option>`).join(''); return;
+            } try {
+                const r =
+                    await fetch(BASE + '/api/voice-options?model=' + m); const j = await r.json(); const v = (j.voices || []).map(
+                        x => ({ name: x.name, dname: x.displayName || x.name }));
+                voiceListCache[m] = v;
+                s.innerHTML = v.map(x => `<option value="${x.name}">${x.dname}</option>`).join('');
+            } catch (e) {
+                s.innerHTML =
+                    '<option value="">加载失败</option>';
+            }
+        }
+        async function playVoiceDemo() {
+            const voice = document.getElementById('ttsVoice').value; const model = document
+                .getElementById('ttsModel').value; if (!voice) return showToast('请先选择音色', 'warning'); const btn = document
+                    .getElementById('btnVoiceDemo');
+            btn.disabled = true;
+            btn.textContent = '...'; const a = document.getElementById('demoAudio');
+            a.src = BASE + '/api/voice-sample/' + encodeURIComponent(voice) + '?model=' + model;
+            a.volume = 0.6; try {
+                await a.play();
+                showToast('试听中...', 'info');
+            } catch (e) { showToast('试听失败', 'error'); }
+            a.onended = () => {
+                btn.disabled = false;
+                btn.textContent = '试听';
+            };
+            a.onerror = () => {
+                btn.disabled = false;
+                btn.textContent = '试听';
+                showToast('试听加载失败', 'error');
+            };
+            setTimeout(() => {
+                if (!a.ended && a.src) {
+                    btn.disabled = false;
+                    btn.textContent = '试听';
+                }
+            }, 7000);
+        }
+        async function singleTtsRequest(item, voice, model, interval, useTextName, maxRetries = 2) {
+            let nt = ''; if (
+                useTextName && item.fromTextId) {
+                const o = textList.find(t => t.id === item.fromTextId); if (o && o.text) nt = o
+                    .text.slice(0, 50).replace(/[\\\/:*?"<>|]/g, '');
+            } if (!nt && useTextName && item.text) nt = item.text.slice(
+                0, 50).replace(/[\\\/:*?"<>|]/g, ''); const payload = {
+                    text: item.text, targetLanguage: item.lang,
+                    voiceName: voice, model: model, paragraphInterval: model === 'google' ? interval : 0,
+                    useContentFileName: useTextName, namingText: nt, skipTranslate: true, transcriptionId: item.id
+                }; let le =
+                    ''; for (let a = 0; a <= maxRetries; a++) {
+                        try {
+                            const r = await fetch(BASE + '/api/generate-speech',
+                                {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(
+                                        payload)
+                                }); if (!r.ok) {
+                                    const et = await r.text().catch(() => ''); let ed = 'HTTP ' + r
+                                        .status; try {
+                                            const ej = JSON.parse(et);
+                                            ed = ej.details || ej.error || ed;
+                                        } catch (e) { } throw new Error(ed);
+                                } const j = await r.json(); if (
+                                !j.audioFileName) throw new Error('响应中没有音频数据'); return {
+                                    success: true, item, result: {
+                                        id: genId(),
+                                        file: j.audioFileName, display: j.displayFileName || j.audioFileName, source: item.source,
+                                        lang: item.lang, selected: false
+                                    }
+                                };
+                        } catch (err) {
+                            le = err.message || '未知错误'; if (a <
+                                maxRetries) await new Promise(r => setTimeout(r, 700 * (a + 1)));
+                        }
+                    } return {
+                        success: false,
+                        item, error: le
+                    };
+        }
+        async function executeTts() {
+            const voice = document.getElementById('ttsVoice').value;
+            const model = document.getElementById('ttsModel').value;
+            const interval = parseFloat(document.getElementById('ttsInterval').value) || 0;
+            const useTextName = document.getElementById('ttsUseTextName').checked;
+            if (!voice) return showToast('请选择音色', 'warning');
+            if (pendingTtsItems.length === 0) return showToast('没有待处理的条目', 'warning');
+
+            const btn = document.getElementById('btnConfirmTts');
+            const pd = document.getElementById('ttsProgress');
+            const pl = document.getElementById('ttsProgressLabel');
+            const pf = document.getElementById('ttsProgressFill');
+            const ft = document.getElementById('ttsFooter');
+            const cb = document.getElementById('modalTtsClose');
+            const fd = document.getElementById('ttsFailedList');
+
+            btn.disabled = true;
+            ft.style.display = 'none';
+            pd.style.display = 'block';
+            fd.style.display = 'none';
+            cb.style.display = 'none';
+
+            const total = pendingTtsItems.length;
+            let done = 0;
+            const success = [];
+            const failed = [];
+
+            pl.textContent = `正在生成... 0/${total}`;
+            pf.style.width = '0%';
+
+            // 并行发起所有TTS请求，每个完成时立即更新界面 
+            const promises = pendingTtsItems.map(item =>
+                singleTtsRequest(item, voice, model, interval, useTextName, 2)
+                    .then(result => {
+                        done++;
+                        if (result.success) {
+                            success.push(result.result);
+                            audioList.push(result.result);
+                            renderAudioList(); // 实时显示新生成的音频 
+                        } else {
+                            failed.push({
+                                text: (result.item.text || '').slice(0, 50),
+                                error: result.error
+                            });
+                        }
+                        // 更新进度 
+                        pl.textContent = `正在生成... ${done}/${total}`;
+                        pf.style.width = ((done / total) * 100) + '%';
+                    })
+            );
+
+            try {
+                // 等待所有请求完成（包括内部重试）
+                await Promise.allSettled(promises);
+
+                // 全部完成后的处理 
+                if (success.length > 0) {
+                    audioList.forEach(x => x.selected = true);
+                    renderAudioList();
+                    updateWorkflowSteps();
+                    switchTab('tab-audio', document.querySelector('.tab-btn[data-tab="tab-audio"]'));
+                }
+
+                if (failed.length > 0) {
+                    fd.style.display = 'block';
+                    fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 条语音生成失败（已重试2次）：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '…" — ' + f.error).join('<br>')}<br><small style="color:#888;">请检查文本内容或稍后重试</small></div>`;
+                    if (success.length > 0) {
+                        showToast(`语音部分完成：${success.length} 成功，${failed.length} 失败`, 'warning');
+                    } else {
+                        showToast(`语音全部失败：${failed.length} 条未成功`, 'error');
+                    }
+                } else {
+                    closeModal('modalTts');
+                    showToast(`语音生成完成，共 ${success.length} 个音频`, 'success');
+                }
+            } catch (err) {
+                showToast('语音生成异常: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                ft.style.display = 'flex';
+                pd.style.display = 'none';
+                cb.style.display = '';
+                pendingTtsItems = [];
+            }
+        }
+        function renderAudioList() {
+            const c = document.getElementById('audioListContainer'),
+                bd = document.getElementById('btnBatchDownloadAudio'),
+                bdel = document.getElementById('btnDelAudio'); if (audioList.length === 0) {
+                    c.innerHTML =
+                        '<div class="empty-state"><div class="empty-icon">S</div><div class="empty-text">暂无生成音频</div><div class="empty-sub">在翻译结果中勾选条目，点击生成语音即可</div></div>';
+                    bd.disabled = true;
+                    bdel.disabled = true; return;
+                }
+            c.innerHTML = audioList.map((item, i) =>
+                `<div class="audio-card"><div class="ac-top"><label class="checkbox-wrap"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="audioList[${i}].selected=this.checked;updateToolbarAudio();"></label><span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span><span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></div><div class="ac-name" title="${escapeHtml(item.display || item.file)}">${escapeHtml(item.display || item.file)}</div><div class="ac-row" style="margin-top:4px;"><button class="btn btn-primary btn-sm" id="playBtn${i}" onclick="togglePlayAudio(${i})">播放</button><button class="btn btn-outline btn-sm" onclick="downloadAudioFile('${escapeAttr(item.file)}','${escapeAttr(item.display || item.file)}')">下载</button><button class="btn btn-ghost btn-sm" style="color:#e54545;" onclick="deleteAudio(${i})">删除</button></div><div id="audioProgressWrap${i}" style="display:none;margin-top:6px;"><div class="audio-progress-bar" onclick="seekAudio(event,${i})"><div class="audio-progress-fill" id="audioProgressFill${i}" style="width:0%;"></div></div><div class="audio-time" id="audioTime${i}">0:00 / 0:00</div></div><audio id="audioEl${i}" style="display:none;" src="${BASE}/api/download-audio/${encodeURIComponent(item.file)}" preload="metadata" onloadedmetadata="onAudioLoaded(${i})" ontimeupdate="onAudioTick(${i})" onended="onAudioEnd(${i})" onerror="onAudioError(${i})"></audio></div>`
+            ).join('');
+            updateToolbarAudio();
+        }
+
+        function updateToolbarAudio() {
+            const s = audioList.filter(i => i.selected).length;
+            document.getElementById('btnBatchDownloadAudio').disabled = s === 0;
+            document.getElementById('btnDelAudio').disabled = s === 0;
+            document.getElementById('selectAllAudio').checked = audioList.length > 0 && audioList.every(i => i.selected);
+        }
+
+        function toggleAllAudio() {
+            const c = document.getElementById('selectAllAudio').checked;
+            audioList.forEach(i => i.selected = c);
+            renderAudioList();
+        }
+        async function deleteAudio(i) {
+            if (!await showConfirm('确定删除该音频记录？')) return; if (currentPlayIdx === i) stopAudio();
+            audioList.splice(i, 1);
+            renderAudioList();
+            updateWorkflowSteps();
+            showToast('已删除', 'success');
+        }
+        async function deleteSelectedAudio() {
+            const s = audioList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选音频', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 个音频？`)) return; if (currentPlayIdx >= 0 && audioList[
+                    currentPlayIdx] && audioList[currentPlayIdx].selected) stopAudio(); for (let i = audioList.length - 1; i >=
+                        0; i--) { if (audioList[i].selected) audioList.splice(i, 1); }
+            renderAudioList();
+            updateWorkflowSteps();
+            showToast('已批量删除', 'success');
+        }
+
+        function batchDownloadAudio() {
+            const s = audioList.filter(i => i.selected); if (s.length === 0) return showToast(
+                '请先勾选音频', 'warning');
+            s.forEach(a => downloadAudioFile(a.file, a.display || a.file));
+            showToast('开始批量下载', 'success');
+        }
+        async function downloadAudioFile(fn, dn) {
+            try {
+                const r = await fetch(BASE + '/api/download-audio/' +
+                    encodeURIComponent(fn), { method: 'GET', headers: { 'Accept': 'audio/*,*/*' } }); if (!r.ok) throw new Error(
+                        '下载失败'); const b = await r.blob(); const u = URL.createObjectURL(b); const a = document.createElement('a');
+                a.href = u;
+                a.download = dn || fn;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(u);
+            } catch (e) {
+                window.open(BASE + '/api/download-audio/' + encodeURIComponent(fn),
+                    '_blank');
+            }
+        }
+
+        function stopAudio() {
+            if (currentAudioEl) {
+                currentAudioEl.pause();
+                currentAudioEl = null;
+            } const oi = currentPlayIdx;
+            currentPlayIdx = -1; if (oi >= 0) {
+                const w = document.getElementById('audioProgressWrap' + oi); const b = document
+                    .getElementById('playBtn' + oi); if (w) w.style.display = 'none'; if (b) b.textContent = '播放';
+            }
+        }
+
+        function togglePlayAudio(i) {
+            if (currentPlayIdx === i) { stopAudio(); return; }
+            stopAudio();
+            currentPlayIdx = i; const ae = document.getElementById('audioEl' + i); const b = document.getElementById('playBtn' + i); const
+                w = document.getElementById('audioProgressWrap' + i); if (!ae) return;
+            currentAudioEl = ae;
+            ae.volume = 0.7;
+            ae.play().catch(() => {
+                showToast('音频加载失败', 'error');
+                stopAudio();
+            }); if (b) b.textContent = '暂停'; if (w) w.style.display = 'block';
+        }
+
+        function onAudioLoaded(i) {
+            const ae = document.getElementById('audioEl' + i); const td = document.getElementById(
+                'audioTime' + i); if (ae && td && ae.duration) td.textContent = '0:00 / ' + formatTime(ae.duration);
+        }
+
+        function onAudioTick(i) {
+            const ae = document.getElementById('audioEl' + i); const f = document.getElementById(
+                'audioProgressFill' + i); const td = document.getElementById('audioTime' + i); if (ae && f && ae.duration) {
+                    const p =
+                        (ae.currentTime / ae.duration) * 100;
+                    f.style.width = p + '%'; if (td) td.textContent = formatTime(ae.currentTime) + ' / ' + formatTime(ae.duration);
+                }
+        }
+
+        function onAudioEnd(i) {
+            const b = document.getElementById('playBtn' + i); const w = document.getElementById(
+                'audioProgressWrap' + i); const f = document.getElementById('audioProgressFill' + i); if (b) b.textContent =
+                    '播放'; if (w) w.style.display = 'none'; if (f) f.style.width = '0%';
+            currentPlayIdx = -1;
+            currentAudioEl = null;
+        }
+
+        function onAudioError(i) {
+            const b = document.getElementById('playBtn' + i); const w = document.getElementById(
+                'audioProgressWrap' + i); if (b) b.textContent = '播放'; if (w) w.style.display = 'none';
+            currentPlayIdx = -1;
+            currentAudioEl = null;
+            showToast('音频加载出错', 'error');
+        }
+
+        function seekAudio(e, i) {
+            const ae = document.getElementById('audioEl' + i); if (!ae || !ae.duration) return; const r = e
+                .currentTarget.getBoundingClientRect(); const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            ae.currentTime = p * ae.duration;
+        }
+
+        function switchTab(tid, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove(
+                'active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); const c = document.getElementById(
+                tid); if (c) c.classList.add('active'); if (btn) btn.classList.add('active');
+        }
+        async function clearAllData() {
+            if (!await showConfirm('确定清空所有上传文件、文案、翻译和音频数据？此操作不可恢复！')) return;
+            stopAudio();
+            fileList = [];
+            textList = [];
+            transList = [];
+            audioList = [];
+            document.getElementById('fileListSection').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            renderTextList();
+            renderTransList();
+            renderAudioList();
+            updateWorkflowSteps();
+            showToast('全部数据已清空', 'success');
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTextList();
+            renderTransList();
+            renderAudioList();
+            loadVoiceOptions('google');
+            updateWorkflowSteps();
+        });
+    </script>
 </body>
 
 </html>
