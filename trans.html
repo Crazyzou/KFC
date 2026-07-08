@@ -1431,14 +1431,24 @@
 
         function processFiles(files) {
             files.forEach(f => {
-                const v = f.type.startsWith('video/'),
-                    a = f.type.startsWith('audio/'); if (!v && !a) { showToast(f.name + ' 不是音视频文件，已跳过', 'warning'); return; } if (f
-                        .size > 1073741824) { showToast(f.name + ' 超过1GB，已跳过', 'warning'); return; } if (fileList.some(i => i
-                            .name === f.name && i.size === f.size)) { showToast(f.name + ' 已存在', 'warning'); return; }
+                const isVid = f.type.startsWith('video/');
+                const isAud = f.type.startsWith('audio/');
+                if (!isVid && !isAud) { showToast(f.name + ' 不是音视频文件，已跳过', 'warning'); return; }
+                if (f.size > 1024 * 1024 * 1024) { showToast(f.name + ' 超过1GB，已跳过', 'warning'); return; }
+                if (fileList.some(item => item.name === f.name && item.size === f.size)) { showToast(f.name + ' 已存在', 'warning'); return; }
                 fileList.push({ uid: genId(), name: f.name, size: f.size, raw: f });
             });
             renderFileList();
             updateWorkflowSteps();
+
+            // ✅ 新增：若当前没有正在进行的转录任务，且文件列表不为空，则自动开始转录 
+            if (!isTranscribing && fileList.length > 0) {
+                setTimeout(() => {
+                    if (!isTranscribing && fileList.length > 0) {
+                        startTranscribe();
+                    }
+                }, 300); // 延迟300ms，确保UI渲染完成且拖拽事件处理完毕 
+            }
         }
 
         function removeFile(i) {
