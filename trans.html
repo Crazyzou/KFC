@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频人声转文本工具</title>
+    <style>
+        :root {
+            /* 基础配色 - 实色高性能方案 */
+            --bg: #f5f7fb;
+            --surface: #ffffff;
+            --surface-alt: #f8f9fd;
+            --surface-hover: #fbfcff;
+            --border: #e5e9f2;
+            --border-hover: #d4dae8;
+            --border-active: #c7cfe0;
+            --text-primary: #1a1d2e;
+            --text-secondary: #565b70;
+            --text-tertiary: #8a90a6;
+            --text-muted: #b0b6c9;
+
+            /* 主题色 */
+            --accent: #5b5bf0;
+            --accent-light: #eef0ff;
+            --accent-hover: #4a4ae6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --accent-glow: rgba(99, 102, 241, 0.12);
+
+            /* 状态色 */
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+
+            /* 阴影系统 - 轻量柔和 */
+            --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.04);
+            --shadow-sm: 0 2px 8px rgba(17, 24, 39, 0.04), 0 1px 3px rgba(17, 24, 39, 0.03);
+            --shadow-md: 0 4px 16px rgba(17, 24, 39, 0.06);
+
+            /* 圆角系统 */
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+
+            /* 字体与动效 - 精简过渡 */
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --transition-fast: 0.15s ease;
+            --transition-base: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font-family);
+            background: var(--bg);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* 滚动条 - 极简 */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d5dae8;
+            border-radius: 20px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b9c0d4;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== 顶部导航 - 纯实色无性能损耗 ========== */
+        .navbar {
+            height: 54px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
+            z-index: 20;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .navbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .navbar .brand .icon-wrap {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        /* CSS绘制视频图标 */
+        .navbar .brand .icon-wrap::before {
+            content: '';
+            width: 16px;
+            height: 12px;
+            border: 2px solid #fff;
+            border-radius: 2px;
+            display: block;
+        }
+
+        .navbar .brand .icon-wrap::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 5px solid #fff;
+        }
+
+        .navbar .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ========== 按钮系统 ========== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all var(--transition-base);
+            font-family: var(--font-family);
+            white-space: nowrap;
+            outline: none;
+            background: #fff;
+            color: var(--text-secondary);
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+            filter: brightness(1.05);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-danger {
+            background: #fff;
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-light);
+            border-color: #fca5a5;
+        }
+
+        .btn-outline {
+            background: #fff;
+            border-color: var(--border);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            background: var(--surface-alt);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border-color: transparent;
+            color: var(--text-tertiary);
+            padding: 5px 9px;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-ghost:hover {
+            background: #f1f3f9;
+            color: var(--text-primary);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-sm {
+            padding: 5px 11px;
+            font-size: 11.5px;
+            border-radius: var(--radius-xs);
+        }
+
+        .btn-xs {
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 5px;
+        }
+
+        .btn-icon {
+            padding: 7px 10px;
+            gap: 4px;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            pointer-events: none;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        /* ========== 主体布局 - 四列同屏 ========== */
+        .main-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+            padding: 12px;
+            gap: 12px;
+        }
+
+        /* ========== 左侧边栏 - 文件管理 ========== */
+        .sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 14px;
+            gap: 12px;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-section {
+            background: var(--surface-alt);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            border: 1px solid var(--border);
+            transition: all var(--transition-base);
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .section-title .dot-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* 上传区域 */
+        .upload-zone {
+            border: 2px dashed #dde2ef;
+            border-radius: var(--radius-md);
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            background: #fafbff;
+            color: var(--text-tertiary);
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #fff;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .upload-zone .upload-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: var(--accent-light);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        /* CSS绘制上传图标 */
+        .upload-zone .upload-icon::before {
+            content: '';
+            width: 16px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .upload-zone .upload-icon::after {
+            content: '';
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            border-top: 2px solid var(--accent);
+            border-left: 2px solid var(--accent);
+            transform: rotate(45deg) translate(2px, 2px);
+        }
+
+        .upload-zone:hover .upload-icon {
+            transform: translateY(-1px);
+        }
+
+        .upload-zone .upload-text {
+            font-size: 12.5px;
+            font-weight: 500;
+        }
+
+        .upload-zone .upload-text span {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .upload-hint {
+            font-size: 10.5px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+            text-align: center;
+            line-height: 1.4;
+            opacity: 0.75;
+        }
+
+        /* 文件列表 */
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 11px;
+            background: #fff;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 5px;
+            transition: all var(--transition-fast);
+        }
+
+        .file-item:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .file-item .fi-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background: var(--accent-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .file-item .fi-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-item .fi-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item .fi-size {
+            font-size: 10.5px;
+            color: var(--text-tertiary);
+            margin-top: 1px;
+        }
+
+        .file-item .fi-del {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 15px;
+            padding: 3px 7px;
+            border-radius: 5px;
+            background: none;
+            border: none;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .file-item .fi-del:hover {
+            color: var(--danger);
+            background: var(--danger-light);
+        }
+
+        /* 进度条 */
+        .progress-wrap {
+            margin-top: 3px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #e8ecf6;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-indeterminate {
+            animation: indeterminate 1.6s infinite ease-in-out;
+            width: 35%;
+        }
+
+        @keyframes indeterminate {
+            0% {
+                transform: translateX(-120%);
+            }
+
+            100% {
+                transform: translateX(420%);
+            }
+        }
+
+        .progress-text {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        /* ========== 主面板 - 三列并列 ========== */
+        .main-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            min-width: 0;
+            gap: 12px;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            margin: 0;
+            border-radius: 0;
+        }
+
+        /* 隐藏原Tab导航栏 */
+        .tab-nav {
+            display: none;
+        }
+
+        /* 三个面板常驻显示 */
+        .tab-content {
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 14px;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* 面板宽度分配：原始文案最宽，方便编辑 */
+        #tab-text {
+            flex: 2;
+        }
+
+        #tab-trans {
+            flex: 2;
+        }
+
+        #tab-audio {
+            flex: 1;
+        }
+
+        .tab-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* 面板标题 - 替代原Tab文字 */
+        .tab-content::before {
+            content: attr(data-panel-title);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+        }
+
+        /* 列表容器 - 占满剩余空间滚动 */
+        #textListContainer,
+        #transListContainer,
+        #audioListContainer {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 4px;
+        }
+
+        /* ========== 文案卡片 - 优化编辑体验 ========== */
+        .card {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-xs);
+            background: var(--surface-hover);
+        }
+
+        /* 选中高亮 */
+        .card:has(input[type="checkbox"]:checked) {
+            border-color: var(--accent);
+            background: #fafbff;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .ch-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .ch-right {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .badge-gray {
+            background: #eceff7;
+            color: #5a5f72;
+        }
+
+        .badge-blue {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .badge-green {
+            background: var(--success-light);
+            color: #059669;
+        }
+
+        .badge-orange {
+            background: var(--warning-light);
+            color: #c27803;
+        }
+
+        .badge-red {
+            background: var(--danger-light);
+            color: #c53030;
+        }
+
+        .source-tag {
+            font-size: 10.5px;
+            color: var(--text-tertiary);
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+        }
+
+        /* 文本编辑框 - 加大高度，优化编辑体验 */
+        textarea.card-textarea {
+            width: 100%;
+            min-height: 75px;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+            font-family: var(--font-family);
+            resize: vertical;
+            background: #fff;
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+            line-height: 1.6;
+        }
+
+        textarea.card-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: #fff;
+        }
+
+        /* ========== 音频卡片 ========== */
+        .audio-card {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            transition: all var(--transition-fast);
+        }
+
+        .audio-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .ac-top {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
+        }
+
+        .ac-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+            font-weight: 500;
+        }
+
+        .ac-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .audio-progress-wrap {
+            margin-top: 7px;
+        }
+
+        .audio-progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #e2e6f0;
+            border-radius: 20px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: height var(--transition-fast);
+        }
+
+        .audio-progress-bar:hover {
+            height: 7px;
+        }
+
+        .audio-progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 20px;
+            transition: width 0.08s linear;
+            pointer-events: none;
+        }
+
+        .audio-time {
+            font-size: 10.5px;
+            color: var(--text-tertiary);
+            text-align: right;
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ========== 空状态 ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+            color: var(--text-tertiary);
+            text-align: center;
+            gap: 8px;
+            height: 100%;
+        }
+
+        .empty-state .empty-icon {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 4px;
+            border-radius: 14px;
+            background: var(--surface-alt);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        /* 空状态文档图标 */
+        #tab-text .empty-icon::before {
+            content: '';
+            width: 22px;
+            height: 28px;
+            border: 2px solid var(--text-muted);
+            border-radius: 3px;
+        }
+
+        #tab-text .empty-icon::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 2px;
+            background: var(--text-muted);
+            margin-top: -8px;
+            box-shadow: 0 5px 0 var(--text-muted), 0 10px 0 var(--text-muted);
+        }
+
+        .empty-state .empty-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .empty-sub {
+            font-size: 11px;
+            opacity: 0.7;
+            max-width: 220px;
+            line-height: 1.5;
+        }
+
+        /* ========== 复选框 ========== */
+        .checkbox-wrap {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-secondary);
+            user-select: none;
+        }
+
+        .checkbox-wrap input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        /* ========== 模态框 - 无模糊纯实色 ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 18, 30, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.15s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            width: 460px;
+            max-width: 93vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: modalIn 0.2s ease;
+            border: 1px solid var(--border);
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 15px 18px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-tertiary);
+            padding: 4px 9px;
+            border-radius: 5px;
+            transition: all var(--transition-fast);
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: #f1f3f9;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 18px;
+        }
+
+        .modal-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            background: var(--surface-alt);
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+
+        .modal textarea,
+        .modal input[type="text"],
+        .modal select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+            font-family: var(--font-family);
+            transition: all var(--transition-fast);
+            background: #fafbff;
+            color: var(--text-primary);
+        }
+
+        .modal textarea:focus,
+        .modal input[type="text"]:focus,
+        .modal select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: #fff;
+        }
+
+        .modal label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            margin-top: 12px;
+        }
+
+        .modal .form-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .modal .form-row select {
+            flex: 1;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 5px;
+            opacity: 0.75;
+            line-height: 1.5;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .slider-val {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 32px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Toast */
+        .toast-msg {
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* 步骤指示器 */
+        .workflow-steps {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+
+        .workflow-step {
+            flex: 1;
+            height: 3px;
+            border-radius: 10px;
+            background: #e2e6f0;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-step.done {
+            background: var(--accent-gradient);
+        }
+
+        .workflow-step.active {
+            background: var(--accent-gradient);
+            animation: pulse-step 1.5s infinite;
+        }
+
+        @keyframes pulse-step {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ========== 响应式适配 ========== */
+        @media (max-width: 1200px) {
+            #tab-text {
+                flex: 1.8;
+            }
+
+            #tab-trans {
+                flex: 1.2;
+            }
+
+            #tab-audio {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .main-body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-shrink: 0;
+                max-height: none;
+            }
+
+            .main-panel {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .tab-content {
+                min-height: 320px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <!-- 顶部导航 -->
+        <nav class="navbar">
+            <div class="brand">
+                <div class="icon-wrap"></div>
+                <span>视频人声转文本</span>
+            </div>
+            <div class="navbar-actions">
+                <button class="btn btn-danger btn-sm" onclick="clearAllData()">清空数据</button>
+            </div>
+        </nav>
+
+        <!-- 主体 -->
+        <div class="main-body">
+            <!-- 左侧边栏 - 文件管理 -->
+            <aside class="sidebar">
+                <!-- 步骤指示器 -->
+                <div class="workflow-steps" id="workflowSteps">
+                    <div class="workflow-step" id="stepUpload"></div>
+                    <div class="workflow-step" id="stepTranscribe"></div>
+                    <div class="workflow-step" id="stepTranslate"></div>
+                    <div class="workflow-step" id="stepAudio"></div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title"><span class="dot-indicator"></span>文件上传</div>
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon"></div>
+                        <div class="upload-text">拖拽文件到此处，或<span>点击上传</span></div>
+                    </div>
+                    <div class="upload-hint">MP4 / AVI / MOV / MKV / WEBM / MP3 / M4A / AAC / OGG / FLAC / WAV · 单文件
+                        ≤1GB</div>
+                    <input type="file" id="fileInput" style="display:none" multiple accept="video/*,audio/*"
+                        onchange="handleFileInput(event)">
+                </div>
+
+                <div class="sidebar-section" id="fileListSection" style="display:none;">
+                    <div class="section-title" id="fileListTitle">已选择文件 (0)</div>
+                    <div id="fileListContainer"></div>
+                    <button class="btn btn-primary" id="transcribeBtn" onclick="startTranscribe()"
+                        style="width:100%;margin-top:8px;justify-content:center;">开始转录</button>
+                </div>
+
+                <div class="sidebar-section" id="progressSection" style="display:none;">
+                    <div class="section-title">处理进度</div>
+                    <div class="progress-text" id="progressLabel">准备中...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 主内容区 - 三面板并列 -->
+            <div class="main-panel">
+                <div class="tab-nav">
+                    <button class="tab-btn active" data-tab="tab-text"
+                        onclick="switchTab('tab-text', this)">原始文案</button>
+                    <button class="tab-btn" data-tab="tab-trans" onclick="switchTab('tab-trans', this)">翻译结果</button>
+                    <button class="tab-btn" data-tab="tab-audio" onclick="switchTab('tab-audio', this)">音频列表</button>
+                </div>
+
+                <!-- 原始文案 - 主编辑区 -->
+                <div class="tab-content active" id="tab-text" data-panel-title="原始文案">
+                    <div class="tab-toolbar">
+                        <div class="toolbar-left">
+                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllText"
+                                    onchange="toggleAllText()"> 全选</label>
+                            <button class="btn btn-outline btn-sm" onclick="addTextManually()">+ 新增</button>
+                        </div>
+                        <div class="toolbar-right">
+                            <button class="btn btn-success btn-sm" id="btnTranslate" onclick="openTranslateDialog()"
+                                disabled>翻译选中</button>
+                            <button class="btn btn-danger btn-sm" id="btnDelText" onclick="deleteSelectedText()"
+                                disabled>删除选中</button>
+                        </div>
+                    </div>
+                    <div id="textListContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">暂无转录文案</div>
+                            <div class="empty-sub">上传文件并点击开始转录后，文案会自动出现在这里</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 翻译结果 -->
+                <div class="tab-content" id="tab-trans" data-panel-title="翻译结果">
+                    <div class="tab-toolbar">
+                        <div class="toolbar-left">
+                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllTrans"
+                                    onchange="toggleAllTrans()"> 全选</label>
+                            <button class="btn btn-outline btn-sm" onclick="addTransManually()">+ 新增</button>
+                        </div>
+                        <div class="toolbar-right">
+                            <button class="btn btn-success btn-sm" id="btnDownloadTrans" onclick="batchDownloadTrans()"
+                                disabled>下载TXT</button>
+                            <button class="btn btn-primary btn-sm" id="btnTts" onclick="openTtsDialog()"
+                                disabled>生成语音</button>
+                            <button class="btn btn-danger btn-sm" id="btnDelTrans" onclick="deleteSelectedTrans()"
+                                disabled>删除</button>
+                        </div>
+                    </div>
+                    <div id="transListContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">暂无翻译内容</div>
+                            <div class="empty-sub">在原始文案中勾选条目，点击翻译选中即可生成</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 音频列表 -->
+                <div class="tab-content" id="tab-audio" data-panel-title="音频列表">
+                    <div class="tab-toolbar">
+                        <div class="toolbar-left">
+                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllAudio"
+                                    onchange="toggleAllAudio()"> 全选</label>
+                        </div>
+                        <div class="toolbar-right">
+                            <button class="btn btn-primary btn-sm" id="btnBatchDownloadAudio"
+                                onclick="batchDownloadAudio()" disabled>批量下载</button>
+                            <button class="btn btn-danger btn-sm" id="btnDelAudio" onclick="deleteSelectedAudio()"
+                                disabled>删除</button>
+                        </div>
+                    </div>
+                    <div id="audioListContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">暂无生成音频</div>
+                            <div class="empty-sub">在翻译结果中勾选条目，点击生成语音即可</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 翻译弹窗 -->
+    <div class="modal-overlay" id="modalTranslate">
+        <div class="modal">
+            <div class="modal-header"><span>批量翻译设置</span><button class="modal-close" id="modalTranslateClose"
+                    onclick="closeModal('modalTranslate')">✕</button></div>
+            <div class="modal-body" id="translateBody">
+                <label for="translateInput">目标语言（用逗号或换行分隔，多个语言自动识别）</label>
+                <textarea id="translateInput" rows="3" placeholder="例如：葡萄牙语、英语、日语&#10;按 Ctrl+Enter 快速开始翻译"></textarea>
+                <div class="hint">系统将自动识别所有已勾选文案并翻译为指定语言</div>
+                <div id="translateProgress" style="display:none; margin-top:14px;">
+                    <div class="progress-text" id="translateProgressLabel">正在翻译... 0/0</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="translateProgressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="translateFooter">
+                <button class="btn btn-outline" onclick="closeModal('modalTranslate')">取消</button>
+                <button class="btn btn-primary" id="btnConfirmTranslate" onclick="executeTranslate()">开始翻译</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TTS弹窗 -->
+    <div class="modal-overlay" id="modalTts">
+        <div class="modal">
+            <div class="modal-header"><span>语音生成设置</span><button class="modal-close" id="modalTtsClose"
+                    onclick="closeModal('modalTts')">✕</button></div>
+            <div class="modal-body" id="ttsBody">
+                <label for="ttsModel">模型选择</label>
+                <select id="ttsModel" onchange="onTtsModelChange()">
+                    <option value="google">谷歌 (Google)</option>
+                    <option value="aliyun">阿里云 (Aliyun)</option>
+                </select>
+                <label for="ttsVoice">语音音色</label>
+                <div class="form-row">
+                    <select id="ttsVoice" style="flex:1;"></select>
+                    <button class="btn btn-outline btn-sm" id="btnVoiceDemo" onclick="playVoiceDemo()">试听</button>
+                </div>
+                <div id="ttsIntervalRow">
+                    <label for="ttsInterval">段落间隔（秒）</label>
+                    <div class="slider-row">
+                        <input type="range" id="ttsInterval" min="0" max="3" step="0.1" value="0.3"
+                            oninput="document.getElementById('ttsIntervalVal').textContent=this.value">
+                        <span class="slider-val" id="ttsIntervalVal">0.3</span>
+                    </div>
+                </div>
+                <label style="margin-top:12px;"><input type="checkbox" id="ttsUseTextName"
+                        style="accent-color:var(--accent);"> 使用原始文案作为文件名</label>
+                <div id="ttsProgress" style="display:none; margin-top:14px;">
+                    <div class="progress-text" id="ttsProgressLabel">正在生成... 0/0</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="ttsProgressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="ttsFooter">
+                <button class="btn btn-outline" onclick="closeModal('modalTts')">取消</button>
+                <button class="btn btn-primary" id="btnConfirmTts" onclick="executeTts()">确认生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手动新增文案弹窗 -->
+    <div class="modal-overlay" id="modalAddText">
+        <div class="modal">
+            <div class="modal-header"><span>新增原始文案</span><button class="modal-close"
+                    onclick="closeModal('modalAddText')">✕</button></div>
+            <div class="modal-body"><textarea id="addTextInput" rows="5" placeholder="输入文本内容..."></textarea></div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('modalAddText')">取消</button><button class="btn btn-primary"
+                    onclick="saveAddText()">保存</button></div>
+        </div>
+    </div>
+
+    <!-- 手动新增翻译弹窗 -->
+    <div class="modal-overlay" id="modalAddTrans">
+        <div class="modal">
+            <div class="modal-header"><span>新增翻译</span><button class="modal-close"
+                    onclick="closeModal('modalAddTrans')">✕</button></div>
+            <div class="modal-body">
+                <label for="addTransLang">语言标识（可选）</label><input type="text" id="addTransLang"
+                    placeholder="zh / en / pt / jp / kr">
+                <label for="addTransText">翻译内容</label><textarea id="addTransText" rows="4"
+                    placeholder="输入翻译文本..."></textarea>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('modalAddTrans')">取消</button><button class="btn btn-primary"
+                    onclick="saveAddTrans()">保存</button></div>
+        </div>
+    </div>
+
+    <audio id="demoAudio" style="display:none;">
+
+        <script src="app.js"></script>
+</body>
+
+</html>
