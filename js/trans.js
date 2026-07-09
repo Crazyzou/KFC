@@ -227,20 +227,57 @@ function removeFile(i) {
     updateWorkflowSteps();
 }
 
-function renderFileList() {
-    const s = document.getElementById('fileListSection'),
-        c = document.getElementById('fileListContainer'),
-        t = document.getElementById('fileListTitle'); if (fileList.length === 0) {
-            s.style.display = 'none';
-            updateWorkflowSteps(); return;
-        }
-    s.style.display = 'block';
-    t.textContent = '已选择文件 (' + fileList.length + ')';
-    c.innerHTML = fileList.map((f, i) =>
-        `<div class="file-item"><span class="fi-icon">F</span><div class="fi-info"><div class="fi-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div><div class="fi-size">${formatSize(f.size)}</div></div><button class="fi-del" onclick="removeFile(${i})" title="移除">&times;</button></div>`
-    ).join('');
-    updateWorkflowSteps();
+function renderTransList() {
+    const c = document.getElementById('transListContainer'),
+        bd = document.getElementById('btnDownloadTrans'),
+        bt = document.getElementById('btnTts'),
+        bdel = document.getElementById('btnDelTrans');
+
+    if (transList.length === 0) {
+        c.innerHTML = '<div class="empty-state">...</div>';
+        bd.disabled = true; bt.disabled = true; bdel.disabled = true;
+        return;
+    }
+
+    let prevFromTextId = null; // 追踪上一个 fromTextId 
+
+    c.innerHTML = transList.map((item, i) => {
+        // 新分组的第一条使用彩色边框，否则用默认透明 
+        const isFirstOfGroup = (item.fromTextId !== prevFromTextId);
+        const borderStyle = isFirstOfGroup
+            ? `border-left:3px solid ${getSourceColor(item.fromTextId)};`
+            : 'border-left:3px solid transparent;';
+
+        prevFromTextId = item.fromTextId; // 更新为当前值 
+
+        const bc = getSourceColor(item.fromTextId); // 仅用于颜色值生成 
+        const sn = getOriginSnippet(item.fromTextId);
+
+        return `<div class="card" style="${borderStyle}">
+            <div class="card-header">
+                <div class="ch-left">
+                    <label class="checkbox-wrap">
+                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="transList[${i}].selected=this.checked;updateToolbarTrans();">
+                    </label>
+                    <span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span>
+                    ${sn ? `<span class="badge-source" title="${escapeHtml(sn)}">${escapeHtml(sn)}</span>` : ''}
+                    <span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
+                </div>
+                <div class="ch-right">
+                    <button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')">复制</button>
+                    <button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')">下载</button>
+                    <button class="btn btn-primary btn-xs" onclick="singleTts(${i})">语音</button>
+                    <button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})">删除</button>
+                </div>
+            </div>
+            <textarea class="card-textarea" onchange="transList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea>
+        </div>`;
+    }).join('');
+
+    updateToolbarTrans();
 }
+
+
 async function startTranscribe() {
     if (fileList.length === 0) return showToast('请先选择文件', 'warning'); if (
         isTranscribing) return;
