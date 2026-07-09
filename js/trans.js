@@ -15,6 +15,20 @@ const SOURCE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#
 const TTS_SETTINGS_KEY = 'tts_settings';
 let pendingTranslateItems = null;
 
+const LANG_CODE_MAP = {
+    'hi': '印地语',
+    'in': '印地语',
+    'sa': '阿拉伯语',
+    'ar': '阿拉伯语',
+    'ja': '日语',
+    'jp': '日语',
+    'ko': '韩语',
+    'kr': '韩语',
+    'pt': '葡萄牙语',
+    'en': '英语',
+    'zh': '中文',
+};
+
 function saveTtsSettings() {
     const settings = {
         model: document.getElementById('ttsModel').value,
@@ -234,23 +248,28 @@ function renderTransList() {
         bdel = document.getElementById('btnDelTrans');
 
     if (transList.length === 0) {
-        c.innerHTML = '<div class="empty-state">...</div>';
-        bd.disabled = true; bt.disabled = true; bdel.disabled = true;
+        c.innerHTML = '<div class="empty-state"><div class="empty-icon">A</div><div class="empty-text">暂无翻译内容</div><div class="empty-sub">在原始文案中勾选条目，然后点击翻译选中即可</div></div>';
+        bd.disabled = true;
+        bt.disabled = true;
+        bdel.disabled = true;
         return;
     }
 
-    let prevFromTextId = null; // 追踪上一个 fromTextId 
+    // ⚠️ 关键：每次渲染前必须重置为 null 
+    let prevFromTextId = null;
 
     c.innerHTML = transList.map((item, i) => {
-        // 新分组的第一条使用彩色边框，否则用默认透明 
+        // 判断是否是当前原文的第一条翻译 
         const isFirstOfGroup = (item.fromTextId !== prevFromTextId);
+
+        // 立即更新 prevFromTextId 供下一条使用 
+        prevFromTextId = item.fromTextId;
+
+        // 第一条用彩色边框，其余用透明 
         const borderStyle = isFirstOfGroup
             ? `border-left:3px solid ${getSourceColor(item.fromTextId)};`
             : 'border-left:3px solid transparent;';
 
-        prevFromTextId = item.fromTextId; // 更新为当前值 
-
-        const bc = getSourceColor(item.fromTextId); // 仅用于颜色值生成 
         const sn = getOriginSnippet(item.fromTextId);
 
         return `<div class="card" style="${borderStyle}">
@@ -264,10 +283,10 @@ function renderTransList() {
                     <span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
                 </div>
                 <div class="ch-right">
-                    <button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')">复制</button>
-                    <button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')">下载</button>
-                    <button class="btn btn-primary btn-xs" onclick="singleTts(${i})">语音</button>
-                    <button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})">删除</button>
+                    <button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button>
+                    <button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button>
+                    <button class="btn btn-primary btn-xs" onclick="singleTts(${i})" title="生成语音">语音</button>
+                    <button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})" title="删除">删除</button>
                 </div>
             </div>
             <textarea class="card-textarea" onchange="transList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea>
@@ -467,8 +486,13 @@ function openTranslateDialog(items = null) {
 }
 
 async function executeTranslate() {
-    const input = document.getElementById('translateInput').value.trim();
-    if (!input) return showToast('请输入目标语言', 'warning');
+    const rawInput = document.getElementById('translateInput').value.trim();
+    if (!rawInput) return showToast('请输入目标语言', 'warning');
+
+    // === 语言代码强制映射处理 === 
+    const parts = rawInput.split(/[,，\n]+/).map(s => s.trim()).filter(s => s);
+    const mappedParts = parts.map(p => LANG_CODE_MAP[p.toLowerCase()] || p);
+    const input = mappedParts.join(',');
 
     const btn = document.getElementById('btnConfirmTranslate');
     const pd = document.getElementById('translateProgress');
@@ -595,6 +619,8 @@ async function executeTranslate() {
         pendingTranslateItems = null; // 确保异常时也清空 
     }
 }
+
+
 function addTransManually() {
     document.getElementById('addTransLang').value = '';
     document.getElementById('addTransText').value = '';
@@ -609,25 +635,6 @@ function saveAddTrans() {
     renderTransList();
     updateWorkflowSteps();
     showToast('翻译已添加', 'success');
-}
-
-function renderTransList() {
-    const c = document.getElementById('transListContainer'),
-        bd = document.getElementById('btnDownloadTrans'),
-        bt = document.getElementById('btnTts'),
-        bdel = document.getElementById('btnDelTrans'); if (transList.length === 0) {
-            c.innerHTML =
-                '<div class="empty-state"><div class="empty-icon">A</div><div class="empty-text">暂无翻译内容</div><div class="empty-sub">在原始文案中勾选条目，然后点击翻译选中即可</div></div>';
-            bd.disabled = true;
-            bt.disabled = true;
-            bdel.disabled = true; return;
-        }
-    c.innerHTML = transList.map((item, i) => {
-        const bc = getSourceColor(item.fromTextId); const sn =
-            getOriginSnippet(item.fromTextId); return `<div class="card" style="border-left:3px solid ${bc};"><div class="card-header"><div class="ch-left"><label class="checkbox-wrap"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="transList[${i}].selected=this.checked;updateToolbarTrans();"></label><span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span>${sn ? `<span class="badge-source" title="${escapeHtml(sn)}">${escapeHtml(sn)}</span>` : ''}<span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></div><div class="ch-right"><button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button><button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button><button class="btn btn-primary btn-xs" onclick="singleTts(${i})" title="生成语音">语音</button><button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})" title="删除">删除</button></div></div><textarea class="card-textarea" onchange="transList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea></div>`;
-    })
-        .join('');
-    updateToolbarTrans();
 }
 
 function updateToolbarTrans() {
