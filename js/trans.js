@@ -61,6 +61,30 @@ function loadTtsSettings() {
     return null;
 }
 
+function renderFileList() {
+    const s = document.getElementById('fileListSection'),
+        c = document.getElementById('fileListContainer'),
+        t = document.getElementById('fileListTitle');
+    if (fileList.length === 0) {
+        s.style.display = 'none';
+        updateWorkflowSteps();
+        return;
+    }
+    s.style.display = 'block';
+    t.textContent = '已选择文件 (' + fileList.length + ')';
+    c.innerHTML = fileList.map((f, i) =>
+        `<div class="file-item">
+            <span class="fi-icon">F</span>
+            <div class="fi-info">
+                <div class="fi-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
+                <div class="fi-size">${formatSize(f.size)}</div>
+            </div>
+            <button class="fi-del" onclick="removeFile(${i})" title="移除">&times;</button>
+        </div>`
+    ).join('');
+    updateWorkflowSteps();
+}
+
 function getSourceColor(fromTextId) {
     if (!fromTextId) return '#c0c5d0'; let hash = 0; for (let i = 0; i < fromTextId
         .length; i++) {
