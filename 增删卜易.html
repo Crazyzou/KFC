@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增删卜易 · 排卦</title>
+    <style>
+        :root {
+            --bg: #f7f1e3;
+            --card-bg: #fffefb;
+            --border: #d9c9a8;
+            --text: #3a2e1e;
+            --text-light: #6b5b40;
+            --accent: #b5343a;
+            --accent-light: #d4644a;
+            --gold: #8b6914;
+            --yao-yang: #2c2416;
+            --yao-yin: #2c2416;
+            --yao-change: #b5343a;
+            --yao-change-bg: #fff5f2;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.05), 0 8px 28px rgba(0, 0, 0, 0.09);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-serif: "PingFang SC", "Hiragino Sans GB", "Noto Serif SC", "Source Han Serif CN", "STSong", "Songti SC", "Microsoft YaHei", serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f4ecda;
+            background-image:
+                radial-gradient(ellipse at 15% 10%, rgba(190, 155, 100, 0.10) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 75%, rgba(175, 140, 85, 0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 40%, rgba(200, 170, 120, 0.05) 0%, transparent 70%),
+                repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(180, 150, 110, 0.015) 3px,
+                    rgba(180, 150, 110, 0.015) 4px);
+            font-family: var(--font-serif);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px 16px 48px;
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 780px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 24px 20px 6px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            border-radius: 1px;
+            opacity: 0.5;
+        }
+
+        .header .icon-row {
+            font-size: 46px;
+            letter-spacing: 8px;
+            margin-bottom: 6px;
+            opacity: 0.8;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+        }
+
+        .header h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #3a2918;
+            margin: 0;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+        }
+
+        .header .subtitle {
+            font-size: 13px;
+            color: #8b7a60;
+            letter-spacing: 3px;
+            margin-top: 4px;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 26px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(180, 140, 90, 0.35) 20%,
+                    rgba(180, 140, 90, 0.15) 50%,
+                    rgba(180, 140, 90, 0.35) 80%,
+                    transparent 100%);
+            border-radius: 3px 3px 0 0;
+            opacity: 0.7;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: #c9b68a;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            color: #4a3620;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #eaddc4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            font-size: 15px;
+        }
+
+        .card-title .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+            box-shadow: 0 0 0 3px rgba(181, 52, 58, 0.12);
+            animation: dot-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes dot-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(181, 52, 58, 0.10);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(181, 52, 58, 0.04), 0 0 0 3px rgba(181, 52, 58, 0.18);
+            }
+        }
+
+        .input-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .yao-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: #fdfcf7;
+            border: 1.5px solid #ebe3d1;
+            transition: var(--transition);
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .yao-input-row:hover {
+            border-color: #c9b68a;
+            background: #fffefc;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transform: translateY(-1px);
+        }
+
+        .yao-input-row.has-moving {
+            border-left: 4px solid var(--accent);
+            background: #fffbf8;
+            box-shadow: 0 1px 6px rgba(181, 52, 58, 0.06);
+            padding-left: 12px;
+        }
+
+        .yao-label {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 44px;
+            text-align: center;
+            color: #4a3620;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            font-family: var(--font-serif);
+        }
+
+        .yao-position-tag {
+            font-size: 11px;
+            color: #8b7a60;
+            background: #f3ede0;
+            padding: 3px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            font-weight: 500;
+            border: 1px solid #e5dac4;
+        }
+
+        .yao-select {
+            flex: 1;
+            min-width: 140px;
+            padding: 9px 14px;
+            font-size: 14px;
+            border: 1.5px solid #d4c5a9;
+            border-radius: 8px;
+            background: #fffef9;
+            color: #3a2e1e;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'  width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b7a60' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+            font-weight: 500;
+        }
+
+        .yao-select:focus {
+            outline: none;
+            border-color: #b5343a;
+            box-shadow: 0 0 0 4px rgba(181, 52, 58, 0.06);
+            background: #fffefd;
+        }
+
+        .yao-select.moving {
+            border-color: #d4644a;
+            background: #fffdf9;
+            color: #b5343a;
+            font-weight: 600;
+            box-shadow: 0 0 0 2px rgba(212, 100, 74, 0.08);
+        }
+
+        .moving-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent);
+            padding: 4px 10px;
+            border-radius: 14px;
+            white-space: nowrap;
+            letter-spacing: 1.5px;
+            animation: pulse-badge 2.2s ease-in-out infinite;
+            min-width: 38px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(181, 52, 58, 0.3);
+        }
+
+        @keyframes pulse-badge {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.78;
+                transform: scale(1.04);
+            }
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: var(--transition);
+            font-family: inherit;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: transparent;
+            transition: var(--transition);
+            pointer-events: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #b5343a 0%, #9a2c31 100%);
+            color: #fff;
+            border-color: #b5343a;
+            box-shadow: 0 2px 8px rgba(181, 52, 58, 0.22), 0 1px 2px rgba(0, 0, 0, 0.08);
+            letter-spacing: 2.5px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #c23d43 0%, #a53035 100%);
+            border-color: #a53035;
+            box-shadow: 0 6px 18px rgba(181, 52, 58, 0.32), 0 2px 4px rgba(0, 0, 0, 0.10);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(181, 52, 58, 0.22);
+            transition: 0.1s ease;
+        }
+
+        .btn-outline {
+            background: #fffef9;
+            color: #5a4a32;
+            border-color: #c9b896;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn-outline:hover {
+            background: #faf5e9;
+            border-color: #b09a70;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+        }
+
+        .btn-outline:active {
+            transform: translateY(0);
+            transition: 0.1s ease;
+        }
+
+        .btn-sm {
+            padding: 7px 16px;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            border-radius: 8px;
+        }
+
+        .result-area {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 600px) {
+            .result-area {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .result-divider-col {
+                display: none;
+            }
+
+            .result-area .arrow-between {
+                grid-column: 1 / -1;
+                text-align: center;
+                font-size: 22px;
+                padding: 0;
+                margin: -6px 0;
+            }
+        }
+
+        .gua-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 8px;
+        }
+
+        .gua-name {
+            font-size: 21px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #3a2918;
+            text-align: center;
+            line-height: 1.3;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+        }
+
+        .gua-symbol {
+            font-size: 52px;
+            line-height: 1;
+            text-align: center;
+            opacity: 0.88;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.10));
+            transition: var(--transition);
+        }
+
+        .gua-sub {
+            font-size: 12px;
+            color: var(--text-light);
+            letter-spacing: 1.5px;
+            text-align: center;
+            opacity: 0.75;
+            font-style: italic;
+        }
+
+        .yao-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+            padding: 12px 0;
+        }
+
+        .yao-visual .yao-line-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            min-height: 28px;
+            padding: 1px 0;
+        }
+
+        .yao-visual .yao-mark {
+            width: 24px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+
+        .yao-visual .yao-mark.moving-mark {
+            color: #b5343a;
+            animation: pulse-badge 2.2s ease-in-out infinite;
+            font-size: 14px;
+            text-shadow: 0 0 8px rgba(181, 52, 58, 0.3);
+        }
+
+        .yao-visual .yao-mark.static-mark {
+            color: #d0c4aa;
+            font-size: 11px;
+        }
+
+        .yao-line-yang {
+            width: 76px;
+            height: 8px;
+            background: var(--yao-yang);
+            border-radius: 4px;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .yao-line-yang.changed {
+            background: var(--yao-change);
+            box-shadow: 0 0 12px rgba(181, 52, 58, 0.45), 0 1px 3px rgba(0, 0, 0, 0.12);
+            animation: changed-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes changed-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(181, 52, 58, 0.35), 0 1px 3px rgba(0, 0, 0, 0.10);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(181, 52, 58, 0.55), 0 1px 5px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        .yao-line-yin-wrapper {
+            display: flex;
+            gap: 12px;
+            width: 76px;
+            justify-content: center;
+        }
+
+        .yao-line-yin {
+            width: 26px;
+            height: 8px;
+            background: var(--yao-yin);
+            border-radius: 4px;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.13);
+        }
+
+        .yao-line-yin.changed {
+            background: var(--yao-change);
+            box-shadow: 0 0 12px rgba(181, 52, 58, 0.45), 0 1px 3px rgba(0, 0, 0, 0.10);
+            animation: changed-glow 2s ease-in-out infinite;
+        }
+
+        .arrow-between {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #b09a70;
+            padding: 0 4px;
+            letter-spacing: 0;
+            transition: var(--transition);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .arrow-between:hover {
+            color: #8b6914;
+            transform: scale(1.1);
+        }
+
+        .result-divider-col {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 30px;
+        }
+
+        .moving-summary {
+            font-size: 13px;
+            color: #6b4e3a;
+            background: #fefaf5;
+            border: 1px solid #e8d8c0;
+            border-radius: 10px;
+            padding: 14px 18px;
+            letter-spacing: 1px;
+            line-height: 1.8;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+        }
+
+        .moving-summary strong {
+            color: #b5343a;
+            font-weight: 700;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            font-size: 12px;
+            color: var(--text-light);
+            letter-spacing: 1px;
+            justify-content: center;
+            padding: 6px 0;
+            opacity: 0.8;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+        }
+
+        .legend .dot-legend {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3a2e1e;
+            color: #fdf6ec;
+            padding: 12px 26px;
+            border-radius: 24px;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25);
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+        }
+
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(2px);
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                break-inside: avoid;
+            }
+
+            .card::before {
+                display: none;
+            }
+
+            .btn-row,
+            .toast {
+                display: none !important;
+            }
+
+            .yao-select {
+                -webkit-appearance: auto;
+                appearance: auto;
+                background-image: none;
+            }
+
+            .yao-line-yang.changed,
+            .yao-line-yin.changed {
+                animation: none;
+            }
+
+            .moving-badge {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon-row">☰☷☳☴☵☲☶☱</div>
+            <h1>增删卜易 · 排卦</h1>
+            <div class="subtitle">— 六爻静动 · 原卦变卦 —</div>
+        </div>
+
+        <div class="legend">
+            <span><span class="dot-legend" style="background:#2c2416;"></span> 静爻</span>
+            <span><span class="dot-legend" style="background:#b5343a;"></span> 动爻</span>
+            <span>⚪ 三背（阳动变阴）</span>
+            <span>× 三字（阴动变阳）</span>
+            <span>———— 阳爻</span>
+            <span>— — 阴爻</span>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="dot"></span>摇卦输入（从上到下：上爻 → 初爻）</div>
+            <div class="input-grid" id="inputGrid"></div>
+            <div class="btn-row">
+                <button class="btn btn-outline" id="btnClear">↺ 重置</button>
+                <button class="btn btn-outline btn-sm" id="btnCopyLink">📋 复制卦象</button>
+            </div>
+        </div>
+
+        <div class="card" id="resultCard">
+            <div class="card-title"><span class="dot"></span>排卦结果</div>
+            <div class="result-area" id="resultArea"></div>
+            <div class="moving-summary" id="movingSummary" style="margin-top:14px;"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function () {
+            const TRIGRAM_MAP = {
+                0: { name: '坤', symbol: '☷', element: '地', binary: '000' },
+                1: { name: '艮', symbol: '☶', element: '山', binary: '001' },
+                2: { name: '坎', symbol: '☵', element: '水', binary: '010' },
+                3: { name: '巽', symbol: '☴', element: '风', binary: '011' },
+                4: { name: '震', symbol: '☳', element: '雷', binary: '100' },
+                5: { name: '离', symbol: '☲', element: '火', binary: '101' },
+                6: { name: '兑', symbol: '☱', element: '泽', binary: '110' },
+                7: { name: '乾', symbol: '☰', element: '天', binary: '111' },
+            };
+
+            const GUA_ORDER_MAP = {
+                0: 2,
+                1: 15,
+                2: 7,
+                3: 46,
+                4: 24,
+                5: 36,
+                6: 19,
+                7: 11,
+                8: 23,
+                9: 52,
+                10: 4,
+                11: 18,
+                12: 27,
+                13: 22,
+                14: 41,
+                15: 26,
+                16: 8,
+                17: 39,
+                18: 29,
+                19: 48,
+                20: 3,
+                21: 63,
+                22: 60,
+                23: 5,
+                24: 20,
+                25: 53,
+                26: 59,
+                27: 57,
+                28: 42,
+                29: 37,
+                30: 61,
+                31: 9,
+                32: 16,
+                33: 62,
+                34: 40,
+                35: 32,
+                36: 51,
+                37: 55,
+                38: 54,
+                39: 34,
+                40: 35,
+                41: 56,
+                42: 64,
+                43: 50,
+                44: 21,
+                45: 30,
+                46: 38,
+                47: 14,
+                48: 45,
+                49: 31,
+                50: 47,
+                51: 28,
+                52: 17,
+                53: 49,
+                54: 58,
+                55: 43,
+                56: 12,
+                57: 33,
+                58: 6,
+                59: 44,
+                60: 25,
+                61: 13,
+                62: 10,
+                63: 1,
+            };
+
+            const GUA_NAMES = {
+                1: '乾为天',
+                2: '坤为地',
+                3: '水雷屯',
+                4: '山水蒙',
+                5: '水天需',
+                6: '天水讼',
+                7: '地水师',
+                8: '水地比',
+                9: '风天小畜',
+                10: '天泽履',
+                11: '地天泰',
+                12: '天地否',
+                13: '天火同人',
+                14: '火天大有',
+                15: '地山谦',
+                16: '雷地豫',
+                17: '泽雷随',
+                18: '山风蛊',
+                19: '地泽临',
+                20: '风地观',
+                21: '火雷噬嗑',
+                22: '山火贲',
+                23: '山地剥',
+                24: '地雷复',
+                25: '天雷无妄',
+                26: '山天大畜',
+                27: '山雷颐',
+                28: '泽风大过',
+                29: '坎为水',
+                30: '离为火',
+                31: '泽山咸',
+                32: '雷风恒',
+                33: '天山遁',
+                34: '雷天大壮',
+                35: '火地晋',
+                36: '地火明夷',
+                37: '风火家人',
+                38: '火泽睽',
+                39: '水山蹇',
+                40: '雷水解',
+                41: '山泽损',
+                42: '风雷益',
+                43: '泽天夬',
+                44: '天风姤',
+                45: '泽地萃',
+                46: '地风升',
+                47: '泽水困',
+                48: '水风井',
+                49: '泽火革',
+                50: '火风鼎',
+                51: '震为雷',
+                52: '艮为山',
+                53: '风山渐',
+                54: '雷泽归妹',
+                55: '雷火丰',
+                56: '火山旅',
+                57: '巽为风',
+                58: '兑为泽',
+                59: '风水涣',
+                60: '水泽节',
+                61: '风泽中孚',
+                62: '雷山小过',
+                63: '水火既济',
+                64: '火水未济',
+            };
+
+            function getGuaSymbol(order) {
+                return String.fromCodePoint(0x4DBF + order);
+            }
+
+            function getGuaOrder(upperTrigram, lowerTrigram) {
+                const key = upperTrigram * 8 + lowerTrigram;
+                return GUA_ORDER_MAP[key] || null;
+            }
+
+            function getGuaName(upperTrigram, lowerTrigram) {
+                const order = getGuaOrder(upperTrigram, lowerTrigram);
+                if (order) return GUA_NAMES[order];
+                const u = TRIGRAM_MAP[upperTrigram];
+                const l = TRIGRAM_MAP[lowerTrigram];
+                return `${u.element}${l.element}${u.name}下${l.name}`;
+            }
+
+            const YAO_POSITIONS = [
+                { index: 5, label: '上爻', tag: '第6次摇' },
+                { index: 4, label: '五爻', tag: '第5次摇' },
+                { index: 3, label: '四爻', tag: '第4次摇' },
+                { index: 2, label: '三爻', tag: '第3次摇' },
+                { index: 1, label: '二爻', tag: '第2次摇' },
+                { index: 0, label: '初爻', tag: '第1次摇' },
+            ];
+
+            const OPTIONS = [
+                {
+                    value: 'one_back', label: '一背 ————（少阳·静）', shortLabel: '一背', type: 'yang',
+                    static: true
+                },
+                {
+                    value: 'two_back', label: '两背 —  —（少阴·静）', shortLabel: '两背', type: 'yin',
+                    static: true
+                },
+                {
+                    value: 'three_back', label: '三背 ⚪（老阳·动）', shortLabel: '三背', type: 'yang', static: false,
+                    movingSymbol: '⚪'
+                },
+                {
+                    value: 'three_word', label: '三字 ×（老阴·动）', shortLabel: '三字', type: 'yin', static: false,
+                    movingSymbol: '×'
+                },
+            ];
+
+            let currentSelections = new Array(6).fill('one_back');
+
+            const inputGrid = document.getElementById('inputGrid');
+            const resultArea = document.getElementById('resultArea');
+            const movingSummary = document.getElementById('movingSummary');
+            const toast = document.getElementById('toast');
+            const btnRandom = document.getElementById('btnRandom');
+            const btnClear = document.getElementById('btnClear');
+            const btnCopyLink = document.getElementById('btnCopyLink');
+
+            let toastTimer;
+
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+            }
+
+            function buildInputGrid() {
+                inputGrid.innerHTML = '';
+                YAO_POSITIONS.forEach((pos) => {
+                    const row = document.createElement('div');
+                    row.className = 'yao-input-row';
+                    row.dataset.yaoIndex = pos.index;
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'yao-label';
+                    labelSpan.textContent = pos.label;
+
+                    const tagSpan = document.createElement('span');
+                    tagSpan.className = 'yao-position-tag';
+                    tagSpan.textContent = pos.tag;
+
+                    const select = document.createElement('select');
+                    select.className = 'yao-select';
+                    select.dataset.yaoIndex = pos.index;
+                    OPTIONS.forEach((opt) => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        if (opt.value === currentSelections[pos.index]) option.selected = true;
+                        select.appendChild(option);
+                    });
+
+                    const badge = document.createElement('span');
+                    badge.className = 'moving-badge';
+                    badge.style.display = 'none';
+                    badge.dataset.yaoIndex = pos.index;
+
+                    select.addEventListener('change', function () {
+                        currentSelections[pos.index] = this.value;
+                        updateRowStyle(row, select, badge, pos.index);
+                        updateResult();
+                    });
+
+                    row.appendChild(labelSpan);
+                    row.appendChild(tagSpan);
+                    row.appendChild(select);
+                    row.appendChild(badge);
+                    inputGrid.appendChild(row);
+                    updateRowStyle(row, select, badge, pos.index);
+                });
+            }
+
+            function updateRowStyle(row, select, badge, yaoIndex) {
+                const val = currentSelections[yaoIndex];
+                const opt = OPTIONS.find(o => o.value === val);
+                if (opt && !opt.static) {
+                    row.classList.add('has-moving');
+                    select.classList.add('moving');
+                    badge.style.display = 'inline-block';
+                    badge.textContent = opt.movingSymbol || '动';
+                } else {
+                    row.classList.remove('has-moving');
+                    select.classList.remove('moving');
+                    badge.style.display = 'none';
+                }
+            }
+
+            function refreshAllRowStyles() {
+                const rows = inputGrid.querySelectorAll('.yao-input-row');
+                rows.forEach(row => {
+                    const yaoIndex = parseInt(row.dataset.yaoIndex);
+                    const select = row.querySelector('.yao-select');
+                    const badge = row.querySelector('.moving-badge');
+                    if (select && badge) updateRowStyle(row, select, badge, yaoIndex);
+                });
+            }
+
+            function syncSelectsToSelections() {
+                const selects = inputGrid.querySelectorAll('.yao-select');
+                selects.forEach(select => {
+                    const yaoIndex = parseInt(select.dataset.yaoIndex);
+                    select.value = currentSelections[yaoIndex];
+                });
+                refreshAllRowStyles();
+            }
+
+            function computeGua() {
+                const originalYao = [];
+                const changedYao = [];
+                const movingFlags = [];
+                for (let i = 0; i < 6; i++) {
+                    const val = currentSelections[i];
+                    const opt = OPTIONS.find(o => o.value === val);
+                    const isYang = (opt && opt.type === 'yang');
+                    const isMoving = (opt && !opt.static);
+                    originalYao.push(isYang ? 1 : 0);
+                    movingFlags.push(isMoving);
+                    changedYao.push(isMoving ? (isYang ? 0 : 1) : (isYang ? 1 : 0));
+                }
+
+                const lowerOriginal = (originalYao[0] << 2) | (originalYao[1] << 1) | originalYao[2];
+                const upperOriginal = (originalYao[3] << 2) | (originalYao[4] << 1) | originalYao[5];
+                const lowerChanged = (changedYao[0] << 2) | (changedYao[1] << 1) | changedYao[2];
+                const upperChanged = (changedYao[3] << 2) | (changedYao[4] << 1) | changedYao[5];
+
+                const hasMoving = movingFlags.some(f => f);
+                return {
+                    originalYao,
+                    changedYao,
+                    movingFlags,
+                    lowerOriginal,
+                    upperOriginal,
+                    lowerChanged,
+                    upperChanged,
+                    hasMoving,
+                };
+            }
+
+            function updateResult() {
+                const gua = computeGua();
+                const { originalYao, changedYao, movingFlags, lowerOriginal, upperOriginal,
+                    lowerChanged, upperChanged, hasMoving } = gua;
+
+                const originalOrder = getGuaOrder(upperOriginal, lowerOriginal);
+                const originalName = originalOrder ? GUA_NAMES[originalOrder] : getGuaName(upperOriginal,
+                    lowerOriginal);
+                const originalSymbol = originalOrder ? getGuaSymbol(originalOrder) : '';
+
+                let changedOrder = null,
+                    changedName = '',
+                    changedSymbol = '';
+                if (hasMoving) {
+                    changedOrder = getGuaOrder(upperChanged, lowerChanged);
+                    changedName = changedOrder ? GUA_NAMES[changedOrder] : getGuaName(upperChanged, lowerChanged);
+                    changedSymbol = changedOrder ? getGuaSymbol(changedOrder) : '';
+                }
+
+                const originalHtml = buildGuaVisualHtml(originalYao, movingFlags, false, originalName, originalSymbol,
+                    upperOriginal, lowerOriginal);
+                const changedHtml = hasMoving ?
+                    buildGuaVisualHtml(changedYao, movingFlags, true, changedName, changedSymbol, upperChanged,
+                        lowerChanged) :
+                    buildStaticNoChangeHtml(originalName, originalSymbol);
+
+                const arrowHtml = hasMoving ?
+                    '<div class="arrow-between">⟶</div>' :
+                    '<div class="arrow-between" style="font-size:18px;color:#c5b99a;">═</div>';
+
+                resultArea.innerHTML = `
+                    <div class="gua-display">
+                        <div class="gua-symbol">${originalSymbol}</div>
+                        <div class="gua-name">${originalName}</div>
+                        <div class="gua-sub">原卦（本卦）</div>
+                        ${originalHtml}
+                    </div>
+                    <div class="result-divider-col">${arrowHtml}</div>
+                    <div class="gua-display">
+                        ${changedHtml}
+                    </div>
+                `;
+
+                if (hasMoving) {
+                    const movingPositions = [];
+                    const movingDetails = [];
+                    YAO_POSITIONS.forEach((pos) => {
+                        const i = pos.index;
+                        if (movingFlags[i]) {
+                            const opt = OPTIONS.find(o => o.value === currentSelections[i]);
+                            const sym = opt ? (opt.movingSymbol || '动') : '动';
+                            movingPositions.push(pos.label);
+                            movingDetails.push(`${pos.label}${sym}`);
+                        }
+                    });
+                    movingSummary.innerHTML = `
+                        <strong>动爻：</strong>${movingDetails.join('、')}
+                        &nbsp;|&nbsp;
+                        原卦 <strong>${originalName}</strong> ${originalSymbol}
+                        ⟶ 变卦 <strong>${changedName}</strong> ${changedSymbol}
+                        &nbsp;|&nbsp;
+                        共 <strong>${movingPositions.length}</strong> 个动爻 
+                    `;
+                } else {
+                    movingSummary.innerHTML = `
+                        <strong>静卦</strong>（无动爻）
+                        &nbsp;|&nbsp;
+                        <strong>${originalName}</strong> ${originalSymbol}
+                        &nbsp;|&nbsp;
+                        六爻皆静，无变卦 
+                    `;
+                }
+            }
+
+            function buildGuaVisualHtml(yaoArray, movingFlags, isChanged, guaName, guaSymbol, upperTrigram, lowerTrigram) {
+                const upperInfo = TRIGRAM_MAP[upperTrigram];
+                const lowerInfo = TRIGRAM_MAP[lowerTrigram];
+                let html = '';
+
+                // 如果是变卦，先输出卦符和卦名 
+                if (isChanged) {
+                    html += `<div class="gua-symbol">${guaSymbol}</div>`;
+                    html += `<div class="gua-name">${guaName}</div>`;
+                }
+
+                html += '<div class="yao-visual">';
+                if (isChanged) {
+                    html += `<div class="gua-sub" style="color:#b5343a;font-weight:600;">变卦（之卦）</div>`;
+                }
+                for (let displayIdx = 5; displayIdx >= 0; displayIdx--) {
+                    const isYang = yaoArray[displayIdx] === 1;
+                    const wasMoving = movingFlags[displayIdx];
+                    const isChangedYao = isChanged && wasMoving;
+
+                    html += '<div class="yao-line-container">';
+                    if (isChanged && wasMoving) {
+                        html += `<span class="yao-mark moving-mark" style="font-size:13px;">◀</span>`;
+                    } else if (!isChanged && wasMoving) {
+                        const opt = OPTIONS.find(o => o.value === currentSelections[displayIdx]);
+                        const sym = opt ? (opt.movingSymbol || '●') : '●';
+                        html += `<span class="yao-mark moving-mark">${sym}</span>`;
+                    } else {
+                        html += `<span class="yao-mark static-mark">·</span>`;
+                    }
+
+                    if (isYang) {
+                        const cls = isChangedYao ? 'yao-line-yang changed' : 'yao-line-yang';
+                        html += `<div class="${cls}"></div>`;
+                    } else {
+                        const cls = isChangedYao ? 'yao-line-yin changed' : 'yao-line-yin';
+                        html += `<div class="yao-line-yin-wrapper"><div class="${cls}"></div><div class="${cls}"></div></div>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                html += `<div class="gua-sub" style="margin-top:2px;">上${upperInfo.element}${upperInfo.symbol} · 下${lowerInfo.element}${lowerInfo.symbol}</div>`;
+
+                return html;
+            }
+
+            function buildStaticNoChangeHtml(originalName, originalSymbol) {
+                return `
+                    <div class="gua-symbol">${originalSymbol}</div>
+                    <div class="gua-name">${originalName}</div>
+                    <div class="gua-sub" style="color:#8b7a60;">变卦同原卦</div>
+                    <div style="padding:20px;text-align:center;color:#b09a70;font-size:13px;letter-spacing:2px;">静卦 · 无变卦</div>
+                `;
+            }
+
+            function randomShake() {
+                const outcomes = [];
+                for (let i = 0; i < 6; i++) {
+                    const backs = Math.floor(Math.random() * 8);
+                    if (backs === 0) outcomes.push('three_word');
+                    else if (backs <= 3) outcomes.push('one_back');
+                    else if (backs <= 6) outcomes.push('two_back');
+                    else outcomes.push('three_back');
+                }
+                for (let i = 0; i < 6; i++) currentSelections[i] = outcomes[i];
+                syncSelectsToSelections();
+                updateResult();
+                showToast('🎲 已随机摇卦');
+                document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function resetAll() {
+                currentSelections.fill('one_back');
+                syncSelectsToSelections();
+                updateResult();
+                showToast('↺ 已重置为全部静阳爻（一背）');
+            }
+
+            function copyGuaInfo() {
+                const gua = computeGua();
+                const { originalYao, changedYao, movingFlags, lowerOriginal, upperOriginal,
+                    lowerChanged, upperChanged, hasMoving } = gua;
+                const originalOrder = getGuaOrder(upperOriginal, lowerOriginal);
+                const originalName = originalOrder ? GUA_NAMES[originalOrder] : getGuaName(upperOriginal,
+                    lowerOriginal);
+                const originalSymbol = originalOrder ? getGuaSymbol(originalOrder) : '';
+                let lines = ['════════ 增删卜易 · 排卦结果 ════════', ''];
+                lines.push('【摇卦记录】（从上到下）');
+                YAO_POSITIONS.forEach((pos) => {
+                    const i = pos.index;
+                    const opt = OPTIONS.find(o => o.value === currentSelections[i]);
+                    const marker = (opt && !opt.static) ? ' ' + (opt.movingSymbol || '动') : '  ·';
+                    lines.push(`  ${pos.label}：${opt ? opt.shortLabel : ''}${marker}`);
+                });
+                lines.push('');
+                lines.push(`【原卦】${originalName} ${originalSymbol}`);
+                lines.push(
+                    `  上：${TRIGRAM_MAP[upperOriginal].element}${TRIGRAM_MAP[upperOriginal].symbol}  下：${TRIGRAM_MAP[lowerOriginal].element}${TRIGRAM_MAP[lowerOriginal].symbol}`
+                );
+                for (let d = 5; d >= 0; d--) {
+                    const y = originalYao[d];
+                    const m = movingFlags[d];
+                    const sym = y === 1 ? '————' : '—  —';
+                    const mark = m ? (y === 1 ? ' ⚪' : ' ×') : '';
+                    lines.push(`    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}`);
+                }
+                lines.push('');
+                if (hasMoving) {
+                    const changedOrder = getGuaOrder(upperChanged, lowerChanged);
+                    const changedName = changedOrder ? GUA_NAMES[changedOrder] : getGuaName(upperChanged,
+                        lowerChanged);
+                    const changedSymbol = changedOrder ? getGuaSymbol(changedOrder) : '';
+                    lines.push(`【变卦】${changedName} ${changedSymbol}`);
+                    for (let d = 5; d >= 0; d--) {
+                        const y = changedYao[d];
+                        const m = movingFlags[d];
+                        const sym = y === 1 ? '————' : '—  —';
+                        const mark = m ? ' ←变' : '';
+                        lines.push(`    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}`);
+                    }
+                } else {
+                    lines.push('【变卦】无（静卦）');
+                }
+                lines.push('');
+                lines.push('════════════════════════════════');
+                const text = lines.join('\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('📋 卦象信息已复制到剪贴板');
+                }).catch(() => {
+                    showToast('⚠️ 复制失败，请手动选择');
+                });
+            }
+
+            btnClear.addEventListener('click', resetAll);
+            btnCopyLink.addEventListener('click', copyGuaInfo);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'r' && e.ctrlKey) {
+                    e.preventDefault();
+                    randomShake();
+                }
+                if (e.key === 'c' && e.ctrlKey && e.shiftKey) {
+                    e.preventDefault();
+                    copyGuaInfo();
+                }
+            });
+
+            function init() {
+                buildInputGrid();
+                updateResult();
+            }
+            init();
+        })();
+    </script>
+</body>
+
+</html>
