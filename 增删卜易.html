@@ -24,7 +24,8 @@
             --radius: 14px;
             --radius-sm: 10px;
             --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-            --font-serif: "PingFang SC", "Hiragino Sans GB", "Noto Serif SC", "Source Han Serif CN", "STSong", "Songti SC", "Microsoft YaHei", serif;
+            --font-serif: "PingFang SC", "Hiragino Sans GB", "Noto Serif SC", "Source Han Serif CN", "STSong",
+                "Songti SC", "Microsoft YaHei", serif;
         }
 
         * {
@@ -251,7 +252,7 @@
             transition: var(--transition);
             appearance: none;
             -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'  width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b7a60' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'   width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b7a60' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 14px center;
             padding-right: 38px;
@@ -458,7 +459,7 @@
             align-items: center;
             gap: 10px;
             position: relative;
-            min-height: 28px;
+            min-height: 32px;
             padding: 1px 0;
         }
 
@@ -483,8 +484,64 @@
             font-size: 11px;
         }
 
+        /* 世爻应爻标记 */
+        .yao-visual .shiying-mark {
+            width: 28px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 2px 6px;
+            line-height: 1.2;
+        }
+
+        .yao-visual .shiying-mark.shi-yao {
+            color: #fff;
+            background: #b5343a;
+            box-shadow: 0 0 8px rgba(181, 52, 58, 0.4);
+            animation: shi-glow 2.5s ease-in-out infinite;
+        }
+
+        .yao-visual .shiying-mark.ying-yao {
+            color: #5a3a1a;
+            background: #f0d89c;
+            border: 1.5px solid #c9a040;
+            box-shadow: 0 0 6px rgba(180, 140, 60, 0.35);
+        }
+
+        @keyframes shi-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(181, 52, 58, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 18px rgba(181, 52, 58, 0.7), 0 0 4px rgba(181, 52, 58, 0.5);
+            }
+        }
+
+        /* 六亲五行标签 */
+        .yao-visual .liuqin-tag {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+            min-width: 60px;
+            text-align: right;
+            color: #4a3620;
+            white-space: nowrap;
+        }
+
+        .yao-visual .liuqin-tag.changed-tag {
+            color: #b5343a;
+            font-weight: 700;
+        }
+
         .yao-line-yang {
-            width: 76px;
+            width: 64px;
             height: 8px;
             background: var(--yao-yang);
             border-radius: 4px;
@@ -512,13 +569,13 @@
 
         .yao-line-yin-wrapper {
             display: flex;
-            gap: 12px;
-            width: 76px;
+            gap: 10px;
+            width: 64px;
             justify-content: center;
         }
 
         .yao-line-yin {
-            width: 26px;
+            width: 22px;
             height: 8px;
             background: var(--yao-yin);
             border-radius: 4px;
@@ -669,9 +726,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="icon-row">☰☷☳☶☲☵☱☴</div>
+            <div class="icon-row">☰☷☳☴☵☲☶☱</div>
             <h1>增删卜易 · 排卦</h1>
-            <div class="subtitle">— 六爻静动 · 原卦变卦 —</div>
+            <div class="subtitle">— 六爻静动 · 原卦变卦 · 世应六亲 —</div>
         </div>
 
         <div class="legend">
@@ -681,6 +738,8 @@
             <span>× 三字（阴动变阳）</span>
             <span>———— 阳爻</span>
             <span>— — 阴爻</span>
+            <span style="color:#b5343a;font-weight:700;">世</span> 世爻</span>
+            <span style="color:#5a3a1a;font-weight:700;">应</span> 应爻</span>
         </div>
 
         <div class="card">
@@ -848,6 +907,186 @@
                 64: '火水未济',
             };
 
+            // 世爻位置映射：卦序 → 世爻位置（1=初爻, 2=二爻, ..., 6=上爻）
+            // 基于京房八宫卦序 
+            const GUA_SHI_YAO = {
+                1: 6,
+                2: 6,
+                3: 2,
+                4: 4,
+                5: 4,
+                6: 4,
+                7: 3,
+                8: 3,
+                9: 1,
+                10: 5,
+                11: 3,
+                12: 3,
+                13: 3,
+                14: 3,
+                15: 3,
+                16: 1,
+                17: 3,
+                18: 3,
+                19: 2,
+                20: 4,
+                21: 5,
+                22: 1,
+                23: 5,
+                24: 1,
+                25: 4,
+                26: 2,
+                27: 4,
+                28: 4,
+                29: 6,
+                30: 6,
+                31: 3,
+                32: 3,
+                33: 2,
+                34: 4,
+                35: 4,
+                36: 4,
+                37: 2,
+                38: 4,
+                39: 4,
+                40: 2,
+                41: 3,
+                42: 3,
+                43: 5,
+                44: 1,
+                45: 2,
+                46: 4,
+                47: 1,
+                48: 5,
+                49: 4,
+                50: 2,
+                51: 6,
+                52: 6,
+                53: 3,
+                54: 4,
+                55: 5,
+                56: 1,
+                57: 6,
+                58: 6,
+                59: 5,
+                60: 1,
+                61: 4,
+                62: 5,
+                63: 3,
+                64: 3,
+            };
+
+            // 卦所属宫（八卦索引0-7）：卦序 → 宫八卦索引 
+            // 乾宫=7(金), 坤宫=0(土), 震宫=4(木), 巽宫=3(木), 坎宫=2(水), 离宫=5(火), 艮宫=1(土), 兑宫=6(金)
+            const GUA_PALACE = {
+                1: 7,
+                2: 0,
+                3: 2,
+                4: 5,
+                5: 0,
+                6: 5,
+                7: 2,
+                8: 0,
+                9: 3,
+                10: 1,
+                11: 0,
+                12: 7,
+                13: 5,
+                14: 7,
+                15: 1,
+                16: 4,
+                17: 4,
+                18: 3,
+                19: 6,
+                20: 7,
+                21: 3,
+                22: 1,
+                23: 7,
+                24: 0,
+                25: 3,
+                26: 1,
+                27: 3,
+                28: 4,
+                29: 2,
+                30: 5,
+                31: 6,
+                32: 4,
+                33: 7,
+                34: 0,
+                35: 7,
+                36: 2,
+                37: 3,
+                38: 1,
+                39: 6,
+                40: 4,
+                41: 1,
+                42: 3,
+                43: 0,
+                44: 7,
+                45: 6,
+                46: 4,
+                47: 6,
+                48: 4,
+                49: 2,
+                50: 5,
+                51: 4,
+                52: 1,
+                53: 1,
+                54: 6,
+                55: 2,
+                56: 5,
+                57: 3,
+                58: 6,
+                59: 5,
+                60: 2,
+                61: 1,
+                62: 6,
+                63: 2,
+                64: 5,
+            };
+
+            // 八卦纳甲地支（内卦：初爻、二爻、三爻；外卦：四爻、五爻、上爻）
+            // 索引0-7对应坤艮坎巽震离兑乾 
+            const NAJIA_DIZHI_INNER = [
+                ['未', '巳', '卯'], // 坤 - 初未、二巳、三卯 
+                ['辰', '午', '申'], // 艮 - 初辰、二午、三申 
+                ['寅', '辰', '午'], // 坎 - 初寅、二辰、三午 
+                ['丑', '亥', '酉'], // 巽 - 初丑、二亥、三酉 
+                ['子', '寅', '辰'], // 震 - 初子、二寅、三辰 
+                ['卯', '丑', '亥'], // 离 - 初卯、二丑、三亥 
+                ['巳', '卯', '丑'], // 兑 - 初巳、二卯、三丑 
+                ['子', '寅', '辰'], // 乾 - 初子、二寅、三辰 
+            ];
+            const NAJIA_DIZHI_OUTER = [
+                ['丑', '亥', '酉'], // 坤 - 四丑、五亥、上酉 
+                ['戌', '子', '寅'], // 艮 - 四戌、五子、上寅 
+                ['申', '戌', '子'], // 坎 - 四申、五戌、上子 
+                ['未', '巳', '卯'], // 巽 - 四未、五巳、上卯 
+                ['午', '申', '戌'], // 震 - 四午、五申、上戌 
+                ['酉', '未', '巳'], // 离 - 四酉、五未、上巳 
+                ['亥', '酉', '未'], // 兑 - 四亥、五酉、上未 
+                ['午', '申', '戌'], // 乾 - 四午、五申、上戌 
+            ];
+
+            // 地支五行 
+            const DIZHI_WUXING = {
+                '子': '水',
+                '丑': '土',
+                '寅': '木',
+                '卯': '木',
+                '辰': '土',
+                '巳': '火',
+                '午': '火',
+                '未': '土',
+                '申': '金',
+                '酉': '金',
+                '戌': '土',
+                '亥': '水',
+            };
+
+            // 八卦五行：坤0=土, 艮1=土, 坎2=水, 巽3=木, 震4=木, 离5=火, 兑6=金, 乾7=金 
+            const PALACE_WUXING = ['土', '土', '水', '木', '木', '火', '金', '金'];
+
             function getGuaSymbol(order) {
                 return String.fromCodePoint(0x4DBF + order);
             }
@@ -865,6 +1104,51 @@
                 return `${u.element}${l.element}${u.name}下${l.name}`;
             }
 
+            // 获取某卦某爻的地支 
+            function getYaoDizhi(upperTrigram, lowerTrigram, yaoIndex) {
+                // yaoIndex: 0=初爻, 1=二爻, 2=三爻, 3=四爻, 4=五爻, 5=上爻 
+                if (yaoIndex < 3) {
+                    return NAJIA_DIZHI_INNER[lowerTrigram][yaoIndex];
+                } else {
+                    return NAJIA_DIZHI_OUTER[upperTrigram][yaoIndex - 3];
+                }
+            }
+
+            // 获取六亲：根据宫五行和爻地支 
+            function getLiuQin(palaceTrigram, dizhi) {
+                const woWuxing = PALACE_WUXING[palaceTrigram]; // 宫五行 
+                const yaoWuxing = DIZHI_WUXING[dizhi]; // 爻地支五行 
+                if (yaoWuxing === woWuxing) return '兄弟';
+                // 生我者为父母 
+                const shengWo = {
+                    '金': '土',
+                    '水': '金',
+                    '木': '水',
+                    '火': '木',
+                    '土': '火'
+                };
+                // 我生者为子孙 
+                const woSheng = {
+                    '金': '水',
+                    '水': '木',
+                    '木': '火',
+                    '火': '土',
+                    '土': '金'
+                };
+                // 克我者为官鬼 
+                const keWo = {
+                    '金': '火',
+                    '水': '土',
+                    '木': '金',
+                    '火': '水',
+                    '土': '木'
+                };
+                if (shengWo[woWuxing] === yaoWuxing) return '父母';
+                if (woSheng[woWuxing] === yaoWuxing) return '子孙';
+                if (keWo[woWuxing] === yaoWuxing) return '官鬼';
+                return '妻财'; // 我克者 
+            }
+
             const YAO_POSITIONS = [
                 { index: 5, label: '上爻', tag: '第6次摇' },
                 { index: 4, label: '五爻', tag: '第5次摇' },
@@ -876,19 +1160,33 @@
 
             const OPTIONS = [
                 {
-                    value: 'one_back', label: '一背 ————（少阳·静）', shortLabel: '一背', type: 'yang',
+                    value: 'one_back',
+                    label: '一背 ————（少阳·静）',
+                    shortLabel: '一背',
+                    type: 'yang',
                     static: true
                 },
                 {
-                    value: 'two_back', label: '两背 —  —（少阴·静）', shortLabel: '两背', type: 'yin',
+                    value: 'two_back',
+                    label: '两背 —  —（少阴·静）',
+                    shortLabel: '两背',
+                    type: 'yin',
                     static: true
                 },
                 {
-                    value: 'three_back', label: '三背 ⚪（老阳·动）', shortLabel: '三背', type: 'yang', static: false,
+                    value: 'three_back',
+                    label: '三背 ⚪（老阳·动）',
+                    shortLabel: '三背',
+                    type: 'yang',
+                    static: false,
                     movingSymbol: '⚪'
                 },
                 {
-                    value: 'three_word', label: '三字 ×（老阴·动）', shortLabel: '三字', type: 'yin', static: false,
+                    value: 'three_word',
+                    label: '三字 ×（老阴·动）',
+                    shortLabel: '三字',
+                    type: 'yin',
+                    static: false,
                     movingSymbol: '×'
                 },
             ];
@@ -899,7 +1197,6 @@
             const resultArea = document.getElementById('resultArea');
             const movingSummary = document.getElementById('movingSummary');
             const toast = document.getElementById('toast');
-            const btnRandom = document.getElementById('btnRandom');
             const btnClear = document.getElementById('btnClear');
             const btnCopyLink = document.getElementById('btnCopyLink');
 
@@ -1033,21 +1330,30 @@
                 const originalName = originalOrder ? GUA_NAMES[originalOrder] : getGuaName(upperOriginal,
                     lowerOriginal);
                 const originalSymbol = originalOrder ? getGuaSymbol(originalOrder) : '';
+                const originalPalace = originalOrder ? (GUA_PALACE[originalOrder] || 7) : 7;
+                const originalShiYao = originalOrder ? (GUA_SHI_YAO[originalOrder] || 6) : 6;
+                const originalYingYao = (originalShiYao + 2) % 6 + 1; // 应爻=世爻+3（模6，1-indexed）
 
                 let changedOrder = null,
                     changedName = '',
                     changedSymbol = '';
+                let changedPalace = originalPalace;
+                let changedShiYao = originalShiYao;
+                let changedYingYao = originalYingYao;
                 if (hasMoving) {
                     changedOrder = getGuaOrder(upperChanged, lowerChanged);
                     changedName = changedOrder ? GUA_NAMES[changedOrder] : getGuaName(upperChanged, lowerChanged);
                     changedSymbol = changedOrder ? getGuaSymbol(changedOrder) : '';
+                    changedPalace = changedOrder ? (GUA_PALACE[changedOrder] || originalPalace) : originalPalace;
+                    changedShiYao = changedOrder ? (GUA_SHI_YAO[changedOrder] || originalShiYao) : originalShiYao;
+                    changedYingYao = (changedShiYao + 2) % 6 + 1;
                 }
 
                 const originalHtml = buildGuaVisualHtml(originalYao, movingFlags, false, originalName, originalSymbol,
-                    upperOriginal, lowerOriginal);
+                    upperOriginal, lowerOriginal, originalPalace, originalShiYao, originalYingYao, hasMoving);
                 const changedHtml = hasMoving ?
                     buildGuaVisualHtml(changedYao, movingFlags, true, changedName, changedSymbol, upperChanged,
-                        lowerChanged) :
+                        lowerChanged, changedPalace, changedShiYao, changedYingYao, true) :
                     buildStaticNoChangeHtml(originalName, originalSymbol);
 
                 const arrowHtml = hasMoving ?
@@ -1098,12 +1404,12 @@
                 }
             }
 
-            function buildGuaVisualHtml(yaoArray, movingFlags, isChanged, guaName, guaSymbol, upperTrigram, lowerTrigram) {
+            function buildGuaVisualHtml(yaoArray, movingFlags, isChanged, guaName, guaSymbol, upperTrigram, lowerTrigram,
+                palaceTrigram, shiYao, yingYao, hasMoving) {
                 const upperInfo = TRIGRAM_MAP[upperTrigram];
                 const lowerInfo = TRIGRAM_MAP[lowerTrigram];
                 let html = '';
 
-                // 如果是变卦，先输出卦符和卦名 
                 if (isChanged) {
                     html += `<div class="gua-symbol">${guaSymbol}</div>`;
                     html += `<div class="gua-name">${guaName}</div>`;
@@ -1117,30 +1423,64 @@
                     const isYang = yaoArray[displayIdx] === 1;
                     const wasMoving = movingFlags[displayIdx];
                     const isChangedYao = isChanged && wasMoving;
+                    const yaoIndex = displayIdx; // 0=初爻...5=上爻 
+                    const shiYaoIdx = shiYao - 1; // 转为0-indexed 
+                    const yingYaoIdx = yingYao - 1;
+
+                    // 获取该爻的地支和六亲 
+                    const dizhi = getYaoDizhi(upperTrigram, lowerTrigram, yaoIndex);
+                    const liuqin = getLiuQin(palaceTrigram, dizhi);
 
                     html += '<div class="yao-line-container">';
-                    if (isChanged && wasMoving) {
-                        html += `<span class="yao-mark moving-mark" style="font-size:13px;">◀</span>`;
-                    } else if (!isChanged && wasMoving) {
-                        const opt = OPTIONS.find(o => o.value === currentSelections[displayIdx]);
-                        const sym = opt ? (opt.movingSymbol || '●') : '●';
-                        html += `<span class="yao-mark moving-mark">${sym}</span>`;
+
+                    // 左侧：世爻/应爻标记 
+                    if (yaoIndex === shiYaoIdx) {
+                        html += `<span class="shiying-mark shi-yao">世</span>`;
+                    } else if (yaoIndex === yingYaoIdx) {
+                        html += `<span class="shiying-mark ying-yao">应</span>`;
                     } else {
                         html += `<span class="yao-mark static-mark">·</span>`;
                     }
 
+                    // 动爻标记 
+                    if (isChanged && wasMoving) {
+                        html +=
+                            `<span class="yao-mark moving-mark" style="font-size:11px;width:20px;min-width:20px;">◀</span>`;
+                    } else if (!isChanged && wasMoving) {
+                        const opt = OPTIONS.find(o => o.value === currentSelections[displayIdx]);
+                        const sym = opt ? (opt.movingSymbol || '●') : '●';
+                        html +=
+                            `<span class="yao-mark moving-mark" style="font-size:13px;width:20px;min-width:20px;">${sym}</span>`;
+                    } else {
+                        html +=
+                            `<span class="yao-mark static-mark" style="width:20px;min-width:20px;">·</span>`;
+                    }
+
+                    // 爻线 
                     if (isYang) {
                         const cls = isChangedYao ? 'yao-line-yang changed' : 'yao-line-yang';
                         html += `<div class="${cls}"></div>`;
                     } else {
                         const cls = isChangedYao ? 'yao-line-yin changed' : 'yao-line-yin';
-                        html += `<div class="yao-line-yin-wrapper"><div class="${cls}"></div><div class="${cls}"></div></div>`;
+                        html +=
+                            `<div class="yao-line-yin-wrapper"><div class="${cls}"></div><div class="${cls}"></div></div>`;
                     }
+
+                    // 右侧：六亲+地支 
+                    const tagCls = isChangedYao ? 'liuqin-tag changed-tag' : 'liuqin-tag';
+                    html +=
+                        `<span class="${tagCls}" style="min-width:64px;text-align:left;font-size:11px;letter-spacing:1px;">${liuqin}${dizhi}${DIZHI_WUXING[dizhi]}</span>`;
+
                     html += '</div>';
                 }
                 html += '</div>';
 
-                html += `<div class="gua-sub" style="margin-top:2px;">上${upperInfo.element}${upperInfo.symbol} · 下${lowerInfo.element}${lowerInfo.symbol}</div>`;
+                html +=
+                    `<div class="gua-sub" style="margin-top:2px;">上${upperInfo.element}${upperInfo.symbol} · 下${lowerInfo.element}${lowerInfo.symbol}</div>`;
+                // 显示世爻位置 
+                const shiLabel = ['初', '二', '三', '四', '五', '上'][shiYao - 1];
+                html +=
+                    `<div class="gua-sub" style="font-size:10px;opacity:0.7;">世在${shiLabel}爻 · 应在${['初', '二', '三', '四', '五', '上'][yingYao - 1]}爻 · 属${PALACE_WUXING[palaceTrigram]}</div>`;
 
                 return html;
             }
@@ -1154,29 +1494,6 @@
                 `;
             }
 
-            function randomShake() {
-                const outcomes = [];
-                for (let i = 0; i < 6; i++) {
-                    const backs = Math.floor(Math.random() * 8);
-                    if (backs === 0) outcomes.push('three_word');
-                    else if (backs <= 3) outcomes.push('one_back');
-                    else if (backs <= 6) outcomes.push('two_back');
-                    else outcomes.push('three_back');
-                }
-                for (let i = 0; i < 6; i++) currentSelections[i] = outcomes[i];
-                syncSelectsToSelections();
-                updateResult();
-                showToast('🎲 已随机摇卦');
-                document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-
-            function resetAll() {
-                currentSelections.fill('one_back');
-                syncSelectsToSelections();
-                updateResult();
-                showToast('↺ 已重置为全部静阳爻（一背）');
-            }
-
             function copyGuaInfo() {
                 const gua = computeGua();
                 const { originalYao, changedYao, movingFlags, lowerOriginal, upperOriginal,
@@ -1185,16 +1502,32 @@
                 const originalName = originalOrder ? GUA_NAMES[originalOrder] : getGuaName(upperOriginal,
                     lowerOriginal);
                 const originalSymbol = originalOrder ? getGuaSymbol(originalOrder) : '';
+                const originalPalace = originalOrder ? (GUA_PALACE[originalOrder] || 7) : 7;
+                const originalShiYao = originalOrder ? (GUA_SHI_YAO[originalOrder] || 6) : 6;
+                const originalYingYao = (originalShiYao + 2) % 6 + 1;
+
+                // 获取当前时间 
+                const now = new Date();
+                const qiuGuaTime = `求卦时间${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
                 let lines = ['════════ 增删卜易 · 排卦结果 ════════', ''];
+                lines.push(qiuGuaTime);
+                lines.push('');
                 lines.push('【摇卦记录】（从上到下）');
                 YAO_POSITIONS.forEach((pos) => {
                     const i = pos.index;
                     const opt = OPTIONS.find(o => o.value === currentSelections[i]);
                     const marker = (opt && !opt.static) ? ' ' + (opt.movingSymbol || '动') : '  ·';
-                    lines.push(`  ${pos.label}：${opt ? opt.shortLabel : ''}${marker}`);
+                    // 获取地支和六亲 
+                    const dizhi = getYaoDizhi(upperOriginal, lowerOriginal, i);
+                    const liuqin = getLiuQin(originalPalace, dizhi);
+                    const shiMark = (i === originalShiYao - 1) ? ' [世]' : (i === originalYingYao - 1) ? ' [应]' : '';
+                    lines.push(
+                        `  ${pos.label}：${opt ? opt.shortLabel : ''}${marker}  ${liuqin}${dizhi}${DIZHI_WUXING[dizhi]}${shiMark}`
+                    );
                 });
                 lines.push('');
-                lines.push(`【原卦】${originalName} ${originalSymbol}`);
+                lines.push(`【原卦】${originalName} ${originalSymbol}  属${PALACE_WUXING[originalPalace]}  世在${['初', '二', '三', '四', '五', '上'][originalShiYao - 1]}爻  应在${['初', '二', '三', '四', '五', '上'][originalYingYao - 1]}爻`);
                 lines.push(
                     `  上：${TRIGRAM_MAP[upperOriginal].element}${TRIGRAM_MAP[upperOriginal].symbol}  下：${TRIGRAM_MAP[lowerOriginal].element}${TRIGRAM_MAP[lowerOriginal].symbol}`
                 );
@@ -1203,7 +1536,12 @@
                     const m = movingFlags[d];
                     const sym = y === 1 ? '————' : '—  —';
                     const mark = m ? (y === 1 ? ' ⚪' : ' ×') : '';
-                    lines.push(`    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}`);
+                    const dizhi = getYaoDizhi(upperOriginal, lowerOriginal, d);
+                    const liuqin = getLiuQin(originalPalace, dizhi);
+                    const shiMark = (d === originalShiYao - 1) ? ' [世]' : (d === originalYingYao - 1) ? ' [应]' : '';
+                    lines.push(
+                        `    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}  ${liuqin}${dizhi}${DIZHI_WUXING[dizhi]}${shiMark}`
+                    );
                 }
                 lines.push('');
                 if (hasMoving) {
@@ -1211,13 +1549,24 @@
                     const changedName = changedOrder ? GUA_NAMES[changedOrder] : getGuaName(upperChanged,
                         lowerChanged);
                     const changedSymbol = changedOrder ? getGuaSymbol(changedOrder) : '';
-                    lines.push(`【变卦】${changedName} ${changedSymbol}`);
+                    const changedPalace = changedOrder ? (GUA_PALACE[changedOrder] || originalPalace) : originalPalace;
+                    const changedShiYao = changedOrder ? (GUA_SHI_YAO[changedOrder] || originalShiYao) : originalShiYao;
+                    const changedYingYao = (changedShiYao + 2) % 6 + 1;
+                    lines.push(
+                        `【变卦】${changedName} ${changedSymbol}  属${PALACE_WUXING[changedPalace]}  世在${['初', '二', '三', '四', '五', '上'][changedShiYao - 1]}爻  应在${['初', '二', '三', '四', '五', '上'][changedYingYao - 1]}爻`
+                    );
+                    // 变卦六亲以本卦宫五行来定（增删卜易惯例）
                     for (let d = 5; d >= 0; d--) {
                         const y = changedYao[d];
                         const m = movingFlags[d];
                         const sym = y === 1 ? '————' : '—  —';
                         const mark = m ? ' ←变' : '';
-                        lines.push(`    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}`);
+                        const dizhi = getYaoDizhi(upperChanged, lowerChanged, d);
+                        const liuqin = getLiuQin(originalPalace, dizhi);
+                        const shiMark = (d === changedShiYao - 1) ? ' [世]' : (d === changedYingYao - 1) ? ' [应]' : '';
+                        lines.push(
+                            `    ${YAO_POSITIONS[5 - d].label}: ${sym}${mark}  ${liuqin}${dizhi}${DIZHI_WUXING[dizhi]}${shiMark}`
+                        );
                     }
                 } else {
                     lines.push('【变卦】无（静卦）');
@@ -1232,14 +1581,15 @@
                 });
             }
 
-            btnClear.addEventListener('click', resetAll);
+            btnClear.addEventListener('click', function () {
+                currentSelections.fill('one_back');
+                syncSelectsToSelections();
+                updateResult();
+                showToast('↺ 已重置为全部静阳爻（一背）');
+            });
             btnCopyLink.addEventListener('click', copyGuaInfo);
 
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'r' && e.ctrlKey) {
-                    e.preventDefault();
-                    randomShake();
-                }
                 if (e.key === 'c' && e.ctrlKey && e.shiftKey) {
                     e.preventDefault();
                     copyGuaInfo();
