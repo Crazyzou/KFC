@@ -54,12 +54,16 @@ function copyCodeBlock(button) {
 // ========== Shorts 播放器相关函数 ==========
 function extractVideoIdSimple(url) {
     try {
-        if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
-        if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
-        if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
+        let cleanUrl = url.replace(/\?_.*$/, '');
+        if (cleanUrl.includes('youtube.com/watch?v=')) return cleanUrl.split('v=')[1].split('&')[0];
+        if (cleanUrl.includes('youtu.be/')) return cleanUrl.split('youtu.be/')[1].split('?')[0];
+        if (cleanUrl.includes('youtube.com/shorts/')) return cleanUrl.split('shorts/')[1].split('?')[0];
     } catch (e) { }
-    return '';
+    return null;
 }
+
+
+
 
 function stringToColor(str) {
     let hash = 0;
