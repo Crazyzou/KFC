@@ -2,12 +2,18 @@
 
 function extractVideoId(url) {
     try {
-        if (url.includes('youtube.com/watch?v=')) return url.split('v=')[1].split('&')[0];
-        if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
-        if (url.includes('youtube.com/shorts/')) return url.split('shorts/')[1].split('?')[0];
+        // 遇到特殊标记 ?_ ，截断?_及其后面全部内容；普通?原生参数保留不动
+        let cleanUrl = url.replace(/\?_.*$/, '');
+
+        if (cleanUrl.includes('youtube.com/watch?v=')) return cleanUrl.split('v=')[1].split('&')[0];
+        if (cleanUrl.includes('youtu.be/')) return cleanUrl.split('youtu.be/')[1].split('?')[0];
+        if (cleanUrl.includes('youtube.com/shorts/')) return cleanUrl.split('shorts/')[1].split('?')[0];
     } catch (e) { }
     return null;
 }
+
+
+
 
 function formatNumber(num) {
     const n = parseInt(num);
