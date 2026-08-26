@@ -1,7 +1,7 @@
 // cloud-cipher.js —— ECDH密钥协商 + 信道加密客户端（安全优化版）
 // 修复：sessionId与共享秘密分离，密钥与IV独立派生，可选公钥指纹校验
 const CloudCipher = (() => {
-    const API_BASE = 'https://tower-pc.tail3cd725.ts.net';
+    const API_BASE = 'https://tower-pc.tail3cd725.ts.net/other/';
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
