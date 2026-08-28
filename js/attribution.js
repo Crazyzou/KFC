@@ -8,11 +8,9 @@
         { name: '王译雪', id: 'D339' },
         { name: '李梦玲', id: 'D338' }
     ];
-
     const STORAGE_KEY = 'wow_tools_designers';
     let selectedDesignerId = '';
     let selectedType = 'recreate';
-
     document.addEventListener('DOMContentLoaded', () => {
         // 兼容性 DOM 获取 (优先匹配当前ID，容错备选ID)
         const processBtn = document.getElementById('attr-process-btn') || document.getElementById('attr-mark-btn');
@@ -22,7 +20,6 @@
         const resultContainer = document.getElementById('attr-result-container');
         const resultTbody = document.getElementById('attr-result-tbody');
         const copyAllBtn = document.getElementById('attr-copy-all-btn');
-
         // 弹窗相关 DOM
         const modalOverlay = document.getElementById('designerModalOverlay');
         const openModalBtn = document.getElementById('open-designer-modal-btn');
@@ -31,7 +28,6 @@
         const newNameInput = document.getElementById('attr-new-name');
         const newIdInput = document.getElementById('attr-new-id');
         const modalDesignerList = document.getElementById('attr-designer-modal-list');
-
         // 1. 获取设计师列表
         function getDesigners() {
             const stored = localStorage.getItem(STORAGE_KEY);
@@ -44,21 +40,17 @@
             }
             return DEFAULT_DESIGNERS;
         }
-
         // 2. 保存设计师
         function saveDesigners(designers) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(designers));
             renderDesigners();
         }
-
         // 3. 渲染设计师选项卡与弹窗列表
         function renderDesigners() {
             const designers = getDesigners();
-
             if (!designers.some(d => d.id === selectedDesignerId)) {
                 selectedDesignerId = designers[0] ? designers[0].id : '';
             }
-
             // 渲染主面板上的选择卡
             if (designerGroup) {
                 designerGroup.innerHTML = designers.map(d => `
@@ -71,7 +63,6 @@
                         <i class="fas fa-check attr-chip-check"></i>
                     </div>
                 `).join('');
-
                 // 绑定设计师选择卡点击事件
                 designerGroup.querySelectorAll('.attr-chip-card').forEach(card => {
                     card.addEventListener('click', (e) => {
@@ -82,7 +73,6 @@
                     });
                 });
             }
-
             // 渲染弹窗内可删除的标签（增加 null 检查）
             if (modalDesignerList) {
                 modalDesignerList.innerHTML = designers.map((d, index) => `
@@ -93,7 +83,6 @@
                 `).join('');
             }
         }
-
         // 4. 素材类型卡片切换绑定 (同时兼容 .attr-option-card 和 .attr-type-card)
         if (typeGroup) {
             const typeCards = typeGroup.querySelectorAll('.attr-option-card, .attr-type-card');
@@ -106,36 +95,29 @@
                 });
             });
         }
-
         // 5. 弹窗打开/关闭
         if (openModalBtn && modalOverlay) openModalBtn.addEventListener('click', () => modalOverlay.style.display = 'flex');
         if (closeModalBtn && modalOverlay) closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
-
         // 6. 添加设计师
         if (addBtn) {
             addBtn.addEventListener('click', () => {
                 const name = newNameInput ? newNameInput.value.trim() : '';
                 const id = newIdInput ? newIdInput.value.trim().toUpperCase() : '';
-
                 if (!name || !id) {
                     alert('请填写完整的设计师姓名和ID！');
                     return;
                 }
-
                 const designers = getDesigners();
                 if (designers.some(d => d.id === id)) {
                     alert('该设计师 ID 已存在！');
                     return;
                 }
-
                 designers.push({ name, id });
                 saveDesigners(designers);
-
                 if (newNameInput) newNameInput.value = '';
                 if (newIdInput) newIdInput.value = '';
             });
         }
-
         // 7. 删除设计师
         window.deleteDesigner = function (index) {
             const designers = getDesigners();
@@ -146,7 +128,6 @@
             designers.splice(index, 1);
             saveDesigners(designers);
         };
-
         // 8. 复制并弹提示
         function copyToClipboardText(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -159,7 +140,6 @@
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
             }
-
             if (typeof showToast === 'function') {
                 showToast('已生成标记并自动复制到剪贴板！');
             } else {
@@ -174,7 +154,6 @@
                 }
             }
         }
-
         // 9. 批量处理逻辑
         if (processBtn) {
             processBtn.addEventListener('click', () => {
@@ -182,26 +161,33 @@
                     alert('未找到输入框节点，请检查 HTML ID 配置');
                     return;
                 }
-
                 const rawText = linksInput.value.trim();
                 if (!rawText) {
                     alert('请输入链接文本！');
                     return;
                 }
-
                 let suffixSymbol = '';
                 if (selectedType === 'recreate') {
                     suffixSymbol = '_#';
                 } else if (selectedType === 'original') {
                     suffixSymbol = '_$';
                 }
-
                 const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
                 const results = [];
                 let tbodyHtml = '';
 
+                // 正则：匹配本工具追加在链接末尾的标记后缀
+                const markTailReg = /\?_D[0-9A-Z]+_[#$]$/;
+
                 lines.forEach(originLink => {
-                    const markedLink = `${originLink}??_${selectedDesignerId}${suffixSymbol}`;
+                    let cleanLink = originLink;
+                    // 如果存在旧标记后缀，则剥离旧后缀，还原基础链接
+                    if (markTailReg.test(cleanLink)) {
+                        cleanLink = cleanLink.replace(markTailReg, '');
+                    }
+                    // 使用当前选中设计师+类型生成全新标记链接
+                    const markedLink = `${cleanLink}?_${selectedDesignerId}${suffixSymbol}`;
+
                     results.push(markedLink);
                     tbodyHtml += `
                         <tr>
@@ -214,18 +200,15 @@
                 // 渲染结果表格
                 if (resultTbody) resultTbody.innerHTML = tbodyHtml;
                 if (resultContainer) resultContainer.style.display = 'block';
-
                 // 自动将结果复制进剪贴板
                 const allCopyText = results.join('\n');
                 copyToClipboardText(allCopyText);
-
                 // 复制按钮点击事件
                 if (copyAllBtn) {
                     copyAllBtn.onclick = () => copyToClipboardText(allCopyText);
                 }
             });
         }
-
         // 初始化渲染
         renderDesigners();
     });
