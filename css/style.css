@@ -2303,6 +2303,507 @@ textarea:focus {
     padding: 8px 6px;
 }
 
+/* 归属标记 - 切换按钮组样式 */
+.attr-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+/* ==================== 链接归属标记【旧模块】CSS（其他界面在用，保留） ==================== */
+.attr-card-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.attr-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.attr-label-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* 素材类型卡片 - 3列并排 */
+.attr-grid-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.attr-option-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--border-color, #e2e8f0);
+    background: var(--card-bg, #ffffff);
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.attr-option-card:hover {
+    border-color: #a5b4fc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.attr-option-card.active {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.16);
+}
+
+.attr-option-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.attr-option-card.active .attr-option-icon {
+    background: #6366f1;
+    color: #ffffff;
+}
+
+.attr-option-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.attr-option-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.attr-option-sub {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.attr-option-sub code {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.attr-check-mark {
+    font-size: 16px;
+    color: #6366f1;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s ease;
+}
+
+.attr-option-card.active .attr-check-mark {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 设计师选择 - Chips 视图 */
+.attr-manage-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.attr-manage-btn:hover {
+    background: #e0e7ff;
+}
+
+.attr-designer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.attr-chip-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    background: var(--card-bg, #ffffff);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.attr-chip-card:hover {
+    border-color: #a5b4fc;
+}
+
+.attr-chip-card.active {
+    border-color: #6366f1;
+    background: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+}
+
+.attr-chip-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attr-chip-card.active .attr-chip-avatar {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.attr-chip-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.attr-chip-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.attr-chip-id {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.attr-chip-check {
+    font-size: 11px;
+    display: none;
+}
+
+.attr-chip-card.active .attr-chip-check {
+    display: inline-block;
+    margin-left: 2px;
+}
+
+/* 按钮与表格结果（旧表格） */
+.attr-submit-btn {
+    margin-top: 8px;
+    height: 44px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+.attr-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 14px;
+}
+
+.attr-table-link-cell {
+    word-break: break-all;
+    font-size: 12px;
+    color: #64748b;
+    padding: 10px 14px;
+}
+
+.attr-table-res-cell {
+    word-break: break-all;
+    font-size: 13px;
+    padding: 10px 14px;
+}
+
+.attr-table-res-cell code {
+    color: #4f46e5;
+    font-weight: 600;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* 弹窗中的 Designer Tag */
+.attr-modal-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.attr-modal-del {
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px;
+    transition: transform 0.2s;
+}
+
+.attr-modal-del:hover {
+    transform: scale(1.2);
+}
+
+/* ========== 新版链接归属标记模块样式（panel3 当前在用，隔离独立） ========== */
+.attr-card-container-new {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.attr-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.attr-main-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.attr-textarea {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    transition: 0.2s;
+}
+
+.attr-textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.attr-section-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.attr-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.attr-type-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.attr-type-card:hover {
+    border-color: #a5b4fc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.attr-type-card.active {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.16);
+}
+
+.attr-type-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.attr-type-card.active .attr-type-icon {
+    background: #6366f1;
+    color: #fff;
+}
+
+.attr-type-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.attr-type-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.attr-type-desc {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.attr-type-desc code {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.attr-type-check {
+    font-size: 16px;
+    color: #6366f1;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: 0.2s ease;
+}
+
+.attr-type-card.active .attr-type-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.attr-designer-chips-new {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.attr-submit-new-btn {
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.attr-submit-new-btn:hover {
+    filter: brightness(1.05);
+}
+
+/* ========== 新版结果表格 ========== */
+.attr-result-wrap {
+    margin-top: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.attr-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.attr-copy-all-btn {
+    border: none;
+    background: #eef2ff;
+    color: #4f46e5;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.attr-copy-all-btn:hover {
+    background: #e0e7ff;
+}
+
+.attr-table-wrap {
+    max-height: 320px;
+    overflow: auto;
+}
+
+.attr-result-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.attr-result-table th {
+    background: #f8fafc;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.attr-result-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    word-break: break-all;
+}
+
+.attr-result-table tbody tr:hover {
+    background: #f8fafc;
+}
+
 @media (max-width: 1024px) {
     .container {
         flex-direction: column;
@@ -2377,4 +2878,5 @@ textarea:focus {
         border-radius: 6px;
         cursor: pointer;
     }
+
 }

@@ -55,15 +55,6 @@ const UIController = {
                 }
                 this.resultArea.classList.add('show');
                 this.emptyTip.style.display = 'none';
-
-                // 🔥 切换到表情包面板时自动加载随机表情包
-                if (card.dataset.target === 'panel3') {
-                    setTimeout(() => {
-                        if (window.bqbAutoFetch) {
-                            window.bqbAutoFetch();
-                        }
-                    }, 150);
-                }
             });
         });
     },
