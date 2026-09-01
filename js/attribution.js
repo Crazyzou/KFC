@@ -28,6 +28,12 @@
         const newNameInput = document.getElementById('attr-new-name');
         const newIdInput = document.getElementById('attr-new-id');
         const modalDesignerList = document.getElementById('attr-designer-modal-list');
+
+        // Youtube链接正则：匹配 youtube.com / youtu.be
+        const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[^\s]+$/i;
+        // 正则：匹配本工具追加在链接末尾的标记后缀，修复原来$位置bug
+        const markTailReg = /\?_D[0-9A-Z]+_[#$]$/;
+
         // 1. 获取设计师列表
         function getDesigners() {
             const stored = localStorage.getItem(STORAGE_KEY);
@@ -172,29 +178,48 @@
                 } else if (selectedType === 'original') {
                     suffixSymbol = '_$';
                 }
-                const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+                const lines = rawText.split('\n').map(l => l.trim());
                 const results = [];
                 let tbodyHtml = '';
 
-                // 正则：匹配本工具追加在链接末尾的标记后缀
-                const markTailReg = /\?_D[0-9A-Z]+_[#$]$/;
-
-                lines.forEach(originLink => {
-                    let cleanLink = originLink;
-                    // 如果存在旧标记后缀，则剥离旧后缀，还原基础链接
-                    if (markTailReg.test(cleanLink)) {
-                        cleanLink = cleanLink.replace(markTailReg, '');
-                    }
-                    // 使用当前选中设计师+类型生成全新标记链接
-                    const markedLink = `${cleanLink}?_${selectedDesignerId}${suffixSymbol}`;
-
-                    results.push(markedLink);
-                    tbodyHtml += `
+                lines.forEach(originLine => {
+                    // 空行保留
+                    if (originLine === '') {
+                        results.push('');
+                        tbodyHtml += `
                         <tr>
-                            <td class="attr-table-link-cell" style="word-break: break-all;">${originLink}</td>
+                            <td class="attr-table-link-cell" style="word-break: break-all;">&nbsp;</td>
+                            <td class="attr-table-res-cell" style="word-break: break-all;">&nbsp;</td>
+                        </tr>
+                        `;
+                        return;
+                    }
+
+                    // 判断是否为Youtube链接
+                    if (youtubeUrlReg.test(originLine)) {
+                        let cleanLink = originLine;
+                        // 剥离旧标记后缀
+                        if (markTailReg.test(cleanLink)) {
+                            cleanLink = cleanLink.replace(markTailReg, '');
+                        }
+                        const markedLink = `${cleanLink}?_${selectedDesignerId}${suffixSymbol}`;
+                        results.push(markedLink);
+                        tbodyHtml += `
+                        <tr>
+                            <td class="attr-table-link-cell" style="word-break: break-all;">${originLine}</td>
                             <td class="attr-table-res-cell" style="word-break: break-all;"><code>${markedLink}</code></td>
                         </tr>
-                    `;
+                        `;
+                    } else {
+                        // 普通文本，不处理，原样输出
+                        results.push(originLine);
+                        tbodyHtml += `
+                        <tr>
+                            <td class="attr-table-link-cell" style="word-break: break-all;">${originLine}</td>
+                            <td class="attr-table-res-cell" style="word-break: break-all;">${originLine}</td>
+                        </tr>
+                        `;
+                    }
                 });
 
                 // 渲染结果表格
