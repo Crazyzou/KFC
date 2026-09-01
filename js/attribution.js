@@ -29,9 +29,9 @@
         const newIdInput = document.getElementById('attr-new-id');
         const modalDesignerList = document.getElementById('attr-designer-modal-list');
 
-        // Youtube链接正则：匹配 youtube.com / youtu.be
-        const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[^\s]+$/i;
-        // 正则：匹配本工具追加在链接末尾的标记后缀，修复原来$位置bug
+        // ✅修复正则：同时支持 watch?v= / shorts/ / youtu.be
+        const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[^\s]+$/i;
+        // 正则：匹配本工具追加在链接末尾的标记后缀
         const markTailReg = /\?_D[0-9A-Z]+_[#$]$/;
 
         // 1. 获取设计师列表
@@ -181,7 +181,6 @@
                 const lines = rawText.split('\n').map(l => l.trim());
                 const results = [];
                 let tbodyHtml = '';
-
                 lines.forEach(originLine => {
                     // 空行保留
                     if (originLine === '') {
@@ -194,7 +193,6 @@
                         `;
                         return;
                     }
-
                     // 判断是否为Youtube链接
                     if (youtubeUrlReg.test(originLine)) {
                         let cleanLink = originLine;
@@ -221,7 +219,6 @@
                         `;
                     }
                 });
-
                 // 渲染结果表格
                 if (resultTbody) resultTbody.innerHTML = tbodyHtml;
                 if (resultContainer) resultContainer.style.display = 'block';
