@@ -1,5 +1,6 @@
 /**
  * 链接原创/二创归属标记模块 (attribution.js)
+ * 支持在 YouTube 链接后保留自定义备注，并自动覆盖旧标记
  */
 (function () {
     // 默认设计师列表
@@ -11,8 +12,14 @@
     const STORAGE_KEY = 'wow_tools_designers';
     let selectedDesignerId = '';
     let selectedType = 'recreate';
+
+    // 正则：匹配 YouTube 链接（支持 watch?v= / shorts/ / youtu.be）
+    // 匹配到第一个空格或行尾，但不包括链接后的备注
+    const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[^\s]+/i;
+    // 正则：匹配我们追加的旧标记（包括 `?_Dxxx` 和 `?_Dxxx_#` / `?_Dxxx_$`）
+    const markTailReg = /\?_D[0-9A-Z]+(_[#$])?$/;
+
     document.addEventListener('DOMContentLoaded', () => {
-        // 兼容性 DOM 获取 (优先匹配当前ID，容错备选ID)
         const processBtn = document.getElementById('attr-process-btn') || document.getElementById('attr-mark-btn');
         const linksInput = document.getElementById('attr-input-links') || document.getElementById('attr-mark-input');
         const designerGroup = document.getElementById('attr-designer-group');
@@ -20,7 +27,7 @@
         const resultContainer = document.getElementById('attr-result-container');
         const resultTbody = document.getElementById('attr-result-tbody');
         const copyAllBtn = document.getElementById('attr-copy-all-btn');
-        // 弹窗相关 DOM
+
         const modalOverlay = document.getElementById('designerModalOverlay');
         const openModalBtn = document.getElementById('open-designer-modal-btn');
         const closeModalBtn = document.getElementById('closeDesignerModal');
@@ -29,12 +36,7 @@
         const newIdInput = document.getElementById('attr-new-id');
         const modalDesignerList = document.getElementById('attr-designer-modal-list');
 
-        // ✅修复正则：同时支持 watch?v= / shorts/ / youtu.be
-        const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[^\s]+$/i;
-        // 正则：匹配本工具追加在链接末尾的标记后缀
-        const markTailReg = /\?_D[0-9A-Z]+_[#$]$/;
-
-        // 1. 获取设计师列表
+        // ---- 设计师管理 ----
         function getDesigners() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
@@ -46,18 +48,17 @@
             }
             return DEFAULT_DESIGNERS;
         }
-        // 2. 保存设计师
+
         function saveDesigners(designers) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(designers));
             renderDesigners();
         }
-        // 3. 渲染设计师选项卡与弹窗列表
+
         function renderDesigners() {
             const designers = getDesigners();
             if (!designers.some(d => d.id === selectedDesignerId)) {
                 selectedDesignerId = designers[0] ? designers[0].id : '';
             }
-            // 渲染主面板上的选择卡
             if (designerGroup) {
                 designerGroup.innerHTML = designers.map(d => `
                     <div class="attr-chip-card ${d.id === selectedDesignerId ? 'active' : ''}" data-value="${d.id}">
@@ -69,7 +70,6 @@
                         <i class="fas fa-check attr-chip-check"></i>
                     </div>
                 `).join('');
-                // 绑定设计师选择卡点击事件
                 designerGroup.querySelectorAll('.attr-chip-card').forEach(card => {
                     card.addEventListener('click', (e) => {
                         designerGroup.querySelectorAll('.attr-chip-card').forEach(c => c.classList.remove('active'));
@@ -79,7 +79,6 @@
                     });
                 });
             }
-            // 渲染弹窗内可删除的标签（增加 null 检查）
             if (modalDesignerList) {
                 modalDesignerList.innerHTML = designers.map((d, index) => `
                     <div class="attr-modal-chip">
@@ -89,7 +88,18 @@
                 `).join('');
             }
         }
-        // 4. 素材类型卡片切换绑定 (同时兼容 .attr-option-card 和 .attr-type-card)
+
+        window.deleteDesigner = function (index) {
+            const designers = getDesigners();
+            if (designers.length <= 1) {
+                alert('请至少保留一名设计师！');
+                return;
+            }
+            designers.splice(index, 1);
+            saveDesigners(designers);
+        };
+
+        // ---- 类型切换 ----
         if (typeGroup) {
             const typeCards = typeGroup.querySelectorAll('.attr-option-card, .attr-type-card');
             typeCards.forEach(card => {
@@ -101,10 +111,11 @@
                 });
             });
         }
-        // 5. 弹窗打开/关闭
+
+        // ---- 弹窗 ----
         if (openModalBtn && modalOverlay) openModalBtn.addEventListener('click', () => modalOverlay.style.display = 'flex');
         if (closeModalBtn && modalOverlay) closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
-        // 6. 添加设计师
+
         if (addBtn) {
             addBtn.addEventListener('click', () => {
                 const name = newNameInput ? newNameInput.value.trim() : '';
@@ -124,17 +135,8 @@
                 if (newIdInput) newIdInput.value = '';
             });
         }
-        // 7. 删除设计师
-        window.deleteDesigner = function (index) {
-            const designers = getDesigners();
-            if (designers.length <= 1) {
-                alert('请至少保留一名设计师！');
-                return;
-            }
-            designers.splice(index, 1);
-            saveDesigners(designers);
-        };
-        // 8. 复制并弹提示
+
+        // ---- 复制工具 ----
         function copyToClipboardText(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text);
@@ -160,7 +162,8 @@
                 }
             }
         }
-        // 9. 批量处理逻辑
+
+        // ---- 核心处理逻辑（修正版） ----
         if (processBtn) {
             processBtn.addEventListener('click', () => {
                 if (!linksInput) {
@@ -172,17 +175,21 @@
                     alert('请输入链接文本！');
                     return;
                 }
+
                 let suffixSymbol = '';
                 if (selectedType === 'recreate') {
                     suffixSymbol = '_#';
                 } else if (selectedType === 'original') {
                     suffixSymbol = '_$';
+                } else if (selectedType === 'mark') {
+                    suffixSymbol = ''; // 仅追加ID，不加后缀符号
                 }
+
                 const lines = rawText.split('\n').map(l => l.trim());
                 const results = [];
                 let tbodyHtml = '';
+
                 lines.forEach(originLine => {
-                    // 空行保留
                     if (originLine === '') {
                         results.push('');
                         tbodyHtml += `
@@ -193,14 +200,30 @@
                         `;
                         return;
                     }
-                    // 判断是否为Youtube链接
-                    if (youtubeUrlReg.test(originLine)) {
-                        let cleanLink = originLine;
-                        // 剥离旧标记后缀
-                        if (markTailReg.test(cleanLink)) {
-                            cleanLink = cleanLink.replace(markTailReg, '');
+
+                    // 提取行中的 YouTube 链接（匹配到第一个空格或行尾）
+                    const match = originLine.match(youtubeUrlReg);
+                    if (match) {
+                        const fullLink = match[0]; // 完整链接（可能包含旧标记）
+                        // 获取链接后面的备注（去除链接后剩余的文本）
+                        let remark = originLine.replace(fullLink, '').trim();
+
+                        // 清理旧标记（如果有）
+                        let cleanLink = fullLink.replace(markTailReg, '');
+
+                        // 构建新标记
+                        let markSuffix = `?_${selectedDesignerId}`;
+                        if (suffixSymbol) {
+                            markSuffix += suffixSymbol;
                         }
-                        const markedLink = `${cleanLink}?_${selectedDesignerId}${suffixSymbol}`;
+
+                        // 最终链接 = 清理后的链接 + 新标记
+                        let markedLink = cleanLink + markSuffix;
+                        // 如果有备注，加在链接后面（空格分隔）
+                        if (remark) {
+                            markedLink += ' ' + remark;
+                        }
+
                         results.push(markedLink);
                         tbodyHtml += `
                         <tr>
@@ -209,7 +232,7 @@
                         </tr>
                         `;
                     } else {
-                        // 普通文本，不处理，原样输出
+                        // 非链接行，原样保留
                         results.push(originLine);
                         tbodyHtml += `
                         <tr>
@@ -219,19 +242,19 @@
                         `;
                     }
                 });
-                // 渲染结果表格
+
                 if (resultTbody) resultTbody.innerHTML = tbodyHtml;
                 if (resultContainer) resultContainer.style.display = 'block';
-                // 自动将结果复制进剪贴板
+
                 const allCopyText = results.join('\n');
                 copyToClipboardText(allCopyText);
-                // 复制按钮点击事件
+
                 if (copyAllBtn) {
                     copyAllBtn.onclick = () => copyToClipboardText(allCopyText);
                 }
             });
         }
-        // 初始化渲染
+
         renderDesigners();
     });
 })();
