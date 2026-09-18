@@ -236,7 +236,6 @@ const Modules = {
         encryptInput.addEventListener('input', updateEncryptBtn);
         decryptInput.addEventListener('input', updateDecryptBtn);
 
-        // ====================== 加密 调用CloudCipher（自动ECDH协商） ======================
         encryptBtn.addEventListener('click', async () => {
             if (encryptBtn.disabled) return;
             const plaintext = encryptInput.value.trim();
@@ -246,29 +245,35 @@ const Modules = {
             encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 加密中…</span>';
             encryptResultArea.style.display = 'none';
 
+            let ciphertext = '';
             try {
-                // 统一使用封装好的ECDH加密工具，自动完成握手
-                const ciphertext = await CloudCipher.encrypt(plaintext);
-
+                // 1. 执行加密（真正可能失败的部分）
+                ciphertext = await CloudCipher.encrypt(plaintext);
+                // 加密成功，显示密文
                 encryptOutput.textContent = ciphertext;
                 encryptResultArea.style.display = 'block';
-                await navigator.clipboard.writeText(ciphertext);
-                showToast('✅ 密文已生成并复制（云加密）');
+                // 先显示成功状态，再尝试复制
+                showToast('✅ 密文已生成');
             } catch (e) {
                 console.error('加密失败', e);
                 showToast('❌ 加密失败：' + e.message);
+                // 加密失败则不再执行后续复制
+                return;
             } finally {
                 encryptBtn.disabled = false;
                 encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
                 updateEncryptBtn();
             }
-        });
 
-        copyBtn.addEventListener('click', async () => {
-            const text = encryptOutput.textContent.trim();
-            if (!text) return;
-            await navigator.clipboard.writeText(text);
-            showToast('密文已复制');
+            // 2. 独立处理复制（与加密状态解耦）
+            try {
+                await navigator.clipboard.writeText(ciphertext);
+                showToast('✅ 密文已生成并复制到剪贴板');
+            } catch (clipError) {
+                // 复制失败，仅提示复制问题，不影响“加密成功”的事实
+                console.warn('复制失败:', clipError);
+                showToast('✅ 密文已生成，但自动复制失败，请手动复制');
+            }
         });
 
         // ====================== 解密 调用CloudCipher ======================
