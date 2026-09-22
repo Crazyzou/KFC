@@ -120,6 +120,9 @@ const Modules = {
         const container = document.getElementById('link-lang-result-container');
         const copyLinksBtn = document.getElementById('copy-all-links');
         const copyLangsBtn = document.getElementById('copy-all-langs');
+
+        if (!input || !btn || !sortBtn || !tbody || !container) return;
+
         const renderTable = (links, langs) => {
             STATE.extractedLinks = links;
             STATE.extractedLangs = langs;
