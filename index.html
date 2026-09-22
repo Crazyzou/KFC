@@ -32,10 +32,10 @@
                     <div class="card-desc">识别语言并分行</div>
                 </div>
             </div>
-            <div class="tool-card" data-target="panel2">
+            <div class="tool-card" data-target="panel6">
                 <div class="card-header">
-                    <div class="card-title"><span class="icon"><i class="fas fa-link"></i></span>Wow链接填表</div>
-                    <div class="card-desc">把发给运营的发给我</div>
+                    <div class="card-title"><span class="icon"><i class="fas fa-ellipsis-h"></i></span>间隔</div>
+                    <div class="card-desc">断点式存在</div>
                 </div>
             </div>
             <!-- 面板3卡片 -->
@@ -99,38 +99,7 @@
             </div>
 
             <!-- 面板2：Wow链接填表 -->
-            <div class="function-panel" id="panel2">
-                <div class="input-group">
-                    <label for="link-lang-input"><i class="fas fa-info-circle"></i>输入包含链接的文本</label>
-                    <textarea id="link-lang-input"
-                        placeholder="例如: zoo  译  @孟详皓（复活吧我的频道）&#10;ro&#10;https://youtube.com/shorts/3VCOED36B58&#10;ar&#10;https://youtube.com/shorts/YWY1CtrHnAM"></textarea>
-                </div>
-                <div style="display: flex; gap: 12px; margin-bottom: 10px;">
-                    <button class="btn" id="link-lang-btn" style="flex: 1;"><span class="btn-content"><i
-                                class="fas fa-extract"></i>提取链接和语言</span></button>
-                    <button class="btn" id="sort-link-lang-btn" style="flex: 1;"><span class="btn-content"><i
-                                class="fas fa-sort"></i>一键整理</span></button>
-                </div>
-                <div class="loading" id="link-lang-loading">
-                    <div class="spinner"></div>正在提取...
-                </div>
-                <div class="result-container" id="link-lang-result-container" style="display: none;">
-                    <div class="result-header">提取结果</div>
-                    <div class="result-content" style="padding:0;">
-                        <table class="link-lang-table" id="link-lang-table">
-                            <thead>
-                                <tr>
-                                    <th>链接<button class="header-copy-btn" id="copy-all-links"><i
-                                                class="far fa-copy"></i>复制</button></th>
-                                    <th>语言<button class="header-copy-btn" id="copy-all-langs"><i
-                                                class="far fa-copy"></i>复制</button></th>
-                                </tr>
-                            </thead>
-                            <tbody id="link-lang-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <div class="function-panel" id="panel6"></div>
 
             <!-- 面板3：链接归属标记（重构） -->
             <div class="function-panel" id="panel3">
@@ -417,8 +386,9 @@
     <!-- ========== JS 模块（按依赖顺序加载） ========== -->
     <script src="./js/config.js"></script>
     <script src="./js/cipher.js"></script>
-    <script src="./js/attribution.js"></script>
     <script src="./js/youtube.js"></script>
+    <script src="./js/mind-panel.js"></script>
+    <script src="./js/attribution.js"></script>
     <script src="./js/app.js"></script>
 </body>
 
