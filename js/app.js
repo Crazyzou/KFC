@@ -11,7 +11,7 @@ class AITitleProcessor {
                     method: "POST",
                     headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: "doubao-1-5-pro-32k-250115",
+                        model: "deepseek-v4-1-flash-260910",
                         messages: [{ role: "user", content: prompt }],
                         temperature: 0.3
                     })
@@ -120,9 +120,6 @@ const Modules = {
         const container = document.getElementById('link-lang-result-container');
         const copyLinksBtn = document.getElementById('copy-all-links');
         const copyLangsBtn = document.getElementById('copy-all-langs');
-
-        if (!input || !btn || !sortBtn || !tbody || !container) return;
-
         const renderTable = (links, langs) => {
             STATE.extractedLinks = links;
             STATE.extractedLangs = langs;
