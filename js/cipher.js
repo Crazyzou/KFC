@@ -6,7 +6,7 @@ const CloudCipher = (() => {
 
     // ======================【重要】粘贴gen‑ed25519‑key.js输出的完整公钥，只配置一次！======================
     const LONG_TERM_ED25519_PUB_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAwotaWZPh7kqfLaWXZVKlwkTQY2wNB+bvrFgd1p2LMQg=
+MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
 -----END PUBLIC KEY-----`;
 
     const encoder = new TextEncoder();
