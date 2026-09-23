@@ -60,9 +60,9 @@
                     <div class="card-title">
                         <span class="icon" style="background: linear-gradient(135deg, #ff0000, #FF8E8E);"><i
                                 class="fab fa-youtube"></i></span>
-                        YouTube数据查询<span class="speed-badge">⚡极速版</span>
+                        视频数据查询
                     </div>
-                    <div class="card-desc">批量查询视频播放量、缩略图等数据</div>
+                    <div class="card-desc">批量查询视频数据</div>
                 </div>
             </div>
         </div>
@@ -141,7 +141,18 @@
                             <i class="fab fa-youtube" style="color:#ff0000"></i> 输入 YouTube 链接（每行一个）
                         </label>
                         <textarea id="attr-input-links" class="attr-textarea" style="height:110px;"
-                            placeholder="每行一个链接，支持在链接后空格隔开添加自定义备注（如：https://youtu.be/xxx toca）"></textarea>
+                            placeholder="这里输入链接"></textarea>
+                        <div class="attr-input-footer">
+                            <span class="attr-footer-tip">支持在链接后空格加备注</span>
+                            <div class="attr-footer-actions">
+                                <button type="button" class="attr-text-btn attr-text-btn-clear" id="attr-clear-btn">
+                                    <i class="fas fa-trash-alt"></i> 清空
+                                </button>
+                                <button type="button" class="attr-text-btn attr-text-btn-history" id="attr-history-btn">
+                                    <i class="fas fa-history"></i> 历史
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 素材类型选择 -->
@@ -281,23 +292,29 @@
                         <div class="input-group">
                             <label><i class="fab fa-youtube" style="color: #ff0000;"></i>输入 YouTube 视频链接（每行一个）</label>
                             <textarea class="youtube-textarea" id="youtubeUrls"
-                                placeholder="支持格式：&#10;普通视频: https://www.youtube.com/watch?v=dQw4w9WgXcQ&#10; 短链接: https://youtu.be/dQw4w9WgXcQ&#10;Shorts:  https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
+                                placeholder="支持格式：&#10;普通视频: https://www.youtube.com/watch?v=dQw4w9WgXcQ&#10;短链接: https://youtu.be/dQw4w9WgXcQ&#10;Shorts:  https://www.youtube.com/shorts/UmPxTmALybQ"></textarea>
                         </div>
-                        <button class="youtube-btn" id="youtubeFetchBtn"><i class="fas fa-search"></i>批量查询</button>
-                        <button class="youtube-btn youtube-btn-convert" id="convertToShortBtn"><i
-                                class="fab fa-youtube"></i>一键转 Shorts</button>
-                        <button class="youtube-btn youtube-btn-clear" id="clearYoutubeInputBtn"><i
-                                class="fas fa-trash-alt"></i>清空</button>
-                        <button class="youtube-btn youtube-btn-history" id="historyBtn"><i
-                                class="fas fa-history"></i>历史查询</button>
-                        <div class="youtube-progress-container" id="youtubeProgressContainer">
-                            <div class="youtube-progress-info"><span id="youtubeProgressText">准备查询</span><span
-                                    id="youtubeProgressCount">0/0</span></div>
-                            <div class="youtube-progress-bar">
-                                <div class="youtube-progress" id="youtubeProgressBar"></div>
+
+                        <!-- ⬇ 四个按钮 + 进度条，包进同一行容器 -->
+                        <div class="youtube-action-row">
+                            <button class="youtube-btn" id="youtubeFetchBtn"><i class="fas fa-search"></i>批量查询</button>
+                            <button class="youtube-btn youtube-btn-convert" id="convertToShortBtn"><i
+                                    class="fab fa-youtube"></i>一键转 Shorts</button>
+                            <button class="youtube-btn youtube-btn-clear" id="clearYoutubeInputBtn"><i
+                                    class="fas fa-trash-alt"></i>清空</button>
+                            <button class="youtube-btn youtube-btn-history" id="historyBtn"><i
+                                    class="fas fa-history"></i>历史查询</button>
+
+                            <div class="youtube-progress-container" id="youtubeProgressContainer">
+                                <div class="youtube-progress-info"><span id="youtubeProgressText">准备查询</span><span
+                                        id="youtubeProgressCount">0/0</span></div>
+                                <div class="youtube-progress-bar">
+                                    <div class="youtube-progress" id="youtubeProgressBar"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="youtube-results-area" id="youtubeResultsArea">
                         <div class="empty-state"
                             style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -327,6 +344,17 @@
                 id="downloadProgressPercent">0%</span></div>
         <div class="youtube-progress-bar">
             <div class="youtube-progress" id="downloadProgressBar" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- ========== 弹窗：链接归属标记历史 ========== -->
+    <div id="attrHistoryOverlay" class="history-overlay" style="display:none;">
+        <div class="history-modal">
+            <div class="history-header">
+                <h3><i class="fas fa-history"></i> 标记历史</h3>
+                <button class="history-close-btn" onclick="closeAttrHistory()">×</button>
+            </div>
+            <div class="history-list" id="attrHistoryList"></div>
         </div>
     </div>
 

@@ -380,6 +380,13 @@ async function processYoutubeUrls() {
 
     btn.disabled = true;
     bar.style.display = "block";
+
+    // ★ 如果当前在最大化状态，先退出
+    const ytContainer = document.querySelector('.youtube-container');
+    if (ytContainer && ytContainer.classList.contains('is-maximized')) {
+        ytContainer._exitMaximize && ytContainer._exitMaximize();
+    }
+
     area.innerHTML = "";
     pBar.style.width = "0%";
     pText.innerText = "⚡ 正在准备并发查询...";
@@ -407,31 +414,34 @@ async function processYoutubeUrls() {
     table.className = "youtube-table";
     table.innerHTML = `
     <thead>
-        <tr>
-            <th class="select-col">
-                <div class="select-all-checkbox-wrap">
-                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this)" title="全选/取消全选">
-                    <button class="btn-copy-selected" onclick="event.stopPropagation(); copySelectedUrls()" title="复制选中行的链接"><i class="fas fa-copy"></i><span>复制选中</span></button>
-                </div>
-            </th>
-            <th onclick="window.copyYoutubeColumn(1)">视频链接<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制整列</small></th>
-            <th onclick="window.copyYoutubeColumn(2)">标题<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.copyYoutubeColumn(3)">频道<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">
-                播放 
-                <button id="sortViewsBtn" class="sort-btn" style="margin-left:5px;">
-                    <i id="sortIcon" class="fas fa-sort"></i>
-                </button>
-            </th>
-            <th onclick="window.copyYoutubeColumn(5)">评论<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.copyYoutubeColumn(6)">发布<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.copyYoutubeColumn(7)">时长<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击复制</small></th>
-            <th onclick="window.downloadAllThumbnails()" title="点击打包下载所有缩略图">缩略图<br><small style="font-size:11px;opacity:0.6;font-weight:400;">点击打包下载</small></th>
-        </tr>
+       <tr>
+    <th class="select-col">
+        <div class="select-all-checkbox-wrap">
+            <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this)" title="全选/取消全选">
+            <button class="btn-copy-selected" onclick="event.stopPropagation(); copySelectedUrls()" title="复制选中行的链接"><i class="fas fa-copy"></i><span>复制选中</span></button>
+        </div>
+    </th>
+    <th class="th-hint-always" onclick="window.copyYoutubeColumn(1)">链接<span class="th-hint">表头点击复制</span></th>
+    <th onclick="window.copyYoutubeColumn(2)">标题<span class="th-hint">点击复制</span></th>
+    <th onclick="window.copyYoutubeColumn(3)">频道<span class="th-hint">点击复制</span></th>
+    <th onclick="window.copyYoutubeColumn(4)" style="cursor: pointer;">
+        播放
+        <button id="sortViewsBtn" class="sort-btn" style="margin-left:5px;">
+            <i id="sortIcon" class="fas fa-sort"></i>
+        </button>
+    </th>
+    <th onclick="window.copyYoutubeColumn(5)">评论<span class="th-hint">点击复制</span></th>
+    <th onclick="window.copyYoutubeColumn(6)">发布<span class="th-hint">点击复制</span></th>
+    <th onclick="window.copyYoutubeColumn(7)">时长<span class="th-hint">点击复制</span></th>
+    <th class="th-hint-always" onclick="window.downloadAllThumbnails()" title="点击打包下载所有缩略图">缩略图<span class="th-hint">点击打包下载</span></th>
+</tr>
     </thead>
     <tbody></tbody>`;
     area.appendChild(table);
     const tbody = table.querySelector("tbody");
+
+    // ★ 新增：行数 > 15 时挂全屏按钮
+    attachFullscreenButton(area, parsedItems.length);
 
     const rowRefs = [];
     for (const item of parsedItems) {
@@ -450,6 +460,13 @@ async function processYoutubeUrls() {
             const count = document.querySelectorAll('.row-checkbox:checked').length;
             const span = document.querySelector('.btn-copy-selected span');
             if (span) span.textContent = count > 0 ? `复制选中 (${count})` : '复制选中';
+        });
+        // ★ 整格可点：点空白区域也能勾选
+        tdCheck.addEventListener('click', function (e) {
+            // 点的是复选框本身 → 交给浏览器原生处理，不重复触发
+            if (e.target === cb) return;
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
         });
         tdCheck.appendChild(cb);
         tr.appendChild(tdCheck);
@@ -556,6 +573,7 @@ async function processYoutubeUrls() {
                 ref.td2.innerText = title.length > 22 ? title.substring(0, 22) + "..." : title;
                 ref.td2.title = title;
                 ref.td3.innerText = snippet.channelTitle;
+                ref.td3.title = snippet.channelTitle;   // ← 加这一行
                 ref.td4.innerHTML = `<span class="youtube-view-count">${formatNumber(stats.viewCount || 0)}</span>`;
                 ref.td5.innerText = formatNumber(stats.commentCount || 0);
                 ref.td6.innerText = formatUploadDate(snippet.publishedAt);
@@ -616,3 +634,64 @@ async function processYoutubeUrls() {
         }
     }
 }
+
+// ==================== 表格全屏功能 ====================
+
+/**
+ * 根据行数决定是否给结果区域挂"全屏"按钮
+ * @param {HTMLElement} area  结果区域（#youtubeResultsArea）
+ * @param {number} rowCount   当前查询到的视频数
+ */
+function attachFullscreenButton(area, rowCount) {
+    const old = area.querySelector('.yt-fullscreen-wrap');
+    if (old) old.remove();
+    if (rowCount <= 15) return;
+
+    const target = area.closest('.youtube-container') || area;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'yt-fullscreen-wrap';
+    wrap.innerHTML = `<button class="yt-fullscreen-btn" title="展开（Esc 退出）"><i class="fas fa-expand"></i></button>`;
+    area.insertBefore(wrap, area.firstChild);
+
+    const btn = wrap.querySelector('.yt-fullscreen-btn');
+
+    function enterMaximize() {
+        target.classList.add('is-maximized');
+        document.body.classList.add('yt-maximized-lock');  // 锁 body 滚动
+        btn.querySelector('i').className = 'fas fa-compress';
+        btn.title = '退出（Esc）';
+    }
+
+    function exitMaximize() {
+        target.classList.remove('is-maximized');
+        document.body.classList.remove('yt-maximized-lock');
+        btn.querySelector('i').className = 'fas fa-expand';
+        btn.title = '展开（Esc 退出）';
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        target.classList.contains('is-maximized') ? exitMaximize() : enterMaximize();
+    });
+
+    // Esc 退出
+    document.addEventListener('keydown', function onEsc(ev) {
+        if (ev.key === 'Escape' && target.classList.contains('is-maximized')) {
+            exitMaximize();
+        }
+    });
+
+    // 把退出方法挂到 target 上，方便查询时强制退出
+    target._exitMaximize = exitMaximize;
+}
+
+// 监听全屏状态变化，切换按钮图标（展开 ↔ 压缩）
+document.addEventListener('fullscreenchange', () => {
+    const isFull = !!document.fullscreenElement;
+    document.querySelectorAll('.yt-fullscreen-btn').forEach(btn => {
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = isFull ? 'fas fa-compress' : 'fas fa-expand';
+        btn.title = isFull ? '退出全屏（Esc）' : '全屏查看';
+    });
+});
