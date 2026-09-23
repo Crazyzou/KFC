@@ -10,11 +10,13 @@
         { name: '李梦玲', id: 'D338' }
     ];
     const STORAGE_KEY = 'wow_tools_designers';
+    const HISTORY_KEY = 'wow_tools_attr_history';
+    const MAX_HISTORY = 20;
+
     let selectedDesignerId = '';
     let selectedType = 'recreate';
 
     // 正则：匹配 YouTube 链接（支持 watch?v= / shorts/ / youtu.be）
-    // 匹配到第一个空格或行尾，但不包括链接后的备注
     const youtubeUrlReg = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[^\s]+/i;
     // 正则：匹配我们追加的旧标记（包括 `?_Dxxx` 和 `?_Dxxx_#` / `?_Dxxx_$`）
     const markTailReg = /\?_D[0-9A-Z]+(_[#$])?$/;
@@ -27,6 +29,12 @@
         const resultContainer = document.getElementById('attr-result-container');
         const resultTbody = document.getElementById('attr-result-tbody');
         const copyAllBtn = document.getElementById('attr-copy-all-btn');
+
+        // 清空 / 历史按钮
+        const clearBtn = document.getElementById('attr-clear-btn');
+        const historyBtn = document.getElementById('attr-history-btn');
+        const historyOverlay = document.getElementById('attrHistoryOverlay');
+        const historyListEl = document.getElementById('attrHistoryList');
 
         const modalOverlay = document.getElementById('designerModalOverlay');
         const openModalBtn = document.getElementById('open-designer-modal-btn');
@@ -163,7 +171,90 @@
             }
         }
 
-        // ---- 核心处理逻辑（修正版） ----
+        // ---- 历史记录 ----
+        function getAttrHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            } catch { return []; }
+        }
+
+        function saveAttrHistory(record) {
+            const list = getAttrHistory();
+            list.unshift(record);
+            if (list.length > MAX_HISTORY) list.length = MAX_HISTORY;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+        }
+
+        function renderAttrHistory() {
+            if (!historyListEl) return;
+            const list = getAttrHistory();
+            if (list.length === 0) {
+                historyListEl.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px;">暂无历史记录</div>';
+                return;
+            }
+            const typeName = { mark: '原视频', recreate: '二创', original: '原创' };
+            historyListEl.innerHTML = list.map((item, i) => `
+                <div class="history-item">
+                    <div style="flex:1;min-width:0;">
+                        <div class="history-item-time">${item.timeStr}</div>
+                        <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+                            ${typeName[item.type] || item.type} · ${item.designerId || '—'} · ${item.count} 条链接
+                        </div>
+                    </div>
+                    <div class="history-item-actions">
+                        <button onclick="window.fillAttrHistory(${i})">回填</button>
+                        <button onclick="window.deleteAttrHistory(${i})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.fillAttrHistory = function (index) {
+            const item = getAttrHistory()[index];
+            if (!item) return;
+            if (linksInput) linksInput.value = item.input;
+            window.closeAttrHistory();
+            if (typeof showToast === 'function') showToast('已回填到输入框');
+        };
+
+        window.deleteAttrHistory = function (index) {
+            const list = getAttrHistory();
+            list.splice(index, 1);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+            renderAttrHistory();
+        };
+
+        window.closeAttrHistory = function () {
+            if (historyOverlay) historyOverlay.style.display = 'none';
+        };
+
+        // ---- 清空 ----
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                if (!linksInput) return;
+                linksInput.value = '';
+                if (resultTbody) resultTbody.innerHTML = '';
+                if (resultContainer) resultContainer.style.display = 'none';
+                if (typeof showToast === 'function') showToast('已清空');
+            });
+        }
+
+        // ---- 打开历史 ----
+        if (historyBtn && historyOverlay) {
+            historyBtn.addEventListener('click', () => {
+                renderAttrHistory();
+                historyOverlay.style.display = 'flex';
+            });
+        }
+
+        // 点击遮罩关闭历史弹窗
+        if (historyOverlay) {
+            historyOverlay.addEventListener('click', (e) => {
+                if (e.target === historyOverlay) window.closeAttrHistory();
+            });
+        }
+
+        // ---- 核心处理逻辑 ----
         if (processBtn) {
             processBtn.addEventListener('click', () => {
                 if (!linksInput) {
@@ -252,6 +343,16 @@
                 if (copyAllBtn) {
                     copyAllBtn.onclick = () => copyToClipboardText(allCopyText);
                 }
+
+                // ★ 写入历史
+                saveAttrHistory({
+                    timestamp: Date.now(),
+                    timeStr: new Date().toLocaleString('zh-CN', { hour12: false }),
+                    input: rawText,
+                    type: selectedType,
+                    designerId: selectedDesignerId,
+                    count: results.filter(r => r).length
+                });
             });
         }
 
