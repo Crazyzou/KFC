@@ -3061,3 +3061,148 @@ body.yt-maximized-lock {
         cursor: pointer;
     }
 }
+
+/* ==================================================================
+   YouTube 区域响应式修复：笔记本 / 平板 / 手机
+   ================================================================== */
+
+/* ---------- 1. 表格外层容器：永远允许横向滚动（关键）---------- */
+.youtube-results-area {
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.youtube-table {
+    min-width: 900px;
+    /* 9 列内容的合理最小宽度 */
+}
+
+/* ---------- 2. 笔记本区间（1024 ~ 1440px）：左栏收窄 ---------- */
+@media (max-width: 1440px) and (min-width: 1025px) {
+    .function-area {
+        width: 300px;
+        /* 原 380px → 300px，给右侧表格让位 */
+    }
+
+    .container {
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .result-area {
+        padding: 1.25rem;
+        /* 原 2rem 太占地方 */
+    }
+}
+
+/* ---------- 3. 平板 / 小笔记本（≤1024px）：纵向堆叠后高度修好 ---------- */
+@media (max-width: 1024px) {
+
+    /* 外层恢复为可滚动整页，而不是锁死 100vh */
+    body {
+        height: auto;
+        overflow-y: auto;
+    }
+
+    .container {
+        height: auto;
+        min-height: 100vh;
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    .function-area {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        overflow: visible;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .tool-card {
+        width: calc(50% - 0.5rem);
+    }
+
+    /* 结果区：不再用 100vh 计算，改成自适应高度 */
+    .result-area {
+        min-height: auto;
+        height: auto;
+        flex: none;
+        width: 100%;
+        padding: 1.25rem;
+        overflow-y: visible;
+    }
+
+    /* 让 function-panel 在纵向布局里能撑开 */
+    .function-panel.active {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    /* YouTube 容器在平板上不再锁 height: 100% */
+    .youtube-container {
+        height: auto;
+        min-height: 0;
+    }
+
+    /* 结果区不再限制 65vh，改由表格自身撑开 */
+    .youtube-results-area {
+        max-height: none;
+        flex: none;
+        min-height: 400px;
+        /* 给个保底高度 */
+    }
+
+    /* YouTube 输入区按钮行允许换行（平板上别强行一行） */
+    .youtube-action-row {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+
+    .youtube-action-row .youtube-btn {
+        flex: 0 0 auto;
+    }
+
+    .youtube-action-row .youtube-progress-container {
+        flex: 1 1 100%;
+        /* 进度条独占一行，宽宽松松 */
+        min-width: 0;
+        margin-top: 4px;
+    }
+}
+
+/* ---------- 4. 手机（≤768px）：单列 + 更紧凑 ---------- */
+@media (max-width: 768px) {
+
+    .tool-card {
+        width: 100%;
+    }
+
+    .result-area {
+        padding: 1rem;
+    }
+
+    /* 表格给个水平滚动条，避免被压扁 */
+    .youtube-results-area {
+        min-height: 320px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        /* iOS 顺滑滚动 */
+    }
+
+    /* 输入框矮一点 */
+    .youtube-input-area .youtube-textarea {
+        min-height: 80px;
+        font-size: 14px;
+        /* 防止 iOS 自动放大 */
+    }
+
+    /* 按钮小一点，别撑爆 */
+    .youtube-action-row .youtube-btn {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}
