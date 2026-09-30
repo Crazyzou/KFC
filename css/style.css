@@ -4002,6 +4002,29 @@ body.yt-maximized-lock {
     /* 5 行 + 表头 */
 }
 
+/* ====================== 标题区：强制分行 ====================== */
+
+/* 标题独占一行 */
+header h1 {
+    display: block;
+}
+
+/* 副标题 + 齿轮：同一行，居中排列 */
+header .subtitle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* 齿轮：取消绝对定位，回到副标题旁边 */
+header .settings-btn {
+    position: static;
+    top: auto;
+    right: auto;
+    flex-shrink: 0;
+}
+
 /* ---------- 响应式 ---------- */
 @media (max-width: 860px) {
     .bonus-layout {
