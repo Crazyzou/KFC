@@ -73,6 +73,7 @@ const Modules = {
         this.initLinkLangExtractor();
         this.initCipherModule();
         this.initYoutubeModule();
+        this.initBonusModule();
     },
     initTextSeparator() {
         const input = document.getElementById('text-separator-input');
@@ -202,21 +203,232 @@ const Modules = {
         const decryptOutput = document.getElementById('cipher-decrypt-output');
         const pasteBtn = document.getElementById('cipher-paste-btn');
 
-        // Tab 切换 
+        const metaProgressEl = document.getElementById('cipher-meta-progress');
+        const metaIconEl = document.getElementById('cipher-meta-icon');
+        const metaStepEl = document.getElementById('cipher-meta-step');
+        const metaLabelEl = document.getElementById('cipher-meta-label');
+
+        // ====================== 步骤定义 ======================
+        const CHIP_STEPS = [
+            { key: 'request', label: '请求' },
+            { key: 'negotiate', label: '协商' },
+            { key: 'verify', label: '签名' },
+            { key: 'session', label: '会话' },
+            { key: 'generate', label: '生成' },
+            { key: 'copy', label: '复制' }
+        ];
+
+        const chipStates = { encrypt: {}, decrypt: {} };
+        const seenNegotiate = { encrypt: false, decrypt: false };
+        let activeCipherOperation = null;
+        let currentTab = 'encrypt';
+
+        // ====================== meta 栏渲染：图标 + 序号/总数 + 步骤名 ======================
+        function renderMeta(type) {
+            if (!metaProgressEl || !metaIconEl || !metaStepEl || !metaLabelEl) return;
+            const state = chipStates[type] || {};
+            const total = CHIP_STEPS.length;
+
+            const anyFail = CHIP_STEPS.some(s => state[s.key] === 'fail');
+            const anyWarn = CHIP_STEPS.some(s => state[s.key] === 'warn');
+            const activeStep = CHIP_STEPS.find(s => state[s.key] === 'active');
+            const failIdx = CHIP_STEPS.findIndex(s => state[s.key] === 'fail');
+            const doneCount = CHIP_STEPS.filter(s => state[s.key] === 'done' || state[s.key] === 'warn').length;
+            const allDone = doneCount === total && !anyFail;
+
+            let iconHtml, stepText, labelText, progressClass;
+
+            if (anyFail) {
+                iconHtml = '<i class="fas fa-times-circle"></i>';
+                stepText = `${failIdx + 1}/${total}`;
+                labelText = CHIP_STEPS[failIdx] ? CHIP_STEPS[failIdx].label : '失败';
+                progressClass = 'is-fail';
+            } else if (allDone) {
+                if (anyWarn) {
+                    iconHtml = '<i class="fas fa-exclamation-circle"></i>';
+                    stepText = `${total}/${total}`;
+                    labelText = '完成';
+                    progressClass = 'is-warn';
+                } else {
+                    iconHtml = '<i class="fas fa-check-circle"></i>';
+                    stepText = `${total}/${total}`;
+                    labelText = '完成';
+                    progressClass = 'is-success';
+                }
+            } else if (activeStep) {
+                iconHtml = '<i class="fas fa-circle-notch fa-spin"></i>';
+                const idx = CHIP_STEPS.findIndex(s => s.key === activeStep.key) + 1;
+                stepText = `${idx}/${total}`;
+                labelText = activeStep.label;
+                progressClass = 'is-active';
+            } else {
+                iconHtml = '<i class="far fa-circle"></i>';
+                stepText = `0/${total}`;
+                labelText = '未开始';
+                progressClass = '';
+            }
+
+            metaIconEl.innerHTML = iconHtml;
+            metaStepEl.textContent = stepText;
+            metaLabelEl.textContent = labelText;
+            metaProgressEl.classList.remove('is-active', 'is-success', 'is-fail', 'is-warn');
+            if (progressClass) metaProgressEl.classList.add(progressClass);
+        }
+
+        function setChipState(type, key, status) {
+            chipStates[type][key] = status;
+            if (currentTab === type) renderMeta(type);
+        }
+
+        function markStepsDoneBefore(type, stepKey) {
+            const idx = CHIP_STEPS.findIndex(s => s.key === stepKey);
+            if (idx < 0) return;
+            const state = chipStates[type];
+            for (let i = 0; i < idx; i++) {
+                const k = CHIP_STEPS[i].key;
+                if (state[k] !== 'fail' && state[k] !== 'warn') state[k] = 'done';
+            }
+        }
+
+        function resetChips(type) {
+            chipStates[type] = {};
+            seenNegotiate[type] = false;
+            if (currentTab === type) renderMeta(type);
+        }
+
+        function handleStatus(type, payload) {
+            const msg = payload.message || '';
+            const state = chipStates[type];
+
+            if (msg.indexOf('🔄') === 0) {
+                seenNegotiate[type] = true;
+                markStepsDoneBefore(type, 'negotiate');
+                setChipState(type, 'negotiate', 'active');
+                return;
+            }
+            if (msg.indexOf('⚠️ 会话过期') === 0) {
+                seenNegotiate[type] = true;
+                markStepsDoneBefore(type, 'negotiate');
+                setChipState(type, 'negotiate', 'active');
+                return;
+            }
+            if (msg.indexOf('✅ Ed25519') === 0) {
+                markStepsDoneBefore(type, 'verify');
+                setChipState(type, 'verify', 'done');
+                setChipState(type, 'session', 'active');
+                return;
+            }
+            if (msg.indexOf('✅ ECDH') === 0) {
+                markStepsDoneBefore(type, 'session');
+                setChipState(type, 'session', 'done');
+                setChipState(type, 'generate', 'active');
+                return;
+            }
+            if (msg.indexOf('✅ 密文已生成') === 0 || msg.indexOf('✅ 解密成功') === 0) {
+                markStepsDoneBefore(type, 'generate');
+                if (!seenNegotiate[type]) {
+                    setChipState(type, 'negotiate', 'done');
+                    setChipState(type, 'verify', 'done');
+                    setChipState(type, 'session', 'done');
+                }
+                setChipState(type, 'generate', 'done');
+                setChipState(type, 'copy', 'active');
+                return;
+            }
+            if (msg.indexOf('📋') === 0) {
+                setChipState(type, 'copy', 'done');
+                return;
+            }
+            if (msg.indexOf('⚠️ 自动复制') === 0) {
+                setChipState(type, 'copy', 'warn');
+                return;
+            }
+            if (msg.indexOf('❌') === 0) {
+                const activeKey = CHIP_STEPS.map(s => s.key).find(k => state[k] === 'active');
+                if (activeKey) setChipState(type, activeKey, 'fail');
+                return;
+            }
+        }
+
+        // 注册 CloudCipher 状态监听
+        if (typeof CloudCipher !== 'undefined' && typeof CloudCipher.onStatus === 'function') {
+            CloudCipher.onStatus(function (payload) {
+                if (activeCipherOperation) {
+                    handleStatus(activeCipherOperation, payload);
+                }
+            });
+        }
+
+        // ====================== 自动销毁定时器 ======================
+        const destroyTimers = {
+            encrypt: { interval: null, timeout: null },
+            decrypt: { interval: null, timeout: null }
+        };
+
+        function stopDestroyCountdown(type) {
+            const t = destroyTimers[type];
+            if (t.interval) { clearInterval(t.interval); t.interval = null; }
+            if (t.timeout) { clearTimeout(t.timeout); t.timeout = null; }
+            const bar = document.getElementById(`cipher-${type}-destroy-bar`);
+            if (bar) bar.style.display = 'none';
+        }
+
+        function startDestroyCountdown(type, totalSeconds) {
+            stopDestroyCountdown(type);
+            const isEncrypt = type === 'encrypt';
+            const inputEl = isEncrypt ? encryptInput : decryptInput;
+            const countEl = document.getElementById(`cipher-${type}-destroy-count`);
+            const fillEl = document.getElementById(`cipher-${type}-destroy-fill`);
+            const bar = document.getElementById(`cipher-${type}-destroy-bar`);
+            if (!countEl || !fillEl || !bar) return;
+
+            let remain = totalSeconds;
+            countEl.textContent = remain;
+            fillEl.style.width = '100%';
+            bar.style.display = 'flex';
+
+            destroyTimers[type].interval = setInterval(() => {
+                remain--;
+                if (remain < 0) remain = 0;
+                countEl.textContent = remain;
+                fillEl.style.width = (remain / totalSeconds * 100) + '%';
+                if (remain <= 0) {
+                    clearInterval(destroyTimers[type].interval);
+                    destroyTimers[type].interval = null;
+                }
+            }, 1000);
+
+            destroyTimers[type].timeout = setTimeout(() => {
+                if (inputEl) inputEl.value = '';
+                if (type === 'decrypt') {
+                    if (decryptOutput) decryptOutput.textContent = '';
+                    if (decryptResultArea) decryptResultArea.style.display = 'none';
+                }
+                bar.style.display = 'none';
+                if (isEncrypt) updateEncryptBtn();
+                else updateDecryptBtn();
+                stopDestroyCountdown(type);
+                showToast(isEncrypt ? '🔒 明文已自动清除' : '🔒 密文与明文已自动清除');
+            }, totalSeconds * 1000);
+        }
+
+        // ====================== Tab 切换 ======================
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 tabBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const tab = btn.dataset.cipherTab;
+                currentTab = tab;
                 panels.encrypt.style.display = tab === 'encrypt' ? 'flex' : 'none';
                 panels.decrypt.style.display = tab === 'decrypt' ? 'flex' : 'none';
+                renderMeta(tab);
             });
         });
 
         function updateEncryptBtn() { encryptBtn.disabled = !encryptInput.value.trim(); }
         function updateDecryptBtn() { decryptBtn.disabled = !decryptInput.value.trim(); }
 
-        // 时间窗口显示 
+        // 密钥窗口显示
         function updateTimeWindow() {
             const d = new Date();
             const h = String(d.getHours()).padStart(2, '0');
@@ -225,17 +437,24 @@ const Modules = {
             const nextBlock = (block + 10) % 60;
             const nextH = block + 10 >= 60 ? String((d.getHours() + 1) % 24).padStart(2, '0') : h;
             const nextM = String(nextBlock).padStart(2, '0');
-            const text = `${h}:${m} → ${nextH}:${nextM}`;
-            document.getElementById('cipher-key-window-encrypt').textContent = text;
-            document.getElementById('cipher-key-window-decrypt').textContent = text;
+            const el = document.getElementById('cipher-key-window');
+            if (el) el.textContent = `${h}:${m}→${nextH}:${nextM}`;
             const remaining = ((10 - (d.getMinutes() % 10)) * 60) - d.getSeconds();
             setTimeout(updateTimeWindow, (remaining + 1) * 1000);
         }
         updateTimeWindow();
 
-        encryptInput.addEventListener('input', updateEncryptBtn);
-        decryptInput.addEventListener('input', updateDecryptBtn);
+        // 输入监听
+        encryptInput.addEventListener('input', () => {
+            updateEncryptBtn();
+            if (destroyTimers.encrypt.timeout) stopDestroyCountdown('encrypt');
+        });
+        decryptInput.addEventListener('input', () => {
+            updateDecryptBtn();
+            if (destroyTimers.decrypt.timeout) stopDestroyCountdown('decrypt');
+        });
 
+        // ====================== 加密 ======================
         encryptBtn.addEventListener('click', async () => {
             if (encryptBtn.disabled) return;
             const plaintext = encryptInput.value.trim();
@@ -245,59 +464,96 @@ const Modules = {
             encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 加密中…</span>';
             encryptResultArea.style.display = 'none';
 
+            resetChips('encrypt');
+            activeCipherOperation = 'encrypt';
+            setChipState('encrypt', 'request', 'done');
+            setChipState('encrypt', 'negotiate', 'active');
+
             let ciphertext = '';
             try {
-                // 1. 执行加密（真正可能失败的部分）
                 ciphertext = await CloudCipher.encrypt(plaintext);
-                // 加密成功，显示密文
                 encryptOutput.textContent = ciphertext;
                 encryptResultArea.style.display = 'block';
-                // 先显示成功状态，再尝试复制
-                showToast('✅ 密文已生成');
+                startDestroyCountdown('encrypt', 10);
+
+                // ★ 主动推进 meta 栏：会话复用场景下 cipher.js 不 emit，
+                //   这里根据"是否发生过协商"补全中间步骤
+                markStepsDoneBefore('encrypt', 'generate');
+                if (!seenNegotiate['encrypt']) {
+                    setChipState('encrypt', 'negotiate', 'done');
+                    setChipState('encrypt', 'verify', 'done');
+                    setChipState('encrypt', 'session', 'done');
+                }
+                setChipState('encrypt', 'generate', 'done');
+                setChipState('encrypt', 'copy', 'active');
             } catch (e) {
                 console.error('加密失败', e);
+                // ★ 把当前 active 的步骤标红
+                const st = chipStates['encrypt'];
+                const activeKey = CHIP_STEPS.map(s => s.key).find(k => st[k] === 'active');
+                if (activeKey) setChipState('encrypt', activeKey, 'fail');
+                else setChipState('encrypt', 'request', 'fail');
                 showToast('❌ 加密失败：' + e.message);
-                // 加密失败则不再执行后续复制
                 return;
             } finally {
+                activeCipherOperation = null;
                 encryptBtn.disabled = false;
                 encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
                 updateEncryptBtn();
             }
 
-            // 2. 独立处理复制（与加密状态解耦）
             try {
                 await navigator.clipboard.writeText(ciphertext);
+                setChipState('encrypt', 'copy', 'done');   // ★
                 showToast('✅ 密文已生成并复制到剪贴板');
             } catch (clipError) {
-                // 复制失败，仅提示复制问题，不影响“加密成功”的事实
                 console.warn('复制失败:', clipError);
+                setChipState('encrypt', 'copy', 'warn');   // ★
                 showToast('✅ 密文已生成，但自动复制失败，请手动复制');
             }
         });
 
-        // ====================== 解密 调用CloudCipher ======================
+        // ====================== 解密 ======================
         async function performDecrypt() {
             if (decryptBtn.disabled) return;
             const rawStr = decryptInput.value.trim();
-            if (!rawStr) {
-                showToast('请输入密文');
-                return;
-            }
+            if (!rawStr) { showToast('请输入密文'); return; }
 
             decryptBtn.disabled = true;
             decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-spinner fa-pulse"></i> 解密中…</span>';
             decryptResultArea.style.display = 'none';
+
+            resetChips('decrypt');
+            activeCipherOperation = 'decrypt';
+            setChipState('decrypt', 'request', 'done');
+            setChipState('decrypt', 'negotiate', 'active');
 
             try {
                 const plaintext = await CloudCipher.decrypt(rawStr);
                 decryptOutput.textContent = plaintext;
                 decryptResultArea.style.display = 'block';
                 showToast('✅ 解密成功（云解密）');
+
+                // ★ 主动推进 meta 栏
+                markStepsDoneBefore('decrypt', 'generate');
+                if (!seenNegotiate['decrypt']) {
+                    setChipState('decrypt', 'negotiate', 'done');
+                    setChipState('decrypt', 'verify', 'done');
+                    setChipState('decrypt', 'session', 'done');
+                }
+                setChipState('decrypt', 'generate', 'done');
+                setChipState('decrypt', 'copy', 'done');  // 解密没有"复制"步骤，直接结束
+
+                startDestroyCountdown('decrypt', 60);
             } catch (e) {
                 console.error('解密失败', e);
+                const st = chipStates['decrypt'];
+                const activeKey = CHIP_STEPS.map(s => s.key).find(k => st[k] === 'active');
+                if (activeKey) setChipState('decrypt', activeKey, 'fail');
+                else setChipState('decrypt', 'request', 'fail');
                 showToast('❌ 解密失败：' + e.message);
             } finally {
+                activeCipherOperation = null;
                 decryptBtn.disabled = false;
                 decryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-unlock"></i> 解密</span>';
                 updateDecryptBtn();
@@ -324,6 +580,7 @@ const Modules = {
         encryptBtn.innerHTML = '<span class="btn-content"><i class="fas fa-lock"></i> 加密并复制</span>';
         updateEncryptBtn();
         updateDecryptBtn();
+        renderMeta('encrypt');
     },
     // ================== YouTube 模块初始化 ==================
     initYoutubeModule() {
@@ -421,8 +678,419 @@ const Modules = {
             e.stopPropagation();
             toggleSortViews();
         });
+    },
+    // ================== 业绩奖金测算器 ==================
+    initBonusModule() {
+        const LEVELS = [
+            { dp: 2000, rate: 0.0065, name: "Level1" },
+            { dp: 3000, rate: 0.0075, name: "Level2" },
+            { dp: 4000, rate: 0.0085, name: "Level3" },
+            { dp: 6000, rate: 0.0090, name: "Level4" },
+            { dp: 7000, rate: 0.0095, name: "Level5" },
+            { dp: 8000, rate: 0.0100, name: "Level6" },
+            { dp: 9000, rate: 0.0110, name: "Level7" },
+            { dp: 10000, rate: 0.0120, name: "Level8" },
+            { dp: 15000, rate: 0.0130, name: "Level9" },
+            { dp: 20000, rate: 0.0135, name: "Level10" },
+            { dp: 25000, rate: 0.01375, name: "Level11" },
+            { dp: 30000, rate: 0.0140, name: "Level12" },
+        ];
+
+        const COEFF_KEY = 'wow_bonus_coefficient';
+        const DEFAULT_COEFF = 1.10;
+
+        const dpInput = document.getElementById('bonus-dp');
+        const monthDaysInput = document.getElementById('bonus-month-days');
+        const rateInput = document.getElementById('bonus-rate');
+        const coeffInput = document.getElementById('bonus-coefficient');
+        const statusEl = document.getElementById('bonus-rate-status');
+        const resultEl = document.getElementById('bonus-result');
+        const placeholderEl = document.getElementById('bonus-result-placeholder');
+        const tbody = document.getElementById('bonus-level-body');
+        if (!dpInput || !tbody) return;
+
+        // ---- 渲染档位表（全部行一次性渲染，靠 display 控制显隐）----
+        tbody.innerHTML = '';
+        LEVELS.forEach(l => {
+            const tr = document.createElement('tr');
+            const bonus = l.dp * l.rate * 30;
+            tr.innerHTML = `<td>${l.name}</td>` +
+                `<td>${l.dp.toLocaleString()}</td>` +
+                `<td>${(l.rate * 1000).toFixed(2)}‰</td>` +
+                `<td>${bonus.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+            tr.dataset.dp = l.dp;
+            tbody.appendChild(tr);
+        });
+
+        // 展开/收起状态
+        let isExpanded = false;
+        const expandBtn = document.getElementById('bonus-expand-btn');
+
+        // 固定显示 5 行，以命中档位为中心，靠边时贴边
+        function applyRowVisibility(target) {
+            const rows = tbody.querySelectorAll('tr');
+
+            // 展开态：全部显示
+            if (isExpanded) {
+                rows.forEach(tr => tr.style.display = '');
+                return;
+            }
+
+            const total = LEVELS.length;
+            const WINDOW = 5;
+
+            // 总共不足 5 行就直接全显示
+            if (total <= WINDOW) {
+                rows.forEach(tr => tr.style.display = '');
+                return;
+            }
+
+            const targetIdx = LEVELS.findIndex(l => l.dp === target.dp);
+            const half = Math.floor(WINDOW / 2);   // 2
+
+            let start = targetIdx - half;
+            let end = targetIdx + half;
+
+            // 上边界越界 → 往下贴
+            if (start < 0) {
+                start = 0;
+                end = WINDOW - 1;
+            }
+            // 下边界越界 → 往上贴
+            if (end > total - 1) {
+                end = total - 1;
+                start = total - WINDOW;
+            }
+
+            rows.forEach((tr, idx) => {
+                tr.style.display = (idx >= start && idx <= end) ? '' : 'none';
+            });
+        }
+
+        // 展开/收起
+        if (expandBtn) {
+            expandBtn.addEventListener('click', () => {
+                isExpanded = !isExpanded;
+                expandBtn.textContent = isExpanded ? '收起' : '展开全部';
+                expandBtn.classList.toggle('is-expanded', isExpanded);
+                // 用当前输入的 dp 重新套用可见性
+                const dp = Number(dpInput.value);
+                let target = LEVELS[0];
+                if (dp > 0) {
+                    for (let i = LEVELS.length - 1; i >= 0; i--) {
+                        if (dp >= LEVELS[i].dp) { target = LEVELS[i]; break; }
+                    }
+                }
+                applyRowVisibility(target);
+            });
+        }
+
+        // ---- 当月天数 ----
+        const now = new Date();
+        monthDaysInput.value = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+        // ---- 职级系数：读取 + 自动保存 ----
+        function loadCoeff() {
+            const raw = localStorage.getItem(COEFF_KEY);
+            const v = parseFloat(raw);
+            return (!isNaN(v) && v > 0) ? v : DEFAULT_COEFF;
+        }
+        function saveCoeff(v) {
+            localStorage.setItem(COEFF_KEY, String(v));
+        }
+        coeffInput.value = loadCoeff().toFixed(2);
+
+        // ---- 汇率 ----
+        let exchangeRate = 0.87;
+        let rateReady = false;
+
+        const RATE_SOURCES = [
+            {
+                url: "https://api.frankfurter.dev/v1/latest?base=HKD&symbols=CNY",
+                parse: d => d && d.rates && d.rates.CNY
+            },
+            {
+                url: "https://open.er-api.com/v6/latest/HKD",
+                parse: d => d && d.rates && d.rates.CNY
+            },
+        ];
+
+        function setRateStatus(text, isFallback) {
+            if (!statusEl) return;
+            if (isFallback) {
+                statusEl.className = 'bonus-rate-status fallback';
+                statusEl.innerHTML = '<span class="bonus-pulse blink"></span><span>' + text + '</span>';
+            } else {
+                statusEl.className = 'bonus-rate-status';
+                statusEl.innerHTML = '<span class="bonus-pulse"></span><span>' + text + '</span>';
+            }
+        }
+
+        // ====================== 核心：实时计算 ======================
+        function runCalc() {
+            const dp = Number(dpInput.value);
+
+            // 空输入 → 回到占位，档位表默认显示前 5 个
+            if (!dp || dp <= 0) {
+                resultEl.style.display = 'none';
+                placeholderEl.style.display = 'block';
+                applyRowVisibility(LEVELS[0]);
+                return;
+            }
+
+            const days = Number(monthDaysInput.value);
+
+            // 命中最高档
+            let target = LEVELS[0];
+            for (let i = LEVELS.length - 1; i >= 0; i--) {
+                if (dp >= LEVELS[i].dp) { target = LEVELS[i]; break; }
+            }
+
+            // 系数
+            let coeff = parseFloat(coeffInput.value);
+            if (isNaN(coeff) || coeff <= 0) coeff = loadCoeff();
+
+            const totalDP = dp * days;
+            const baseHKD = totalDP * target.rate;
+            const finalHKD = baseHKD * coeff;
+            const finalCNY = finalHKD * exchangeRate;
+
+            document.getElementById('bonus-level-info').textContent =
+                `${target.name} · ${(target.rate * 1000).toFixed(2)}‰`;
+            document.getElementById('bonus-total-dp').textContent =
+                totalDP.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('bonus-base-hkd').textContent =
+                'HKD ' + baseHKD.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('bonus-final-hkd').textContent =
+                'HKD ' + finalHKD.toLocaleString('zh-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('bonus-final-cny').textContent =
+                '¥ ' + finalCNY.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            tbody.querySelectorAll('tr').forEach(tr =>
+                tr.classList.toggle('current', Number(tr.dataset.dp) === target.dp)
+            );
+            applyRowVisibility(target);
+
+            placeholderEl.style.display = 'none';
+            resultEl.style.display = 'block';
+        }
+
+        // ====================== 汇率拉取 ======================
+        async function fetchRate() {
+            for (const src of RATE_SOURCES) {
+                try {
+                    const res = await fetch(src.url, {
+                        signal: AbortSignal.timeout(6000),
+                        cache: 'no-store'
+                    });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    const v = src.parse(data);
+                    if (v && typeof v === 'number' && v > 0) {
+                        exchangeRate = v;
+                        rateReady = true;
+                        rateInput.value = exchangeRate.toFixed(4);
+                        setRateStatus('实时汇率已更新', false);
+                        runCalc();          // ★ 汇率到位后重算
+                        return;
+                    }
+                } catch (e) { /* 下一个源 */ }
+            }
+            rateReady = false;
+            rateInput.value = exchangeRate.toFixed(4);
+            setRateStatus('获取失败，已使用备用值 0.87', true);
+            runCalc();                      // ★ 兜底后也重算一次
+        }
+
+        // ====================== 事件绑定 ======================
+        // 日均利润：输入即算
+        dpInput.addEventListener('input', runCalc);
+
+        // 系数：输入即算 + 自动保存
+        coeffInput.addEventListener('input', () => {
+            const v = parseFloat(coeffInput.value);
+            if (!isNaN(v) && v > 0) saveCoeff(v);
+            runCalc();
+        });
+        // 失焦格式化
+        coeffInput.addEventListener('blur', () => {
+            const v = parseFloat(coeffInput.value);
+            if (!isNaN(v) && v > 0) {
+                coeffInput.value = v.toFixed(2);
+                saveCoeff(v);
+            } else {
+                coeffInput.value = loadCoeff().toFixed(2);
+            }
+            runCalc();
+        });
+
+        // 初始化
+        fetchRate();
+        runCalc();
+    },
+};
+
+// ================== 设置模块：左侧模块显隐 ==================
+const Settings = {
+    STORAGE_KEY: 'wow_tools_hidden_modules',
+    DEFAULT_HIDDEN: ['panel7'],
+
+    init() {
+        const btn = document.getElementById('settingsBtn');
+        const overlay = document.getElementById('settingsOverlay');
+        const closeBtn = document.getElementById('closeSettingsModal');
+        const resetBtn = document.getElementById('settingsReset');
+        const saveBtn = document.getElementById('settingsSave');
+
+        if (!btn || !overlay) return;
+
+        btn.addEventListener('click', () => this.open());
+        closeBtn.addEventListener('click', () => this.close());
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) this.close();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            localStorage.removeItem(this.STORAGE_KEY);
+            this.apply();
+            this.close();
+            if (typeof showToast === 'function') showToast('已恢复默认显示');
+        });
+
+        saveBtn.addEventListener('click', () => this.saveFromUI());
+
+        // 首次应用
+        this.apply();
+    },
+
+    /* 读取"被隐藏的模块 target 列表"。从未保存过设置时使用默认隐藏列表 */
+    getHidden() {
+        try {
+            const raw = localStorage.getItem(this.STORAGE_KEY);
+            // 用户从未保存过设置 → 使用默认隐藏列表
+            if (raw === null) {
+                return Settings.DEFAULT_HIDDEN.slice();
+            }
+            const arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+        } catch { return Settings.DEFAULT_HIDDEN.slice(); }
+    },
+
+    /* 从 DOM 抓取所有左侧模块（含 mind-panel 等动态注入的） */
+    getModules() {
+        const cards = document.querySelectorAll('.tool-card');
+        const list = [];
+        const seen = new Set();
+        cards.forEach(card => {
+            const target = card.dataset.target;
+            if (!target || seen.has(target)) return;
+            seen.add(target);
+
+            // 记录原始 display —— 只记录一次
+            if (!card.dataset.origDisplay) {
+                card.dataset.origDisplay = card.style.display === 'none' ? 'none' : 'visible';
+            }
+            // 硬编码 display:none 的卡片（比如 yunyin.html 里隐藏的 panel4）不入设置列表
+            if (card.dataset.origDisplay === 'none') return;
+
+            const titleEl = card.querySelector('.card-title');
+            const descEl = card.querySelector('.card-desc');
+            let title = titleEl ? titleEl.textContent.replace(/\s+/g, ' ').trim() : target;
+            title = title.replace(/⚡极速版/g, '').trim();
+            const desc = descEl ? descEl.textContent.trim() : '';
+            list.push({ target, title, desc });
+        });
+        return list;
+    },
+
+    /* 应用设置：按 hidden 列表显示/隐藏卡片；如果当前面板被隐藏了就收起 */
+    apply() {
+        document.documentElement.classList.remove('hide-panel7-init');
+        const hidden = this.getHidden();
+        document.querySelectorAll('.tool-card').forEach(card => {
+            const target = card.dataset.target;
+            if (!target) return;
+
+            if (!card.dataset.origDisplay) {
+                card.dataset.origDisplay = card.style.display === 'none' ? 'none' : 'visible';
+            }
+            if (card.dataset.origDisplay === 'none') return;
+
+            card.style.display = hidden.includes(target) ? 'none' : '';
+
+            if (hidden.includes(target)) {
+                const panel = document.getElementById(target);
+                if (panel && panel.classList.contains('active')) {
+                    card.classList.remove('active');
+                    panel.classList.remove('active');
+                    const anyActive = document.querySelector('.function-panel.active');
+                    const emptyTip = document.getElementById('emptyTip');
+                    const resultArea = document.getElementById('resultArea');
+                    if (!anyActive) {
+                        if (emptyTip) emptyTip.style.display = 'flex';
+                        if (resultArea) resultArea.classList.remove('show');
+                    }
+                }
+            }
+        });
+    },
+
+    open() {
+        this.renderList();
+        document.getElementById('settingsOverlay').style.display = 'flex';
+    },
+
+    close() {
+        document.getElementById('settingsOverlay').style.display = 'none';
+    },
+
+    /* 渲染列表：卡片式布局 + 右侧开关 */
+    renderList() {
+        const container = document.getElementById('settingsList');
+        const modules = this.getModules();
+        const hidden = this.getHidden();
+        container.innerHTML = modules.map(m => `
+            <label class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">${this.escape(m.title)}</div>
+                    <div class="settings-item-desc">${this.escape(m.desc)}</div>
+                </div>
+                <span class="settings-switch">
+                    <input type="checkbox" data-target="${m.target}" ${hidden.includes(m.target) ? '' : 'checked'}>
+                    <span class="settings-switch-track">
+                        <span class="settings-switch-thumb"></span>
+                    </span>
+                </span>
+            </label>
+        `).join('');
+    },
+
+    escape(s) {
+        const d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    },
+
+    saveFromUI() {
+        const checkboxes = document.querySelectorAll('#settingsList input[type="checkbox"]');
+        const hidden = [];
+        let visibleCount = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) visibleCount++;
+            else hidden.push(cb.dataset.target);
+        });
+
+        if (visibleCount === 0) {
+            if (typeof showToast === 'function') showToast('⚠️ 请至少保留一个模块');
+            return;
+        }
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(hidden));
+        this.apply();
+        this.close();
+        if (typeof showToast === 'function') showToast('✅ 设置已保存');
     }
 };
+
 
 // ================== YouTube API 就绪回调 ==================
 window.onYouTubeIframeAPIReady = function () {
@@ -448,4 +1116,5 @@ document.addEventListener('DOMContentLoaded', function () {
     UIController.init();
     Modules.init(ai);
     window.Modules = Modules;
+    Settings.init();
 });
