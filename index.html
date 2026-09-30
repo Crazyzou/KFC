@@ -5,6 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wow工具箱</title>
+    <script>
+        // 首屏防闪现：在 DOM 构建前同步决定 panel7 是否隐藏
+        (function () {
+            var KEY = 'wow_tools_hidden_modules';
+            var DEFAULT_HIDDEN = ['panel7'];
+            var hidden;
+            try {
+                var raw = localStorage.getItem(KEY);
+                if (raw === null) hidden = DEFAULT_HIDDEN.slice();
+                else hidden = JSON.parse(raw) || [];
+                if (!Array.isArray(hidden)) hidden = [];
+            } catch (e) { hidden = DEFAULT_HIDDEN.slice(); }
+            if (hidden.indexOf('panel7') >= 0) {
+                document.documentElement.className += ' hide-panel7-init';
+            }
+        })();
+    </script>
+    <style>
+        .hide-panel7-init .tool-card[data-target="panel7"] {
+            display: none !important;
+        }
+    </style>
     <link rel="icon" href="https://i.pinimg.com/originals/5c/2b/20/5c2b2023053650ec890d690da18880fa.jpg"
         type="image/x-icon" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,7 +46,12 @@
         <div class="function-area">
             <header>
                 <h1>Wow工具集合</h1>
-                <p class="subtitle">常用的一些工具的集合</p>
+                <div class="subtitle-row">
+                    <p class="subtitle">常用的一些工具的集合</p>
+                    <button class="settings-btn" id="settingsBtn" title="设置显示的模块" aria-label="设置">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
             </header>
             <div class="tool-card" data-target="panel1">
                 <div class="card-header">
@@ -63,6 +90,16 @@
                         视频数据查询
                     </div>
                     <div class="card-desc">批量查询视频数据</div>
+                </div>
+            </div>
+            <div class="tool-card" data-target="panel7">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon" style="background: linear-gradient(135deg, #2f6fed, #5aa8ff);"><i
+                                class="fas fa-coins"></i></span>
+                        奖金速算
+                    </div>
+                    <div class="card-desc">仅自用</div>
                 </div>
             </div>
         </div>
@@ -231,28 +268,49 @@
             <!-- 面板4：密语编码器 -->
             <div class="function-panel" id="panel4">
                 <div class="cipher-wrapper">
-                    <div class="cipher-tab-bar">
-                        <button class="cipher-tab active" data-cipher-tab="encrypt"><i class="fas fa-lock"></i><span>明文
-                                → 密文</span></button>
-                        <button class="cipher-tab" data-cipher-tab="decrypt"><i class="fas fa-unlock"></i><span>密文 →
-                                明文</span></button>
+                    <div class="cipher-top">
+                        <div class="cipher-tab-bar">
+                            <button class="cipher-tab active" data-cipher-tab="encrypt"><i
+                                    class="fas fa-lock"></i><span>明文 → 密文</span></button>
+                            <button class="cipher-tab" data-cipher-tab="decrypt"><i class="fas fa-unlock"></i><span>密文 →
+                                    明文</span></button>
+                        </div>
+                        <div class="cipher-meta-bar">
+                            <span class="cipher-meta-key">
+                                <i class="fas fa-clock"></i>
+                                密钥窗口 <strong id="cipher-key-window">--:--→--:--</strong>
+                            </span>
+                            <span class="cipher-meta-progress" id="cipher-meta-progress">
+                                <span class="cipher-meta-icon" id="cipher-meta-icon"><i
+                                        class="far fa-circle"></i></span>
+                                <span class="cipher-meta-step" id="cipher-meta-step">0/6</span>
+                                <span class="cipher-meta-label" id="cipher-meta-label">未开始</span>
+                            </span>
+                        </div>
                     </div>
+
+                    <!-- 加密面板 -->
                     <div class="cipher-panel active" id="cipher-encrypt-panel">
-                        <div class="cipher-time-hint" id="cipher-time-hint-encrypt">⏱ 当前密钥窗口：<strong
-                                id="cipher-key-window-encrypt"></strong></div>
                         <div class="cipher-card">
-                            <div class="cipher-card-header">
-                                <div class="cipher-step-badge">1</div><span>输入明文内容</span>
-                            </div>
+                            <div class="cipher-card-header"><span>输入明文</span></div>
                             <textarea id="cipher-encrypt-input" class="cipher-textarea"
                                 placeholder="输入要加密的内容（支持中文、英文、emoji、特殊符号）…" rows="3"></textarea>
                         </div>
-                        <button class="cipher-btn-primary" id="cipher-encrypt-btn" disabled><i class="fas fa-lock"></i>
-                            加密生成密文</button>
+                        <button class="cipher-btn-primary" id="cipher-encrypt-btn" disabled>
+                            <i class="fas fa-lock"></i> 加密生成密文
+                        </button>
+
                         <div class="cipher-card" id="cipher-encrypt-result-area" style="display:none;">
                             <div class="cipher-card-header">
-                                <div class="cipher-step-badge done">✓</div><span>密文结果</span><span
-                                    class="cipher-badge-tag">古文伪装</span>
+                                <span>密文结果</span><span class="cipher-badge-tag">古文伪装</span>
+                            </div>
+                            <div class="cipher-destroy-inline" id="cipher-encrypt-destroy-bar" style="display:none;">
+                                <div class="cipher-destroy-line">
+                                    <div class="cipher-destroy-fill" id="cipher-encrypt-destroy-fill"></div>
+                                </div>
+                                <div class="cipher-destroy-label">
+                                    明文将在 <strong id="cipher-encrypt-destroy-count">10</strong> 秒后自动清除
+                                </div>
                             </div>
                             <div class="cipher-output-box">
                                 <div class="cipher-output-text" id="cipher-encrypt-output"></div><button
@@ -260,23 +318,29 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 解密面板 -->
                     <div class="cipher-panel" id="cipher-decrypt-panel" style="display:none;">
-                        <div class="cipher-time-hint" id="cipher-time-hint-decrypt">⏱ 当前密钥窗口：<strong
-                                id="cipher-key-window-decrypt"></strong></div>
                         <div class="cipher-card">
-                            <div class="cipher-card-header">
-                                <div class="cipher-step-badge">1</div><span>输入密文</span>
-                            </div>
+                            <div class="cipher-card-header"><span>输入密文</span></div>
                             <textarea id="cipher-decrypt-input" class="cipher-textarea cipher-mono"
                                 placeholder="在此粘贴密文（自动过滤标点、空格等无关字符）…" rows="3"></textarea>
                             <div class="cipher-card-actions"><button class="cipher-btn-paste" id="cipher-paste-btn"><i
                                         class="fas fa-paste"></i> 从剪贴板粘贴</button></div>
                         </div>
-                        <button class="cipher-btn-primary" id="cipher-decrypt-btn" disabled><i
-                                class="fas fa-unlock"></i> 解密密文</button>
+                        <button class="cipher-btn-primary" id="cipher-decrypt-btn" disabled>
+                            <i class="fas fa-unlock"></i> 解密密文
+                        </button>
+
                         <div class="cipher-card" id="cipher-decrypt-result-area" style="display:none;">
-                            <div class="cipher-card-header">
-                                <div class="cipher-step-badge done">✓</div><span>解密结果</span>
+                            <div class="cipher-card-header"><span>解密结果</span></div>
+                            <div class="cipher-destroy-inline" id="cipher-decrypt-destroy-bar" style="display:none;">
+                                <div class="cipher-destroy-line">
+                                    <div class="cipher-destroy-fill" id="cipher-decrypt-destroy-fill"></div>
+                                </div>
+                                <div class="cipher-destroy-label">
+                                    密文与明文将在 <strong id="cipher-decrypt-destroy-count">60</strong> 秒后自动清除
+                                </div>
                             </div>
                             <div class="cipher-output-box decrypted" id="cipher-decrypt-output"
                                 style="white-space: pre-wrap; word-break: break-word;"></div>
@@ -327,8 +391,129 @@
                             class="fas fa-arrow-up"></i></button>
                 </div>
             </div>
+
+            <!-- 面板7：业绩奖金测算器 -->
+            <div class="function-panel" id="panel7">
+                <div class="bonus-layout">
+
+                    <!-- 左侧：输入参数 -->
+                    <div class="bonus-left">
+                        <div class="bonus-card">
+                            <div class="bonus-card-title">测算参数</div>
+
+                            <div class="bonus-field">
+                                <label for="bonus-dp">日均利润（DP）</label>
+                                <input id="bonus-dp" type="number" placeholder="输入后自动计算" autocomplete="off">
+                            </div>
+
+                            <div class="bonus-field">
+                                <label for="bonus-month-days">本月天数</label>
+                                <input id="bonus-month-days" readonly>
+                            </div>
+
+                            <div class="bonus-field">
+                                <label for="bonus-rate">港币兑人民币汇率</label>
+                                <input id="bonus-rate" readonly>
+                                <div class="bonus-rate-status" id="bonus-rate-status">
+                                    <span class="bonus-pulse blink"></span><span>汇率更新中…</span>
+                                </div>
+                            </div>
+
+                            <div class="bonus-field">
+                                <label for="bonus-coefficient">职级系数</label>
+                                <input id="bonus-coefficient" type="number" step="0.01" min="0" value="1.10">
+                                <div class="bonus-hint">修改后自动保存</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：结果 + 档位表 -->
+                    <div class="bonus-right">
+
+                        <!-- 结果卡片 -->
+                        <div class="bonus-card" id="bonus-result-card">
+                            <!-- 占位 -->
+                            <div class="bonus-placeholder" id="bonus-result-placeholder">
+                                <div class="bonus-placeholder-title">输入日均利润后自动计算</div>
+                            </div>
+
+                            <!-- 结果 -->
+                            <div class="bonus-result" id="bonus-result" style="display:none;">
+                                <div class="bonus-amount-block">
+                                    <div class="bonus-amount-label">
+                                        预计到手 · 人民币
+                                        <span class="bonus-level-pill" id="bonus-level-info">—</span>
+                                    </div>
+                                    <div class="bonus-amount" id="bonus-final-cny">¥ 0.00</div>
+                                </div>
+
+                                <dl class="bonus-detail-list">
+                                    <div class="bonus-detail-row">
+                                        <dt>当月总 DP</dt>
+                                        <dd id="bonus-total-dp">—</dd>
+                                    </div>
+                                    <div class="bonus-detail-row">
+                                        <dt>基础奖金</dt>
+                                        <dd id="bonus-base-hkd">—</dd>
+                                    </div>
+                                    <div class="bonus-detail-row">
+                                        <dt>× 职级系数后</dt>
+                                        <dd id="bonus-final-hkd">—</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- 档位表 -->
+                        <div class="bonus-card">
+                            <div class="bonus-card-title">
+                                Level 档位对照表
+                                <button type="button" class="bonus-expand-btn" id="bonus-expand-btn">
+                                    展开全部
+                                </button>
+                            </div>
+                            <div class="bonus-table-wrap">
+                                <table class="bonus-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Level</th>
+                                            <th>个人DP 门槛</th>
+                                            <th>提点 ‰</th>
+                                            <th>示例奖金（HKD）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bonus-level-body"></tbody>
+                                </table>
+                            </div>
+                            <p class="bonus-note">* 示例奖金 = 个人DP × 提点‰ × 30（港币）。高亮行为当前命中档位。</p>
+                        </div>
+
+                        <div class="bonus-foot">汇率为网络参考行情，仅用于估算，实际结算以银行牌价为准。</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- ========== 设置弹窗：模块显隐 ========== -->
+    <div class="settings-overlay" id="settingsOverlay" style="display:none;">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <h3><i class="fas fa-sliders-h"></i> 设置 · 显示的模块</h3>
+                <button class="settings-close-btn" id="closeSettingsModal" aria-label="关闭">×</button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-hint">勾选想要显示的模块，取消勾选即可隐藏。设置会自动保存到本地。</div>
+                <div class="settings-list" id="settingsList"></div>
+            </div>
+            <div class="settings-footer">
+                <button class="settings-btn-secondary" id="settingsReset">恢复默认</button>
+                <button class="settings-btn-primary" id="settingsSave">保存</button>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- ========== 叠加层：视频播放器 ========== -->
     <div id="videoPlayerOverlay">

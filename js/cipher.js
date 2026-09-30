@@ -19,6 +19,30 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
     let clientFingerprint = null;
     let importedLongTermPubKey = null;
 
+    // ========== 状态回调机制（给 UI 用） ==========
+    const statusListeners = [];
+    function emitStatus(message, level) {
+        if (!level) {
+            if (message.indexOf('✅') === 0) level = 'success';
+            else if (message.indexOf('⚠️') === 0) level = 'warn';
+            else if (message.indexOf('❌') === 0) level = 'error';
+            else level = 'info';
+        }
+        const payload = { message: message, level: level, time: Date.now() };
+        statusListeners.forEach(function (fn) {
+            try { fn(payload); } catch (e) { }
+        });
+        if (level === 'error') console.error(message);
+        else if (level === 'warn') console.warn(message);
+        else console.log(message);
+    }
+    function onStatus(fn) {
+        statusListeners.push(fn);
+        return function off() {
+            const i = statusListeners.indexOf(fn);
+            if (i >= 0) statusListeners.splice(i, 1);
+        };
+    }
     function arrayBufferToBase64(buffer) {
         return btoa(String.fromCharCode(...new Uint8Array(buffer)));
     }
@@ -143,7 +167,7 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
         }
         tokenLock = new Promise(async (resolve, reject) => {
             try {
-                console.log('🔄 正在进行 ECDH 密钥协商...');
+                emitStatus('🔄 正在进行 ECDH 密钥协商...');
                 if (!clientFingerprint) {
                     clientFingerprint = arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(16)));
                 }
@@ -164,7 +188,7 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
                 if (!verifyOk) {
                     throw new Error("Ed25519签名校验失败，疑似中间人攻击！");
                 }
-                console.log("✅ Ed25519签名校验通过");
+                emitStatus("✅ Ed25519签名校验通过");
 
                 const clientKeyPair = await crypto.subtle.generateKey(
                     { name: 'ECDH', namedCurve: 'P-256' },
@@ -222,7 +246,7 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
                 sessionId = result.sessionId;
                 sharedSecretHex = newSharedSecretHex;
                 sessionExpiresAt = result.expiresAt;
-                console.log(`✅ ECDH 会话建立成功，会话ID: ${sessionId.slice(0, 8)}...`);
+                emitStatus(`✅ ECDH 会话建立成功，会话ID: ${sessionId.slice(0, 8)}...`);
                 resolve();
             } catch (err) {
                 reject(err);
@@ -248,7 +272,7 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
         if (!res.ok) {
             const err = await res.json().catch(() => ({ error: '请求失败' }));
             if (res.status === 401 && retryCount < 1) {
-                console.log('⚠️ 会话过期，重新协商...');
+                emitStatus('⚠️ 会话过期，重新协商...');
                 sessionId = null;
                 sharedSecretHex = null;
                 sessionExpiresAt = 0;
@@ -280,5 +304,16 @@ MCowBQYDK2VwAyEA5ynm758di7/9e1Yy6XNWTF+zL+lix2caKr/TPs6xmLU=
         }
     }
 
-    return { encrypt, decrypt, getServerFingerprint };
+    function getSessionInfo() {
+        const now = Date.now();
+        const hasSession = !!sessionId && now < sessionExpiresAt;
+        return {
+            hasSession: hasSession,
+            sessionId: sessionId ? sessionId.slice(0, 8) : '',
+            expiresAt: sessionExpiresAt,
+            expiresIn: hasSession ? sessionExpiresAt - now : 0
+        };
+    }
+
+    return { encrypt, decrypt, getServerFingerprint, onStatus, getSessionInfo };
 })();
