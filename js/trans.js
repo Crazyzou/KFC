@@ -1,166 +1,139 @@
+/* ============================================================
+ * 数据模型
+ * textList:  [{ id, source, origin, lines: [str], deletedLines: [int] }]
+ * transList: [{ id, lang, fromTextId, lines: [str], text, source }]
+ * audioList: [{ id, file, display, source, lang, fromTextId, fromTransId }]
+ * ============================================================ */
 const BASE = 'https://149.28.88.166:3005';
 let fileList = [];
 let textList = [];
 let transList = [];
 let audioList = [];
 let isTranscribing = false;
-let currentPlayIdx = -1;
-let currentAudioEl = null;
-let voiceListCache = { google: [], aliyun: [] };
+let cardState = {};
 let pendingTtsItems = [];
-const SOURCE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6',
-    '#f97316', '#84cc16', '#a855f7', '#22d3ee', '#fb7185', '#2dd4bf', '#eab308'
-];
-
-const TTS_SETTINGS_KEY = 'tts_settings';
 let pendingTranslateItems = null;
+let voiceListCache = { google: [], aliyun: [] };
+const TTS_SETTINGS_KEY = 'tts_settings';
 
+/* ============================================================
+ * AI 翻译配置（DeepSeek / 火山引擎方舟）
+ * ============================================================ */
+const AI_CONFIG = {
+    apiKey: '6869437c-0d6b-42ee-8c6d-4c865ca9b475',
+    apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+    model: 'deepseek-v4-1-flash-260910'
+};
+const AI_TRANSLATE_MAX_CHARS = 8000;   // 单块最大字符数，块间并行
+const AI_TRANSLATE_TIMEOUT = 90000;    // 单次请求超时 90s
+
+/* 语言别名 → 中文名 */
 const LANG_CODE_MAP = {
-    'hi': '印地语',
-    'in': '印地语',
-    'sa': '阿拉伯语',
-    'ar': '阿拉伯语',
-    'ja': '日语',
-    'jp': '日语',
-    'ko': '韩语',
-    'kr': '韩语',
-    'pt': '葡萄牙语',
-    'en': '英语',
-    'zh': '中文',
+    'hi': '印地语', 'in': '印地语',
+    'sa': '阿拉伯语', 'ar': '阿拉伯语',
+    'ja': '日语', 'jp': '日语',
+    'ko': '韩语', 'kr': '韩语',
+    'pt': '葡萄牙语', 'en': '英语',
+    'zh': '中文', 'cn': '中文',
+    'id': '印度尼西亚语', 'ind': '印度尼西亚语',
+    'indonesia': '印度尼西亚语', 'indonesian': '印度尼西亚语',
+    'ms': '马来语', 'th': '泰语',
+    'vi': '越南语', 'vn': '越南语',
+    'es': '西班牙语', 'fr': '法语', 'de': '德语',
+    'it': '意大利语', 'ru': '俄语'
 };
 
-function saveTtsSettings() {
-    const settings = {
-        model: document.getElementById('ttsModel').value,
-        voice: document.getElementById('ttsVoice').value,
-        interval: document.getElementById('ttsInterval').value,
-        useTextName: document.getElementById('ttsUseTextName').checked
-    };
-    localStorage.setItem(TTS_SETTINGS_KEY, JSON.stringify(settings));
-}
-
-function loadTtsSettings() {
-    const saved = localStorage.getItem(TTS_SETTINGS_KEY);
-    if (saved) {
-        try {
-            const settings = JSON.parse(saved);
-            // 应用非异步的部分（model、interval、useTextName）
-            const modelSelect = document.getElementById('ttsModel');
-            if (settings.model && modelSelect) modelSelect.value = settings.model;
-
-            if (settings.interval !== undefined) {
-                document.getElementById('ttsInterval').value = settings.interval;
-                document.getElementById('ttsIntervalVal').textContent = settings.interval;
-            }
-            if (settings.useTextName !== undefined) {
-                document.getElementById('ttsUseTextName').checked = settings.useTextName;
-            }
-            return settings; // 返回以便后续设置 voice 
-        } catch (e) { }
-    }
-    return null;
-}
-
-function renderFileList() {
-    const s = document.getElementById('fileListSection'),
-        c = document.getElementById('fileListContainer'),
-        t = document.getElementById('fileListTitle');
-    if (fileList.length === 0) {
-        s.style.display = 'none';
-        updateWorkflowSteps();
-        return;
-    }
-    s.style.display = 'block';
-    t.textContent = '已选择文件 (' + fileList.length + ')';
-    c.innerHTML = fileList.map((f, i) =>
-        `<div class="file-item">
-            <span class="fi-icon">F</span>
-            <div class="fi-info">
-                <div class="fi-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
-                <div class="fi-size">${formatSize(f.size)}</div>
-            </div>
-            <button class="fi-del" onclick="removeFile(${i})" title="移除">&times;</button>
-        </div>`
-    ).join('');
-    updateWorkflowSteps();
-}
-
-function getSourceColor(fromTextId) {
-    if (!fromTextId) return '#c0c5d0'; let hash = 0; for (let i = 0; i < fromTextId
-        .length; i++) {
-        hash = ((hash << 5) - hash) + fromTextId.charCodeAt(i);
-        hash |= 0;
-    } return SOURCE_COLORS[Math.abs(hash) % SOURCE_COLORS.length];
-}
-
-function getOriginSnippet(fromTextId) {
-    if (!fromTextId) return ''; const o = textList.find(t => t.id === fromTextId); if (
-        !o || !o.text) return ''; const c = o.text.replace(/\s+/g, ' ').trim(); return c.length > 25 ? c.slice(0, 25) +
-            '...' : c;
-}
-
+/* ============================================================
+ * 工具
+ * ============================================================ */
 function genId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9); }
-
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 function formatSize(b) {
-    if (!b || b === 0) return '0 B'; const k = 1024,
-        arr = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(
-            k, i)).toFixed(2)) + ' ' + arr[i];
+    if (!b || b === 0) return '0 B';
+    const k = 1024, arr = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + arr[i];
 }
-
 function formatTime(s) {
-    if (isNaN(s) || s < 0) return '0:00'; const m = Math.floor(s / 60),
-        sec = Math.floor(s % 60); return m + ':' + sec.toString().padStart(2, '0');
+    if (isNaN(s) || s < 0) return '0:00';
+    const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+    return m + ':' + sec.toString().padStart(2, '0');
 }
-
 function getLangName(c) {
-    const m = { zh: '中文', pt: '葡萄牙语', en: '英语', jp: '日语', kr: '韩语' }; return m[c] || c ||
-        '未知';
-}
-
-function getBadgeClass(c) {
     const m = {
-        zh: 'badge-blue', en: 'badge-green', pt: 'badge-orange', jp: 'badge-gray',
-        kr: 'badge-red'
-    }; return m[c] || 'badge-gray';
+        zh: '中文', cn: '中文', pt: '葡萄牙语', en: '英语', jp: '日语', ja: '日语', kr: '韩语', ko: '韩语',
+        es: '西班牙语', fr: '法语', de: '德语', it: '意大利语', ru: '俄语',
+        ar: '阿拉伯语', sa: '阿拉伯语', hi: '印地语', in: '印地语',
+        id: '印度尼西亚语', ind: '印度尼西亚语', indonesia: '印度尼西亚语', indonesian: '印度尼西亚语',
+        ms: '马来语', th: '泰语', vi: '越南语', vn: '越南语'
+    };
+    const k = String(c || '').toLowerCase();
+    return m[k] || c || '未知';
 }
-
 function escapeHtml(s) {
     const d = document.createElement('div');
-    d.textContent = s; return d.innerHTML;
+    d.textContent = s;
+    return d.innerHTML;
 }
-
 function escapeAttr(s) {
-    return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g,
-        '&lt;').replace(/>/g, '&gt;');
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function splitText(t) {
+    const s = String(t || '').replace(/\r/g, '');
+    const out = [];
+    s.split('\n').forEach(para => {
+        let buf = '', i = 0;
+        for (; i < para.length; i++) {
+            const ch = para[i]; buf += ch;
+            const isCjk = '。！？；'.indexOf(ch) >= 0;
+            const isEnd = isCjk || '!?;…'.indexOf(ch) >= 0 || ch === '.';
+            if (isEnd) {
+                const nxt = para[i + 1];
+                if (isCjk || nxt === undefined || nxt === ' ' || nxt === '\n') {
+                    if (buf.trim()) out.push(buf.trim());
+                    buf = '';
+                    if (nxt === ' ') i++;
+                }
+            }
+        }
+        if (buf.trim()) out.push(buf.trim());
+    });
+    return out.length ? out : [String(t || '').trim()];
+}
+function nowFileName() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getMonth() + 1}月${d.getDate()}日_${p(d.getHours())}${p(d.getMinutes())}.txt`;
 }
 
+/* ============================================================
+ * Toast / Confirm
+ * ============================================================ */
 function showToast(msg, type = 'info') {
-    const e = document.querySelector('.toast-msg'); if (e) e.remove(); const t =
-        document.createElement('div');
+    const e = document.querySelector('.toast-msg');
+    if (e) e.remove();
+    const t = document.createElement('div');
     t.className = 'toast-msg';
-    t.textContent = msg; const c = { info: '#4f5ef0', success: '#0fa87a', error: '#e54545', warning: '#d4880a' };
-    t.style.cssText =
-        `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;background:${c[type] || c.info};color:#fff;padding:10px 20px;border-radius:18px;font-size:12.5px;font-weight:500;box-shadow:0 5px 16px rgba(0,0,0,0.16);pointer-events:none;animation:toastIn 0.3s ease;max-width:88vw;text-align:center;`;
+    t.textContent = msg;
+    const c = { info: '#4f5bd5', success: '#0e9f6e', error: '#c0392b', warning: '#b7791f' };
+    t.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:300;background:${c[type] || c.info};color:#fff;padding:9px 18px;border-radius:16px;font-size:12px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,0.14);pointer-events:none;animation:toastIn 0.3s ease;max-width:88vw;text-align:center;`;
     document.body.appendChild(t);
-    setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transition = 'opacity 0.3s';
-    }, 2300);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 2300);
     setTimeout(() => t.remove(), 2900);
 }
-
 function showConfirm(msg) {
     return new Promise(r => {
         const o = document.createElement('div');
         o.className = 'modal-overlay';
         o.style.display = 'flex';
-        o.innerHTML =
-            `<div class="modal" style="width:350px;"><div class="modal-header"><span>确认操作</span><button class="modal-close close-confirm">&times;</button></div><div class="modal-body"><p style="font-size:13px;margin:0;line-height:1.5;">${msg}</p></div><div class="modal-footer"><button class="btn btn-outline cancel-confirm">取消</button><button class="btn btn-primary confirm-confirm">确认</button></div></div>`;
-        document.body.appendChild(o); const c = (v) => {
-            o.style.display = 'none';
-            setTimeout(() => o.remove(), 180);
-            r(v);
-        };
+        o.innerHTML = `<div class="modal" style="width:340px;">
+      <div class="modal-header"><span>确认操作</span><button class="modal-close close-confirm">&times;</button></div>
+      <div class="modal-body"><p style="font-size:12.5px;margin:0;line-height:1.5;">${msg}</p></div>
+      <div class="modal-footer"><button class="btn btn-outline cancel-confirm">取消</button><button class="btn btn-primary confirm-confirm">确认</button></div>
+    </div>`;
+        document.body.appendChild(o);
+        const c = v => { o.style.display = 'none'; setTimeout(() => o.remove(), 180); r(v); };
         o.querySelector('.close-confirm').onclick = () => c(false);
         o.querySelector('.cancel-confirm').onclick = () => c(false);
         o.querySelector('.confirm-confirm').onclick = () => c(true);
@@ -168,331 +141,668 @@ function showConfirm(msg) {
     });
 }
 
+/* ============================================================
+ * 复制 / 下载
+ * ============================================================ */
 function copyText(t) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(t).then(() => showToast('已复制',
-            'success')).catch(() => showToast('复制失败', 'error'));
-    } else {
-        const ta = document.createElement(
-            'textarea');
+    try {
+        const ta = document.createElement('textarea');
         ta.value = t;
-        ta.style.cssText = 'position:fixed;left:-9999px;';
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
         document.body.appendChild(ta);
         ta.select();
-        document.execCommand('copy');
+        const ok = document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast('已复制', 'success');
+        if (ok) showToast('已复制', 'success');
+        else showToast('复制失败', 'error');
+    } catch (e) {
+        showToast('复制失败', 'error');
     }
 }
-
-function downloadTxt(t, n) {
-    const b = new Blob([t], { type: 'text/plain;charset=utf-8' }); const u = URL.createObjectURL(
-        b); const a = document.createElement('a');
-    a.href = u;
-    a.download = (n || '文案') + '_' + Date.now() + '.txt';
-    document.body.appendChild(a);
-    a.click();
+function downloadTxt(t, name) {
+    const b = new Blob([t], { type: 'text/plain;charset=utf-8' });
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = u; a.download = name || nowFileName();
+    document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(u);
 }
 
-function openModal(id) { document.getElementById(id).classList.add('show'); }
-
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('modal-overlay')) e.target.classList
-        .remove('show');
+function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('show'); }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('show'); }
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('show');
 });
 
+/* ============================================================
+ * 复制状态
+ * ============================================================ */
+const COPIED_KEY = 'transCopied_v7';
+let COPIED = {};
+try { COPIED = JSON.parse(localStorage.getItem(COPIED_KEY)) || {}; } catch (e) { COPIED = {}; }
+
+function getCopied(transId) {
+    if (!COPIED[transId]) COPIED[transId] = [];
+    return COPIED[transId];
+}
+function isCopied(transId, idx) { return getCopied(transId).indexOf(idx) >= 0; }
+function markCopied(transId, idx) {
+    const arr = getCopied(transId);
+    if (arr.indexOf(idx) < 0) {
+        arr.push(idx);
+        try { localStorage.setItem(COPIED_KEY, JSON.stringify(COPIED)); } catch (e) { }
+    }
+}
+function langCopyProgress(trans) {
+    if (!trans || !trans.lines) return { done: 0, total: 0 };
+    const textItem = textList.find(x => x.id === trans.fromTextId);
+    const origDeleted = (textItem && textItem.deletedLines) || [];
+    const copied = getCopied(trans.id);
+    const visibleIdx = trans.lines
+        .map((_, i) => i)
+        .filter(i => !origDeleted.includes(i));
+    const done = visibleIdx.filter(i => copied.indexOf(i) >= 0).length;
+    return { done, total: visibleIdx.length };
+}
+function isLangDone(trans) {
+    if (!trans || !trans.lines) return false;
+    const p = langCopyProgress(trans);
+    return p.total > 0 && p.done === p.total;
+}
+
+/* ============================================================
+ * 工作流
+ * ============================================================ */
 function updateWorkflowSteps() {
     const s = {
-        u: document.getElementById('stepUpload'), t: document.getElementById(
-            'stepTranscribe'), r: document.getElementById('stepTranslate'), a: document.getElementById(
-                'stepAudio')
+        u: document.getElementById('stepUpload'),
+        t: document.getElementById('stepTranscribe'),
+        r: document.getElementById('stepTranslate'),
+        a: document.getElementById('stepAudio')
     };
-    Object.values(s).forEach(x => x.className = 'workflow-step'); if (fileList.length > 0) s.u.classList.add('done'); if (
-        textList.length > 0) s.t.classList.add('done'); if (transList.length > 0) s.r.classList.add('done'); if (audioList
-            .length > 0) s.a.classList.add('done'); if (isTranscribing) s.t.classList.add('active');
+    Object.values(s).forEach(x => x && (x.className = 'workflow-step'));
+    if (fileList.length > 0) s.u?.classList.add('done');
+    if (textList.length > 0) s.t?.classList.add('done');
+    if (transList.length > 0) s.r?.classList.add('done');
+    if (audioList.length > 0) s.a?.classList.add('done');
+    if (isTranscribing) s.t?.classList.add('active');
 }
-const uploadZone = document.getElementById('uploadZone');
-uploadZone.addEventListener('dragover', function (e) {
-    e.preventDefault();
-    this.style.borderColor = '#4f5ef0';
-    this.style.background = '#f0f1ff';
-});
-uploadZone.addEventListener('dragleave', function (e) {
-    e.preventDefault();
-    this.style.borderColor = '#d8dce8';
-    this.style.background = '#fafbfd';
-});
-uploadZone.addEventListener('drop', function (e) {
-    e.preventDefault();
-    this.style.borderColor = '#d8dce8';
-    this.style.background = '#fafbfd'; const f = e.dataTransfer.files; if (f && f.length) processFiles(Array.from(
-        f));
-});
 
+/* ============================================================
+ * 文件上传
+ * ============================================================ */
+const uploadZone = document.getElementById('uploadZone');
+if (uploadZone) {
+    uploadZone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        this.style.borderColor = '#4f5bd5';
+    });
+    uploadZone.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        this.style.borderColor = '#d5d8de';
+    });
+    uploadZone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        this.style.borderColor = '#d5d8de';
+        const f = e.dataTransfer.files;
+        if (f && f.length) processFiles(Array.from(f));
+    });
+}
 function handleFileInput(e) {
-    const f = e.target.files; if (f && f.length) processFiles(Array.from(f));
+    const f = e.target.files;
+    if (f && f.length) processFiles(Array.from(f));
     e.target.value = '';
 }
-
 function processFiles(files) {
     files.forEach(f => {
         const isVid = f.type.startsWith('video/');
         const isAud = f.type.startsWith('audio/');
         if (!isVid && !isAud) { showToast(f.name + ' 不是音视频文件，已跳过', 'warning'); return; }
         if (f.size > 1024 * 1024 * 1024) { showToast(f.name + ' 超过1GB，已跳过', 'warning'); return; }
-        if (fileList.some(item => item.name === f.name && item.size === f.size)) { showToast(f.name + ' 已存在', 'warning'); return; }
+        if (fileList.some(item => item.name === f.name && item.size === f.size)) {
+            showToast(f.name + ' 已存在', 'warning'); return;
+        }
         fileList.push({ uid: genId(), name: f.name, size: f.size, raw: f });
     });
     renderFileList();
     updateWorkflowSteps();
-
-    // ✅ 新增：若当前没有正在进行的转录任务，且文件列表不为空，则自动开始转录 
     if (!isTranscribing && fileList.length > 0) {
-        setTimeout(() => {
-            if (!isTranscribing && fileList.length > 0) {
-                startTranscribe();
-            }
-        }, 300); // 延迟300ms，确保UI渲染完成且拖拽事件处理完毕 
+        setTimeout(() => { if (!isTranscribing && fileList.length > 0) startTranscribe(); }, 300);
     }
 }
+function removeFile(i) { fileList.splice(i, 1); renderFileList(); updateWorkflowSteps(); }
 
-function removeFile(i) {
-    fileList.splice(i, 1);
-    renderFileList();
-    updateWorkflowSteps();
-}
-
-function renderTransList() {
-    const c = document.getElementById('transListContainer'),
-        bd = document.getElementById('btnDownloadTrans'),
-        bt = document.getElementById('btnTts'),
-        bdel = document.getElementById('btnDelTrans');
-
-    if (transList.length === 0) {
-        c.innerHTML = '<div class="empty-state"><div class="empty-icon">A</div><div class="empty-text">暂无翻译内容</div><div class="empty-sub">在原始文案中勾选条目，然后点击翻译选中即可</div></div>';
-        bd.disabled = true;
-        bt.disabled = true;
-        bdel.disabled = true;
+function renderFileList() {
+    const s = document.getElementById('fileListSection'),
+        c = document.getElementById('fileListContainer'),
+        t = document.getElementById('fileListTitle');
+    if (!s) return;
+    if (fileList.length === 0) {
+        s.style.display = 'none';
+        syncUploadZone();
+        updateWorkflowSteps();
         return;
     }
-
-    // ⚠️ 关键：每次渲染前必须重置为 null 
-    let prevFromTextId = null;
-
-    c.innerHTML = transList.map((item, i) => {
-        // 判断是否是当前原文的第一条翻译 
-        const isFirstOfGroup = (item.fromTextId !== prevFromTextId);
-
-        // 立即更新 prevFromTextId 供下一条使用 
-        prevFromTextId = item.fromTextId;
-
-        // 第一条用彩色边框，其余用透明 
-        const borderStyle = isFirstOfGroup
-            ? `border-left:3px solid ${getSourceColor(item.fromTextId)};`
-            : 'border-left:3px solid transparent;';
-
-        const sn = getOriginSnippet(item.fromTextId);
-
-        return `<div class="card" style="${borderStyle}">
-            <div class="card-header">
-                <div class="ch-left">
-                    <label class="checkbox-wrap">
-                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="transList[${i}].selected=this.checked;updateToolbarTrans();">
-                    </label>
-                    <span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span>
-                    ${sn ? `<span class="badge-source" title="${escapeHtml(sn)}">${escapeHtml(sn)}</span>` : ''}
-                    <span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
-                </div>
-                <div class="ch-right">
-                    <button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button>
-                    <button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button>
-                    <button class="btn btn-primary btn-xs" onclick="singleTts(${i})" title="生成语音">语音</button>
-                    <button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteTrans(${i})" title="删除">删除</button>
-                </div>
-            </div>
-            <textarea class="card-textarea" onchange="transList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea>
-        </div>`;
-    }).join('');
-
-    updateToolbarTrans();
+    s.style.display = 'block';
+    t.textContent = '已选择文件 (' + fileList.length + ')';
+    c.innerHTML = fileList.map((f, i) =>
+        `<div class="file-item">
+      <span class="fi-icon">F</span>
+      <div class="fi-info">
+        <div class="fi-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
+        <div class="fi-size">${formatSize(f.size)}</div>
+      </div>
+      <button class="fi-del" onclick="removeFile(${i})" title="移除">&times;</button>
+    </div>`
+    ).join('');
+    syncUploadZone();
+    updateWorkflowSteps();
+}
+function syncUploadZone() {
+    const zone = document.getElementById('uploadZone');
+    const fs = document.getElementById('fileListSection');
+    const fl = document.getElementById('fileListTitle');
+    if (!zone || !fs) return;
+    const textEl = zone.querySelector('.upload-text');
+    if (!textEl) return;
+    const visible = fs.style.display !== 'none' && fs.style.display !== '';
+    if (visible) {
+        zone.classList.add('is-collapsed');
+        const m = fl ? fl.textContent.match(/(\d+)/) : null;
+        const n = m ? m[1] : '0';
+        textEl.innerHTML = '已选 ' + n + ' 个文件 · <span>点击继续添加</span>';
+    } else {
+        zone.classList.remove('is-collapsed');
+        textEl.innerHTML = '拖拽文件到此处，或<span>点击上传</span>';
+    }
 }
 
-
+/* ============================================================
+ * 转录
+ * ============================================================ */
 async function startTranscribe() {
-    if (fileList.length === 0) return showToast('请先选择文件', 'warning'); if (
-        isTranscribing) return;
+    if (fileList.length === 0) return showToast('请先选择文件', 'warning');
+    if (isTranscribing) return;
     isTranscribing = true;
-    updateWorkflowSteps(); const ps = document.getElementById('progressSection'),
+    updateWorkflowSteps();
+    const ps = document.getElementById('progressSection'),
         pf = document.getElementById('progressFill'),
         pl = document.getElementById('progressLabel'),
         btn = document.getElementById('transcribeBtn');
-    ps.style.display = 'block';
-    btn.disabled = true;
-    btn.textContent = '转录中...';
-    pf.className = 'progress-fill progress-indeterminate';
-    pl.textContent = '正在处理: ' + fileList[0].name; try {
+    if (ps) ps.style.display = 'block';
+    if (btn) { btn.disabled = true; btn.textContent = '转录中...'; }
+    if (pf) pf.className = 'progress-fill progress-indeterminate';
+    if (pl) pl.textContent = '正在处理: ' + fileList[0].name;
+
+    try {
         for (let i = 0; i < fileList.length; i++) {
-            const fi =
-                fileList[i];
-            pl.textContent = `处理中 (${i + 1}/${fileList.length}): ${fi.name}`; const fd = new FormData(); const isV = fi
-                .raw.type.startsWith('video/'); const url = isV ? '/api/transcribe' : '/api/transcribe-audio';
-            fd.append(isV ? 'video' : 'audio', fi.raw); const res = await fetch(BASE + url, {
-                method: 'POST',
-                body: fd
-            }); if (!res.ok) throw new Error('HTTP ' + res.status); if (isV) {
-                const reader = res.body
-                    .getReader(); const decoder = new TextDecoder(); let buf = ''; while (true) {
-                        const { done,
-                            value } = await reader.read(); if (done) break;
-                        buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n');
-                        buf = lines.pop() || ''; for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const d =
-                                        JSON.parse(line.slice(6)); if (d.type === 'complete') {
-                                            textList.push({
-                                                id: genId(),
-                                                source: fi.name, origin: d.data.originalTranscription || '', text: d
-                                                    .data.chineseTranscription || '', selected: false
-                                            });
-                                            renderTextList();
-                                        }
-                                } catch (e) { }
-                            }
+            const fi = fileList[i];
+            if (pl) pl.textContent = `处理中 (${i + 1}/${fileList.length}): ${fi.name}`;
+            const fd = new FormData();
+            const isV = fi.raw.type.startsWith('video/');
+            const url = isV ? '/api/transcribe' : '/api/transcribe-audio';
+            fd.append(isV ? 'video' : 'audio', fi.raw);
+            const res = await fetch(BASE + url, { method: 'POST', body: fd });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (isV) {
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buf = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buf += decoder.decode(value, { stream: true });
+                    const lines = buf.split('\n');
+                    buf = lines.pop() || '';
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const d = JSON.parse(line.slice(6));
+                                if (d.type === 'complete') {
+                                    addTextFromTranscribe(fi.name, d.data.originalTranscription || '', d.data.chineseTranscription || '');
+                                    renderMainList();
+                                }
+                            } catch (e) { }
                         }
                     }
+                }
             } else {
                 const json = await res.json();
-                textList.push({
-                    id: genId(), source: fi.name, origin: json.originalTranscription || '', text: json
-                        .chineseTranscription || '', selected: false
-                });
-                renderTextList();
+                addTextFromTranscribe(fi.name, json.originalTranscription || '', json.chineseTranscription || '');
+                renderMainList();
             }
         }
-        pf.className = 'progress-fill';
-        pf.style.width = '100%';
-        pl.textContent = '转录完成';
-        textList.forEach(x => x.selected = true);
-        renderTextList();
-        updateWorkflowSteps(); if (textList.length > 0) switchTab('tab-text', document.querySelector(
-            '.tab-btn[data-tab="tab-text"]'));
+        if (pf) { pf.className = 'progress-fill'; pf.style.width = '100%'; }
+        if (pl) pl.textContent = '转录完成';
+        renderMainList();
+        updateWorkflowSteps();
         showToast('转录完成，共 ' + textList.length + ' 条文案', 'success');
     } catch (err) {
-        pl.textContent = '转录失败: ' + err
-            .message;
+        if (pl) pl.textContent = '转录失败: ' + err.message;
         showToast('转录失败: ' + err.message, 'error');
     } finally {
         isTranscribing = false;
-        btn.disabled = false;
-        btn.textContent = '开始转录';
+        if (btn) { btn.disabled = false; btn.textContent = '开始转录'; }
         updateWorkflowSteps();
         setTimeout(() => {
-            ps.style.display = 'none';
-            pf.style.width = '0%';
-            pf.className = 'progress-fill';
+            if (ps) ps.style.display = 'none';
+            if (pf) { pf.style.width = '0%'; pf.className = 'progress-fill'; }
         }, 2200);
     }
 }
+function addTextFromTranscribe(source, origin, text) {
+    textList.push({
+        id: genId(),
+        source,
+        origin,
+        lines: splitText(text),
+        deletedLines: []
+    });
+}
 
-function renderTextList() {
-    const c = document.getElementById('textListContainer'),
-        bt = document.getElementById('btnTranslate'),
-        bd = document.getElementById('btnDelText');
+/* ============================================================
+ * 数据查找
+ * ============================================================ */
+function getTransOfText(textId) { return transList.filter(t => t.fromTextId === textId); }
+function getAudioForTrans(trans) {
+    if (!trans) return null;
+    return audioList.find(a => a.fromTransId === trans.id) || null;
+}
+function sortLangs(langs) {
+    const order = ['zh', 'en', 'pt', 'jp', 'kr', 'id', 'hi', 'ar'];
+    return langs.slice().sort((a, b) => {
+        const ia = order.indexOf(a), ib = order.indexOf(b);
+        return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    });
+}
 
+/* ============================================================
+ * 主列表渲染
+ * ============================================================ */
+function renderMainList() {
+    const c = document.getElementById('mainListContainer');
+    if (!c) return;
+    const lc = document.getElementById('listCount');
+    if (lc) lc.textContent = textList.length;
     if (textList.length === 0) {
-        c.innerHTML = '<div class="empty-state"><div class="empty-icon">T</div><div class="empty-text">暂无转录文案</div><div class="empty-sub">上传文件并点击开始转录后，文案会自动出现在这里</div></div>';
-        bt.disabled = true;
-        bd.disabled = true;
-        document.getElementById('selectAllText').checked = false;
+        c.innerHTML = '<div class="empty-state"><div class="empty-icon">文</div><div class="empty-text">暂无文案</div><div class="empty-sub">上传文件开始转录，或点击「+ 新增文案」手动输入</div></div>';
+        updateWorkflowSteps();
         return;
     }
-
-    c.innerHTML = textList.map((item, i) =>
-        `<div class="card">
-            <div class="card-header">
-                <div class="ch-left">
-                    <label class="checkbox-wrap">
-                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="textList[${i}].selected=this.checked;updateToolbarText();">
-                    </label>
-                    <span class="badge badge-gray">#${i + 1}</span>
-                    <span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
-                </div>
-                <div class="ch-right">
-                    <button class="btn btn-primary btn-xs" onclick="singleTranslate(${i})" title="单独翻译此条">翻译</button>
-                    <button class="btn btn-ghost btn-xs" onclick="copyText('${escapeAttr(item.text)}')" title="复制">复制</button>
-                    <button class="btn btn-ghost btn-xs" onclick="downloadTxt('${escapeAttr(item.text)}','${escapeAttr(item.source)}')" title="下载">下载</button>
-                    <button class="btn btn-ghost btn-xs" style="color:#e54545;" onclick="deleteText(${i})" title="删除">删除</button>
-                </div>
-            </div>
-            <textarea class="card-textarea" onchange="textList[${i}].text=this.value" rows="3">${escapeHtml(item.text)}</textarea>
-        </div>`
-    ).join('');
-
-    updateToolbarText();
-}
-
-function singleTranslate(idx) {
-    if (idx < 0 || idx >= textList.length) return;
-    openTranslateDialog([textList[idx]]);
-}
-
-function updateToolbarText() {
-    const s = textList.filter(i => i.selected).length;
-    document.getElementById('btnTranslate').disabled = s === 0;
-    document.getElementById('btnDelText').disabled = s === 0;
-    document.getElementById('selectAllText').checked = textList.length > 0 && textList.every(i => i.selected);
-}
-
-function toggleAllText() {
-    const c = document.getElementById('selectAllText').checked;
-    textList.forEach(i => i.selected = c);
-    renderTextList();
-}
-async function deleteText(i) {
-    if (!await showConfirm('确定删除该条原始文案？')) return;
-    textList.splice(i, 1);
-    renderTextList();
+    c.innerHTML = textList.map((item, i) => renderCard(item, i)).join('');
     updateWorkflowSteps();
-    showToast('已删除', 'success');
-}
-async function deleteSelectedText() {
-    const s = textList.filter(i => i.selected); if (s.length === 0) return showToast(
-        '请先勾选文案', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 条文案？`)) return; for (let i = textList.length -
-            1; i >= 0; i--) { if (textList[i].selected) textList.splice(i, 1); }
-    renderTextList();
-    updateWorkflowSteps();
-    showToast('已批量删除', 'success');
 }
 
-function addTextManually() {
-    document.getElementById('addTextInput').value = '';
-    openModal('modalAddText');
-}
-
-function saveAddText() {
-    const v = document.getElementById('addTextInput').value.trim(); if (!v) return showToast('请输入内容',
-        'warning');
-    textList.push({ id: genId(), source: '手动输入', origin: v, text: v, selected: false });
-    closeModal('modalAddText');
-    renderTextList();
-    updateWorkflowSteps();
-    showToast('手动文案已添加', 'success');
-}
-
-function openTranslateDialog(items = null) {
-    // 确定待翻译的条目 
-    if (items && items.length > 0) {
-        pendingTranslateItems = items;
-    } else {
-        const selected = textList.filter(i => i.selected);
-        if (selected.length === 0) return showToast('请先在原始文案中勾选需要翻译的条目', 'warning');
-        pendingTranslateItems = selected;
+function renderCard(item, idx) {
+    const trans = getTransOfText(item.id);
+    const langs = sortLangs([...new Set(trans.map(t => t.lang))]);
+    const curLang = (cardState[item.id] && cardState[item.id].lang) || (langs[0] || '');
+    if (curLang) {
+        if (!cardState[item.id]) cardState[item.id] = {};
+        cardState[item.id].lang = curLang;
     }
 
+    const deletedLines = item.deletedLines || [];
+    const originLinesHtml = item.lines.map((line, i) => {
+        const deleted = deletedLines.includes(i);
+        return `<div class="oline${deleted ? ' deleted' : ''}">
+      <span class="no">${i + 1}</span>
+      <span class="tx" contenteditable="${deleted ? 'false' : 'true'}"
+        onblur="updateOriginLine('${escapeAttr(item.id)}',${i},this.textContent)">${escapeHtml(line)}</span>
+      <button class="rm" onclick="toggleOriginLineDel('${escapeAttr(item.id)}',${i})"
+        title="${deleted ? '撤回此行' : '删除此行（译文同步隐藏）'}">${deleted ? '↺' : '✕'}</button>
+    </div>`;
+    }).join('');
+
+    const colorClass = 'c' + (idx % 4);
+
+    return `
+  <div class="mcard ${colorClass}" data-textid="${escapeAttr(item.id)}">
+    <div class="mcard-head">
+      <span class="no">${idx + 1}</span>
+      <span class="src" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
+      <div class="head-actions">
+        <button class="btn btn-outline btn-xs" onclick="singleTranslate('${escapeAttr(item.id)}')">翻译</button>
+        <button class="btn btn-ghost btn-xs danger" onclick="deleteTextById('${escapeAttr(item.id)}')">删除</button>
+      </div>
+    </div>
+    <div class="mcard-origin">
+      <div class="label-row">原文</div>
+      <div class="origin-lines">${originLinesHtml}</div>
+    </div>
+    ${langs.length > 0
+            ? renderLangTabs(item, trans, curLang) + renderLangPanes(item, trans, curLang)
+            : `<div class="lang-tabs"><span class="empty-hint">还没有译文，点右上「翻译」生成</span></div>`}
+  </div>`;
+}
+
+function renderLangTabs(item, trans, curLang) {
+    const langs = sortLangs([...new Set(trans.map(t => t.lang))]);
+    return `<div class="lang-tabs">${langs.map(lang => {
+        const t = trans.find(x => x.lang === lang);
+        const done = t && isLangDone(t);
+        const p = t ? langCopyProgress(t) : { done: 0, total: 0 };
+        const active = lang === curLang;
+        return `<button class="lang-tab${active ? ' active' : ''}${done ? ' done' : ''}"
+      data-lang="${escapeAttr(lang)}" data-transid="${escapeAttr(t ? t.id : '')}"
+      onclick="switchLangTab('${escapeAttr(item.id)}','${escapeAttr(lang)}')">
+      ${escapeHtml(getLangName(lang))}
+      <span class="cnt">${p.done}/${p.total}${done ? ' ✓' : ''}</span>
+    </button>`;
+    }).join('')}
+  <button class="btn-tts-all" onclick="openTtsForCard('${escapeAttr(item.id)}')">
+    全部语言生成语音
+  </button>
+  </div>`;
+}
+
+function renderLangPanes(item, trans, curLang) {
+    return trans.map(t => renderLangPane(item, t, t.lang === curLang)).join('');
+}
+
+function renderLangPane(item, t, isActive) {
+    const lines = t.lines || [];
+    const audio = getAudioForTrans(t);
+    const textItem = textList.find(x => x.id === t.fromTextId);
+    const origDeleted = (textItem && textItem.deletedLines) || [];
+
+    const visibleLinesHtml = lines.map((line, i) => {
+        if (origDeleted.includes(i)) return '';
+        const done = isCopied(t.id, i);
+        return `<div class="line${done ? ' done' : ''}" data-transid="${escapeAttr(t.id)}" data-idx="${i}">
+      <span class="no">${i + 1}</span>
+      <span class="tx" contenteditable="true"
+        onblur="updateTransLine('${escapeAttr(t.id)}',${i},this.textContent)">${escapeHtml(line)}</span>
+      <button class="cp${done ? ' done' : ''}"
+        onclick="copyLine('${escapeAttr(t.id)}',${i},this)">
+        ${done ? '已复制 ✓' : '复制'}
+      </button>
+    </div>`;
+    }).join('');
+
+    const audioHtml = audio
+        ? `<div class="audio-inline">
+        <div class="ai-head">
+          <button class="play-btn" id="playBtn_${escapeAttr(t.id)}"
+            onclick="togglePlayInline('${escapeAttr(t.id)}')">▶</button>
+          <span class="ai-name" title="${escapeHtml(audio.display || audio.file)}">${escapeHtml(audio.display || audio.file)}</span>
+          <button class="ai-dl"
+            onclick="downloadAudioFile('${escapeAttr(audio.file)}','${escapeAttr(audio.display || audio.file)}')">下载</button>
+        </div>
+        <div class="ai-bar" onclick="seekInline(event,'${escapeAttr(t.id)}')">
+          <div class="ai-fill" id="aiFill_${escapeAttr(t.id)}" style="width:0%;"></div>
+        </div>
+        <div class="ai-foot">
+          <span id="aiCur_${escapeAttr(t.id)}">0:00</span>
+          <span id="aiDur_${escapeAttr(t.id)}">0:00</span>
+        </div>
+        <audio id="audioEl_${escapeAttr(t.id)}" style="display:none;" preload="metadata"
+          src="${BASE}/api/download-audio/${encodeURIComponent(audio.file)}"></audio>
+      </div>`
+        : '';
+
+    return `
+  <div class="lang-pane${isActive ? ' active' : ''}" data-lang="${escapeAttr(t.lang)}">
+    <div class="lines">${visibleLinesHtml || '<div style="color:#999;font-size:12px;padding:6px;">该语言暂无可见译文行</div>'}</div>
+    ${audioHtml}
+  </div>`;
+}
+
+/* ============================================================
+ * 交互
+ * ============================================================ */
+function updateOriginLine(textId, idx, val) {
+    const t = textList.find(x => x.id === textId);
+    if (t && t.lines[idx] !== undefined) t.lines[idx] = val;
+}
+function updateTransLine(transId, idx, val) {
+    const t = transList.find(x => x.id === transId);
+    if (!t || !t.lines) return;
+    if (t.lines[idx] !== undefined) {
+        t.lines[idx] = val;
+        t.text = t.lines.join('\n');
+    }
+}
+
+function toggleOriginLineDel(textId, idx) {
+    const t = textList.find(x => x.id === textId);
+    if (!t) return;
+    if (!t.deletedLines) t.deletedLines = [];
+    const p = t.deletedLines.indexOf(idx);
+    if (p >= 0) {
+        t.deletedLines.splice(p, 1);
+        renderMainList();
+        showToast('已撤回该行', 'success');
+    } else {
+        t.deletedLines.push(idx);
+        renderMainList();
+        showToast('已删除该行（译文同步隐藏）', 'info');
+    }
+}
+
+function switchLangTab(textId, lang) {
+    if (!cardState[textId]) cardState[textId] = {};
+    cardState[textId].lang = lang;
+    const card = document.querySelector(`.mcard[data-textid="${textId}"]`);
+    if (!card) return;
+    card.querySelectorAll('.lang-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.lang === lang);
+    });
+    card.querySelectorAll('.lang-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.dataset.lang === lang);
+    });
+}
+
+function copyLine(transId, idx, btn) {
+    const t = transList.find(x => x.id === transId);
+    if (!t || !t.lines || t.lines[idx] === undefined) return;
+    if (btn) {
+        btn.classList.add('done');
+        btn.textContent = '已复制 ✓';
+        const lineEl = btn.closest('.line');
+        if (lineEl) lineEl.classList.add('done');
+    }
+    markCopied(transId, idx);
+    updateLangTab(transId);
+    copyText(t.lines[idx]);
+}
+function updateLangTab(transId) {
+    const t = transList.find(x => x.id === transId);
+    if (!t) return;
+    const tab = document.querySelector(`.lang-tab[data-transid="${transId}"]`);
+    if (!tab) return;
+    const p = langCopyProgress(t);
+    const done = p.total > 0 && p.done === p.total;
+    tab.classList.toggle('done', done);
+    tab.innerHTML = `${escapeHtml(getLangName(t.lang))} <span class="cnt">${p.done}/${p.total}${done ? ' ✓' : ''}</span>`;
+}
+
+/* ============================================================
+ * 内嵌音频
+ * ============================================================ */
+let currentInlineAudio = null;
+let currentInlineId = null;
+function togglePlayInline(transId) {
+    const el = document.getElementById('audioEl_' + transId);
+    const btn = document.getElementById('playBtn_' + transId);
+    if (!el || !btn) return;
+    if (!el.paused) {
+        el.pause();
+        btn.textContent = '▶';
+        return;
+    }
+    if (currentInlineAudio && currentInlineAudio !== el) {
+        try { currentInlineAudio.pause(); } catch (e) { }
+        if (currentInlineId) {
+            const pb = document.getElementById('playBtn_' + currentInlineId);
+            if (pb) pb.textContent = '▶';
+        }
+    }
+    currentInlineAudio = el; currentInlineId = transId;
+    el.volume = 0.7;
+    el.play().then(() => { btn.textContent = '⏸'; })
+        .catch(() => { showToast('音频加载失败', 'error'); btn.textContent = '▶'; });
+    if (!el.dataset.bound) {
+        el.addEventListener('timeupdate', () => {
+            const cur = document.getElementById('aiCur_' + transId);
+            const dur = document.getElementById('aiDur_' + transId);
+            const fill = document.getElementById('aiFill_' + transId);
+            if (!cur || !dur || !fill || !el.duration) return;
+            cur.textContent = formatTime(el.currentTime);
+            dur.textContent = formatTime(el.duration);
+            fill.style.width = (el.currentTime / el.duration * 100) + '%';
+        });
+        el.addEventListener('ended', () => {
+            btn.textContent = '▶';
+            const fill = document.getElementById('aiFill_' + transId);
+            if (fill) fill.style.width = '0%';
+        });
+        el.dataset.bound = '1';
+    }
+}
+function seekInline(e, transId) {
+    const el = document.getElementById('audioEl_' + transId);
+    if (!el || !el.duration) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    el.currentTime = p * el.duration;
+}
+
+/* ============================================================
+ * AI 调用 / 整体翻译（本土化）
+ * ============================================================ */
+async function aiChat(prompt, { temperature = 0.3, retries = 2, timeout = AI_TRANSLATE_TIMEOUT } = {}) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            const res = await fetch(AI_CONFIG.apiUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${AI_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: AI_CONFIG.model,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            if (!res.ok) {
+                const et = await res.text().catch(() => '');
+                throw new Error('HTTP ' + res.status + (et ? ' ' + et.slice(0, 120) : ''));
+            }
+            const json = await res.json();
+            const content = json.choices && json.choices[0] && json.choices[0].message
+                ? String(json.choices[0].message.content || '').trim()
+                : '';
+            if (!content) throw new Error('Empty response');
+            return content;
+        } catch (err) {
+            console.error(`AI请求错误 (尝试 ${i + 1}/${retries + 1}):`, err);
+            if (i === retries) throw err;
+            await delay(400 * (i + 1));
+        }
+    }
+}
+
+function buildTranslatePrompt(chunk, langName) {
+    const body = chunk.map(c => `${c.no}. ${c.text}`).join('\n');
+    return `你是资深本地化译者。请将下列带编号的文本逐条翻译成【${langName}】。
+
+严格遵循：
+1. 每条与输入编号一一对应，输出格式必须是“编号. 译文”。
+2. 不合并、不拆分、不遗漏任何编号；输入多少条，输出就多少条。
+3. 保持原意与句式结构，不增删信息。
+4. 使用【${langName}】母语者日常自然、地道的表达（本土化），避免逐字直译与翻译腔。
+5. 只输出翻译结果，不要解释、不要加代码块标记、不要额外空行。
+
+原文：
+${body}
+
+翻译结果：`;
+}
+
+function parseNumberedTranslation(text, expectedNos) {
+    const map = new Map();
+    const lines = String(text).replace(/\r/g, '').split('\n');
+    let curNo = null;
+    for (let raw of lines) {
+        const line = raw.replace(/\*\*/g, '').trim();
+        if (!line) continue;
+        const m = line.match(/^(\d+)\s*[.、．:：)\]]\s*(.*)$/);
+        if (m) {
+            curNo = parseInt(m[1], 10);
+            map.set(curNo, (m[2] || '').trim());
+        } else if (curNo !== null) {
+            const prev = map.get(curNo) || '';
+            map.set(curNo, prev ? prev + ' ' + line : line);
+        }
+    }
+    // 兜底：完全没有编号时，按行顺序对齐
+    if (map.size === 0) {
+        const arr = lines.map(s => s.replace(/\*\*/g, '').trim()).filter(Boolean);
+        expectedNos.forEach((no, i) => map.set(no, arr[i] || ''));
+    }
+    expectedNos.forEach(no => { if (!map.has(no)) map.set(no, ''); });
+    return map;
+}
+
+/* 整体翻译一个文案到指定语言，返回与原文等长的 lines 数组 */
+async function translateTextItem(textItem, langName) {
+    const linesSrc = textItem.lines || [];
+    const deleted = textItem.deletedLines || [];
+    const active = [];
+    linesSrc.forEach((lineText, idx) => {
+        if (deleted.includes(idx)) return;
+        if (!lineText || !lineText.trim()) return;
+        active.push({ no: idx + 1, text: lineText });
+    });
+    if (active.length === 0) return new Array(linesSrc.length).fill('');
+
+    // 分块（块内整体翻译；块间并行）
+    const chunks = [];
+    let cur = [], curLen = 0;
+    for (const item of active) {
+        const add = item.text.length + 8;
+        if (curLen + add > AI_TRANSLATE_MAX_CHARS && cur.length > 0) {
+            chunks.push(cur);
+            cur = []; curLen = 0;
+        }
+        cur.push(item);
+        curLen += add;
+    }
+    if (cur.length) chunks.push(cur);
+
+    const chunkResults = await Promise.all(chunks.map(async chunk => {
+        const prompt = buildTranslatePrompt(chunk, langName);
+        const raw = await aiChat(prompt, { temperature: 0.3, timeout: AI_TRANSLATE_TIMEOUT });
+        return { chunk, map: parseNumberedTranslation(raw, chunk.map(c => c.no)) };
+    }));
+
+    const out = new Array(linesSrc.length).fill('');
+    for (const { chunk, map } of chunkResults) {
+        for (const item of chunk) {
+            const t = map.get(item.no);
+            if (t !== undefined) out[item.no - 1] = t;
+        }
+    }
+    return out;
+}
+
+/* ============================================================
+ * 翻译入口（整体翻译 + 多语言并行）
+ * ============================================================ */
+function singleTranslate(textId) {
+    const t = textList.find(x => x.id === textId);
+    if (t) openTranslateDialog([t]);
+}
+function openTranslateDialog(items = null) {
+    pendingTranslateItems = items && items.length > 0 ? items : textList.slice();
+    if (pendingTranslateItems.length === 0) return showToast('请先添加文案', 'warning');
     document.getElementById('translateInput').value = '';
     document.getElementById('translateProgress').style.display = 'none';
     document.getElementById('translateFailedList').style.display = 'none';
@@ -502,18 +812,13 @@ function openTranslateDialog(items = null) {
     openModal('modalTranslate');
     document.getElementById('translateInput').focus();
     document.getElementById('translateInput').onkeydown = function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            executeTranslate();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); executeTranslate(); }
     };
 }
 
 async function executeTranslate() {
     const rawInput = document.getElementById('translateInput').value.trim();
     if (!rawInput) return showToast('请输入目标语言', 'warning');
-
-    // === 语言代码强制映射处理 === 
     const parts = rawInput.split(/[,，\n]+/).map(s => s.trim()).filter(s => s);
     const mappedParts = parts.map(p => LANG_CODE_MAP[p.toLowerCase()] || p);
     const input = mappedParts.join(',');
@@ -530,324 +835,318 @@ async function executeTranslate() {
     ft.style.display = 'none';
     pd.style.display = 'block';
     fd.style.display = 'none';
-    cb.style.display = 'none';
+    if (cb) cb.style.display = 'none';
 
     try {
-        // 1. 解析目标语言 
         const lr = await fetch(BASE + '/api/extract-target-languages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ languageInstruction: input })
         });
         if (!lr.ok) throw new Error('语言解析失败');
         const lj = await lr.json();
-        const langs = lj.extractedLanguages || [];
+        let langs = lj.extractedLanguages || [];
         if (!langs.length) throw new Error('未识别到有效目标语言');
 
-        // 2. 确定待翻译条目（来自独立按钮或勾选）
-        const sel = pendingTranslateItems || textList.filter(i => i.selected);
-        if (!sel || sel.length === 0) throw new Error('没有可翻译的条目');
-        pendingTranslateItems = null; // 用完即清，避免下次误用 
+        // 按 lang code 去重
+        const seen = new Set();
+        langs = langs.filter(lo => {
+            const code = String(lo.ttsCode || lo.language || '').toLowerCase();
+            if (seen.has(code)) return false;
+            seen.add(code);
+            return true;
+        });
 
-        const total = sel.length * langs.length;
+        const sel = pendingTranslateItems || [];
+        if (sel.length === 0) throw new Error('没有可翻译的条目');
+        pendingTranslateItems = null;
+
+        // 每个 (文案, 语言) 一个整体翻译任务（请求数 = 语言数 × 文案数）
+        const tasks = [];
+        sel.forEach(textItem => {
+            langs.forEach(lo => {
+                const lc = lo.ttsCode || lo.language || '';
+                tasks.push({ textItem, lc, langName: getLangName(lo.language) });
+            });
+        });
+
+        const total = tasks.length;
         let done = 0;
         const failed = [];
-        const successResults = []; // 收集成功结果，用于排序 
+        const newTransList = [];
 
         pl.textContent = `正在翻译... 0/${total}`;
         pf.style.width = '0%';
 
-        // 3. 构建任务，记录原文索引和语言索引 
-        const tasks = [];
-        sel.forEach((ti, srcIdx) => {
-            langs.forEach((lo, langIdx) => {
-                tasks.push({ ti, lo, srcIdx, langIdx });
-            });
-        });
-
-        // 4. 并行翻译 
-        const promises = tasks.map(task =>
-            fetch(BASE + '/api/translate-text', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: task.ti.text, targetLanguage: task.lo.language })
-            })
-                .then(async r => {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    const json = await r.json();
-                    return { success: true, task, json };
-                })
-                .catch(err => {
-                    return { success: false, task, error: err.message || '未知错误' };
-                })
-                .then(result => {
-                    done++;
-                    if (result.success) {
-                        const { task, json } = result;
-                        const lc = task.lo.ttsCode || task.lo.language || '';
-                        successResults.push({
+        await Promise.allSettled(tasks.map(task =>
+            translateTextItem(task.textItem, task.langName)
+                .then(lines => {
+                    if (lines && lines.length) {
+                        newTransList.push({
                             id: genId(),
-                            text: json.translatedText || '',
-                            lang: lc,
-                            source: task.ti.source + ' - ' + getLangName(task.lo.language),
-                            fromTextId: task.ti.id,
-                            selected: false,
-                            srcIdx: task.srcIdx,
-                            langIdx: task.langIdx
-                        });
-                    } else {
-                        failed.push({
-                            text: (task.ti.text || '').slice(0, 40),
-                            lang: getLangName(task.lo.language),
-                            error: result.error
+                            lang: task.lc,
+                            fromTextId: task.textItem.id,
+                            lines,
+                            text: lines.join('\n'),
+                            source: task.textItem.source + ' - ' + task.langName
                         });
                     }
+                })
+                .catch(err => {
+                    failed.push({
+                        text: task.textItem.source,
+                        lang: task.langName,
+                        error: err.message || '未知错误'
+                    });
+                })
+                .then(() => {
+                    done++;
                     pl.textContent = `正在翻译... ${done}/${total}`;
                     pf.style.width = ((done / total) * 100) + '%';
                 })
-        );
+        ));
 
-        await Promise.allSettled(promises);
+        transList.push(...newTransList);
+        renderMainList();
 
-        // 5. 按原文顺序、语言顺序排序 
-        successResults.sort((a, b) => {
-            if (a.srcIdx !== b.srcIdx) return a.srcIdx - b.srcIdx;
-            return a.langIdx - b.langIdx;
-        });
+        if (newTransList.length > 0) {
+            let out = '';
+            newTransList.forEach(t => {
+                const textItem = textList.find(x => x.id === t.fromTextId);
+                const origDeleted = (textItem && textItem.deletedLines) || [];
+                const visibleIdx = t.lines.map((_, i) => i).filter(i => !origDeleted.includes(i));
+                out += `[${getLangName(t.lang)}] ${t.source}\n` + visibleIdx.map(i => t.lines[i]).join('\n') + '\n\n';
+            });
+            downloadTxt(out, nowFileName());
+        }
 
-        // 6. 一次性插入所有译文 
-        transList.push(...successResults);
-
-        // 7. 只选中本次翻译的条目（而非全选所有）
-        sel.forEach(x => x.selected = true);
-        renderTransList();
-        updateWorkflowSteps();
-
-        // 8. 处理失败提示 
         if (failed.length > 0) {
             fd.style.display = 'block';
-            fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 条翻译失败：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '…" → ' + f.lang + ' (' + f.error + ')').join('<br>')}</div>`;
-            showToast(`翻译部分完成：${successResults.length} 成功，${failed.length} 失败`, 'warning');
+            fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 项翻译失败：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '" → ' + f.lang + ' (' + f.error + ')').join('<br>')}</div>`;
+            showToast(`翻译部分完成：${newTransList.length} 成功，${failed.length} 失败`, 'warning');
         } else {
             closeModal('modalTranslate');
-            showToast(`翻译完成，共 ${successResults.length} 条译文`, 'success');
+            showToast(`翻译完成，共 ${newTransList.length} 个语种，已自动下载`, 'success');
         }
-        switchTab('tab-trans', document.querySelector('.tab-btn[data-tab="tab-trans"]'));
     } catch (err) {
         showToast('翻译失败: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
         ft.style.display = 'flex';
         pd.style.display = 'none';
-        cb.style.display = '';
-        pendingTranslateItems = null; // 确保异常时也清空 
+        if (cb) cb.style.display = '';
+        pendingTranslateItems = null;
     }
 }
 
-
-function addTransManually() {
-    document.getElementById('addTransLang').value = '';
-    document.getElementById('addTransText').value = '';
-    openModal('modalAddTrans');
+/* ============================================================
+ * 新增 / 删除
+ * ============================================================ */
+function addTextManually() {
+    document.getElementById('addTextInput').value = '';
+    openModal('modalAddText');
 }
-
-function saveAddTrans() {
-    const l = document.getElementById('addTransLang').value.trim() || 'en'; const t = document
-        .getElementById('addTransText').value.trim(); if (!t) return showToast('请输入翻译内容', 'warning');
-    transList.push({ id: genId(), text: t, lang: l, source: '手动输入', fromTextId: null, selected: false });
-    closeModal('modalAddTrans');
-    renderTransList();
-    updateWorkflowSteps();
-    showToast('翻译已添加', 'success');
+function saveAddText() {
+    const v = document.getElementById('addTextInput').value.trim();
+    if (!v) return showToast('请输入内容', 'warning');
+    textList.push({
+        id: genId(),
+        source: '手动输入',
+        origin: '',
+        lines: splitText(v),
+        deletedLines: []
+    });
+    closeModal('modalAddText');
+    renderMainList();
+    showToast('文案已添加', 'success');
 }
-
-function updateToolbarTrans() {
-    const s = transList.filter(i => i.selected).length;
-    document.getElementById('btnDownloadTrans').disabled = s === 0;
-    document.getElementById('btnTts').disabled = s === 0;
-    document.getElementById('btnDelTrans').disabled = s === 0;
-    document.getElementById('selectAllTrans').checked = transList.length > 0 && transList.every(i => i.selected);
-}
-
-function toggleAllTrans() {
-    const c = document.getElementById('selectAllTrans').checked;
-    transList.forEach(i => i.selected = c);
-    renderTransList();
-}
-async function deleteTrans(i) {
-    if (!await showConfirm('确定删除该条翻译？')) return;
-    transList.splice(i, 1);
-    renderTransList();
-    updateWorkflowSteps();
+function deleteTextById(textId) {
+    const transOfThis = transList.filter(x => x.fromTextId === textId);
+    transOfThis.forEach(tr => { delete COPIED[tr.id]; });
+    textList = textList.filter(x => x.id !== textId);
+    transList = transList.filter(x => x.fromTextId !== textId);
+    audioList = audioList.filter(x => x.fromTextId !== textId);
+    delete cardState[textId];
+    try { localStorage.setItem(COPIED_KEY, JSON.stringify(COPIED)); } catch (e) { }
+    renderMainList();
     showToast('已删除', 'success');
 }
-async function deleteSelectedTrans() {
-    const s = transList.filter(i => i.selected); if (s.length === 0) return showToast(
-        '请先勾选翻译', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 条翻译？`)) return; for (let i = transList.length -
-            1; i >= 0; i--) { if (transList[i].selected) transList.splice(i, 1); }
-    renderTransList();
-    updateWorkflowSteps();
-    showToast('已批量删除', 'success');
-}
 
-function batchDownloadTrans() {
-    const s = transList.filter(i => i.selected); if (s.length === 0) return showToast(
-        '请先勾选翻译', 'warning'); let str = '';
-    s.forEach(i => { str += '[' + getLangName(i.lang) + '] ' + i.source + '\n' + i.text + '\n\n'; }); const now = new Date();
-    downloadTxt(str, '翻译合集_' + (now.getMonth() + 1) + '月' + now.getDate() + '日');
-    showToast('翻译合集已下载', 'success');
-}
-async function openTtsDialog() {
-    const s = transList.filter(i => i.selected);
-    if (s.length === 0) return showToast('请先勾选翻译条目', 'warning');
-    pendingTtsItems = [...s];
-
-    // --- 加载持久化设置 --- 
-    const saved = loadTtsSettings();
-    const currentModel = document.getElementById('ttsModel').value;
-    // 如果 saved.model 与当前不同，需要重新加载音色列表 
-    const modelToLoad = saved && saved.model ? saved.model : currentModel;
-
-    document.getElementById('ttsInterval').value = saved ? saved.interval || 0.3 : 0.3;
-    document.getElementById('ttsIntervalVal').textContent = saved ? saved.interval || 0.3 : 0.3;
-    document.getElementById('ttsUseTextName').checked = saved ? saved.useTextName || false : false;
-
-    document.getElementById('ttsProgress').style.display = 'none';
-    document.getElementById('ttsFailedList').style.display = 'none';
-    document.getElementById('ttsFooter').style.display = 'flex';
-    document.getElementById('modalTtsClose').style.display = '';
-    document.getElementById('btnConfirmTts').disabled = false;
-
-    await loadVoiceOptions(modelToLoad);  // 加载音色列表 
-
-    // 设置上次选择的音色（如果存在）
-    if (saved && saved.voice) {
-        const voiceSelect = document.getElementById('ttsVoice');
-        if (voiceSelect.querySelector(`option[value="${saved.voice}"]`)) {
-            voiceSelect.value = saved.voice;
-        }
+/* ============================================================
+ * 下载音频
+ * ============================================================ */
+async function downloadAudioFile(fn, dn) {
+    try {
+        const r = await fetch(BASE + '/api/download-audio/' + encodeURIComponent(fn), {
+            method: 'GET', headers: { 'Accept': 'audio/*,*/*' }
+        });
+        if (!r.ok) throw new Error('下载失败');
+        const b = await r.blob();
+        const u = URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.href = u; a.download = dn || fn;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(u), 3000);
+    } catch (e) {
+        window.open(BASE + '/api/download-audio/' + encodeURIComponent(fn), '_blank');
     }
-
-    openModal('modalTts');
 }
 
-async function singleTts(i) {
-    pendingTtsItems = [transList[i]];
-
-    const saved = loadTtsSettings();
-    const modelToLoad = saved && saved.model ? saved.model : 'google';
-
-    document.getElementById('ttsModel').value = modelToLoad;
-    document.getElementById('ttsInterval').value = saved ? saved.interval || 0.3 : 0.3;
-    document.getElementById('ttsIntervalVal').textContent = saved ? saved.interval || 0.3 : 0.3;
-    document.getElementById('ttsUseTextName').checked = saved ? saved.useTextName || false : false;
-
-    document.getElementById('ttsProgress').style.display = 'none';
-    document.getElementById('ttsFailedList').style.display = 'none';
-    document.getElementById('ttsFooter').style.display = 'flex';
-    document.getElementById('modalTtsClose').style.display = '';
-    document.getElementById('btnConfirmTts').disabled = false;
-
-    await loadVoiceOptions(modelToLoad);
-    if (saved && saved.voice) {
-        const voiceSelect = document.getElementById('ttsVoice');
-        if (voiceSelect.querySelector(`option[value="${saved.voice}"]`)) {
-            voiceSelect.value = saved.voice;
-        }
+/* ============================================================
+ * TTS 设置
+ * ============================================================ */
+function saveTtsSettings() {
+    const settings = {
+        model: document.getElementById('ttsModel').value,
+        voice: document.getElementById('ttsVoice').value,
+        interval: document.getElementById('ttsInterval').value,
+        useTextName: document.getElementById('ttsUseTextName').checked
+    };
+    localStorage.setItem(TTS_SETTINGS_KEY, JSON.stringify(settings));
+}
+function loadTtsSettings() {
+    const saved = localStorage.getItem(TTS_SETTINGS_KEY);
+    if (saved) {
+        try {
+            const settings = JSON.parse(saved);
+            const m = document.getElementById('ttsModel');
+            if (settings.model && m) m.value = settings.model;
+            if (settings.interval !== undefined) {
+                document.getElementById('ttsInterval').value = settings.interval;
+                document.getElementById('ttsIntervalVal').textContent = settings.interval;
+            }
+            if (settings.useTextName !== undefined) {
+                document.getElementById('ttsUseTextName').checked = settings.useTextName;
+            }
+            return settings;
+        } catch (e) { }
     }
-    openModal('modalTts');
+    return null;
 }
-
+async function loadVoiceOptions(m) {
+    const s = document.getElementById('ttsVoice');
+    if (!s) return;
+    s.innerHTML = '<option value="">加载中...</option>';
+    if (voiceListCache[m] && voiceListCache[m].length > 0) {
+        s.innerHTML = voiceListCache[m].map(v => `<option value="${v.name}">${v.dname}</option>`).join('');
+        return;
+    }
+    try {
+        const r = await fetch(BASE + '/api/voice-options?model=' + m);
+        const j = await r.json();
+        const v = (j.voices || []).map(x => ({ name: x.name, dname: x.displayName || x.name }));
+        voiceListCache[m] = v;
+        s.innerHTML = v.map(x => `<option value="${x.name}">${x.dname}</option>`).join('');
+    } catch (e) {
+        s.innerHTML = '<option value="">加载失败</option>';
+    }
+}
 async function onTtsModelChange() {
     const m = document.getElementById('ttsModel').value;
     document.getElementById('ttsIntervalRow').style.display = m === 'google' ? 'block' : 'none';
     await loadVoiceOptions(m);
-    saveTtsSettings();  // 模型切换时立即保存 
-}
-
-async function loadVoiceOptions(m) {
-    const s = document.getElementById('ttsVoice');
-    s.innerHTML = '<option value="">加载中...</option>'; if (voiceListCache[m] && voiceListCache[m].length > 0) {
-        s.innerHTML =
-            voiceListCache[m].map(v => `<option value="${v.name}">${v.dname}</option>`).join(''); return;
-    } try {
-        const r =
-            await fetch(BASE + '/api/voice-options?model=' + m); const j = await r.json(); const v = (j.voices || []).map(
-                x => ({ name: x.name, dname: x.displayName || x.name }));
-        voiceListCache[m] = v;
-        s.innerHTML = v.map(x => `<option value="${x.name}">${x.dname}</option>`).join('');
-    } catch (e) {
-        s.innerHTML =
-            '<option value="">加载失败</option>';
-    }
+    saveTtsSettings();
 }
 async function playVoiceDemo() {
-    const voice = document.getElementById('ttsVoice').value; const model = document
-        .getElementById('ttsModel').value; if (!voice) return showToast('请先选择音色', 'warning'); const btn = document
-            .getElementById('btnVoiceDemo');
-    btn.disabled = true;
-    btn.textContent = '...'; const a = document.getElementById('demoAudio');
+    const voice = document.getElementById('ttsVoice').value;
+    const model = document.getElementById('ttsModel').value;
+    if (!voice) return showToast('请先选择音色', 'warning');
+    const btn = document.getElementById('btnVoiceDemo');
+    btn.disabled = true; btn.textContent = '...';
+    const a = document.getElementById('demoAudio');
     a.src = BASE + '/api/voice-sample/' + encodeURIComponent(voice) + '?model=' + model;
-    a.volume = 0.6; try {
-        await a.play();
-        showToast('试听中...', 'info');
-    } catch (e) { showToast('试听失败', 'error'); }
-    a.onended = () => {
-        btn.disabled = false;
-        btn.textContent = '试听';
-    };
-    a.onerror = () => {
-        btn.disabled = false;
-        btn.textContent = '试听';
-        showToast('试听加载失败', 'error');
-    };
-    setTimeout(() => {
-        if (!a.ended && a.src) {
-            btn.disabled = false;
-            btn.textContent = '试听';
-        }
-    }, 7000);
+    a.volume = 0.6;
+    try { await a.play(); showToast('试听中...', 'info'); } catch (e) { showToast('试听失败', 'error'); }
+    a.onended = () => { btn.disabled = false; btn.textContent = '试听'; };
+    a.onerror = () => { btn.disabled = false; btn.textContent = '试听'; showToast('试听加载失败', 'error'); };
+    setTimeout(() => { if (!a.ended && a.src) { btn.disabled = false; btn.textContent = '试听'; } }, 7000);
 }
-async function singleTtsRequest(item, voice, model, interval, useTextName, maxRetries = 2) {
-    let nt = ''; if (
-        useTextName && item.fromTextId) {
-        const o = textList.find(t => t.id === item.fromTextId); if (o && o.text) nt = o
-            .text.slice(0, 50).replace(/[\\\/:*?"<>|]/g, '');
-    } if (!nt && useTextName && item.text) nt = item.text.slice(
-        0, 50).replace(/[\\\/:*?"<>|]/g, ''); const payload = {
-            text: item.text, targetLanguage: item.lang,
-            voiceName: voice, model: model, paragraphInterval: model === 'google' ? interval : 0,
-            useContentFileName: useTextName, namingText: nt, skipTranslate: true, transcriptionId: item.id
-        }; let le =
-            ''; for (let a = 0; a <= maxRetries; a++) {
-                try {
-                    const r = await fetch(BASE + '/api/generate-speech',
-                        {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(
-                                payload)
-                        }); if (!r.ok) {
-                            const et = await r.text().catch(() => ''); let ed = 'HTTP ' + r
-                                .status; try {
-                                    const ej = JSON.parse(et);
-                                    ed = ej.details || ej.error || ed;
-                                } catch (e) { } throw new Error(ed);
-                        } const j = await r.json(); if (
-                        !j.audioFileName) throw new Error('响应中没有音频数据'); return {
-                            success: true, item, result: {
-                                id: genId(),
-                                file: j.audioFileName, display: j.displayFileName || j.audioFileName, source: item.source,
-                                lang: item.lang, selected: false
-                            }
-                        };
-                } catch (err) {
-                    le = err.message || '未知错误'; if (a <
-                        maxRetries) await new Promise(r => setTimeout(r, 700 * (a + 1)));
+
+/* ============================================================
+ * 语音生成
+ * ============================================================ */
+async function openTtsForCard(textId) {
+    const transOfThis = transList.filter(t => t.fromTextId === textId);
+    if (transOfThis.length === 0) return showToast('该卡片暂无译文', 'warning');
+    pendingTtsItems = transOfThis;
+    await openTtsDialogInternal(transOfThis);
+}
+async function openTtsDialogInternal(items) {
+    const langs = [...new Set(items.map(i => i.lang))];
+    const summary = document.getElementById('ttsSummary');
+    if (summary) {
+        summary.textContent = `即将生成 ${items.length} 个音频（${langs.length} 个语种：${langs.map(l => getLangName(l)).join('、')}），完成后自动下载`;
+    }
+    const saved = loadTtsSettings();
+    const modelToLoad = saved && saved.model ? saved.model : 'google';
+    document.getElementById('ttsModel').value = modelToLoad;
+    document.getElementById('ttsInterval').value = saved ? saved.interval || 0.3 : 0.3;
+    document.getElementById('ttsIntervalVal').textContent = saved ? saved.interval || 0.3 : 0.3;
+    document.getElementById('ttsUseTextName').checked = saved ? saved.useTextName || false : false;
+    document.getElementById('ttsProgress').style.display = 'none';
+    document.getElementById('ttsFailedList').style.display = 'none';
+    document.getElementById('ttsFooter').style.display = 'flex';
+    document.getElementById('modalTtsClose').style.display = '';
+    document.getElementById('btnConfirmTts').disabled = false;
+    await loadVoiceOptions(modelToLoad);
+    if (saved && saved.voice) {
+        const vs = document.getElementById('ttsVoice');
+        if (vs.querySelector(`option[value="${saved.voice}"]`)) vs.value = saved.voice;
+    }
+    openModal('modalTts');
+}
+
+async function generateTtsForTrans(item, voice, model, interval, useTextName, maxRetries = 3) {
+    let nt = '';
+    if (useTextName && item.fromTextId) {
+        const o = textList.find(t => t.id === item.fromTextId);
+        if (o && o.lines) nt = o.lines.join('').slice(0, 50).replace(/[\\\/:*?"<>|]/g, '');
+    }
+    if (!nt && useTextName && item.text) nt = item.text.slice(0, 50).replace(/[\\\/:*?"<>|]/g, '');
+    const payload = {
+        text: item.text, targetLanguage: item.lang,
+        voiceName: voice, model: model,
+        paragraphInterval: model === 'google' ? interval : 0,
+        useContentFileName: useTextName, namingText: nt,
+        skipTranslate: true, transcriptionId: item.id
+    };
+    let lastErr = '';
+    for (let a = 0; a <= maxRetries; a++) {
+        try {
+            const r = await fetch(BASE + '/api/generate-speech', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!r.ok) {
+                const et = await r.text().catch(() => '');
+                let ed = 'HTTP ' + r.status;
+                try { const ej = JSON.parse(et); ed = ej.details || ej.error || ed; } catch (e) { }
+                throw new Error(ed);
+            }
+            const j = await r.json();
+            if (!j.audioFileName) throw new Error('响应中没有音频数据');
+            return {
+                success: true, item, result: {
+                    id: genId(),
+                    file: j.audioFileName,
+                    display: j.displayFileName || j.audioFileName,
+                    source: item.source,
+                    lang: item.lang,
+                    fromTextId: item.fromTextId,
+                    fromTransId: item.id
                 }
-            } return {
-                success: false,
-                item, error: le
             };
+        } catch (err) {
+            lastErr = err.message || '未知错误';
+            if (a < maxRetries) {
+                const wait = 800 * Math.pow(2, a);
+                await new Promise(r => setTimeout(r, wait));
+            }
+        }
+    }
+    return { success: false, item, error: lastErr };
 }
+
 async function executeTts() {
     const voice = document.getElementById('ttsVoice').value;
     const model = document.getElementById('ttsModel').value;
@@ -868,232 +1167,124 @@ async function executeTts() {
     ft.style.display = 'none';
     pd.style.display = 'block';
     fd.style.display = 'none';
-    cb.style.display = 'none';
+    if (cb) cb.style.display = 'none';
 
-    const total = pendingTtsItems.length;
-    let done = 0;
-    const success = [];
-    const failed = [];
-
-    pl.textContent = `正在生成... 0/${total}`;
-    pf.style.width = '0%';
-
-    // 并行发起所有TTS请求，每个完成时立即更新界面 
-    const promises = pendingTtsItems.map(item =>
-        singleTtsRequest(item, voice, model, interval, useTextName, 2)
-            .then(result => {
-                done++;
-                if (result.success) {
-                    success.push(result.result);
-                    audioList.push(result.result);
-                    renderAudioList(); // 实时显示新生成的音频 
-                } else {
-                    failed.push({
-                        text: (result.item.text || '').slice(0, 50),
-                        error: result.error
-                    });
-                }
-                // 更新进度 
-                pl.textContent = `正在生成... ${done}/${total}`;
-                pf.style.width = ((done / total) * 100) + '%';
-            })
-    );
+    let remaining = [...pendingTtsItems];
+    const successResults = [];
+    let finalFailed = [];
+    const MAX_ROUNDS = 3;
 
     try {
-        // 等待所有请求完成（包括内部重试）
-        await Promise.allSettled(promises);
+        for (let round = 0; round < MAX_ROUNDS && remaining.length > 0; round++) {
+            if (round > 0) {
+                pl.textContent = `第 ${round + 1} 轮自动重试（${remaining.length} 条）...`;
+                await new Promise(r => setTimeout(r, 1500 * round));
+            }
+            let done = 0;
+            const roundTotal = remaining.length;
+            const roundFailedItems = [];
+            const roundFailedErrors = [];
+            pf.style.width = '0%';
+            pl.textContent = round === 0
+                ? `正在生成... 0/${roundTotal}`
+                : `第 ${round + 1} 轮重试... 0/${roundTotal}`;
 
-        // 全部完成后的处理 
-        if (success.length > 0) {
-            audioList.forEach(x => x.selected = true);
-            renderAudioList();
-            updateWorkflowSteps();
-            switchTab('tab-audio', document.querySelector('.tab-btn[data-tab="tab-audio"]'));
+            await Promise.allSettled(
+                remaining.map(item =>
+                    generateTtsForTrans(item, voice, model, interval, useTextName, 3)
+                        .then(result => {
+                            done++;
+                            if (result.success) {
+                                successResults.push(result.result);
+                                audioList = audioList.filter(a => a.fromTransId !== result.result.fromTransId);
+                                audioList.push(result.result);
+                            } else {
+                                roundFailedItems.push(result.item);
+                                roundFailedErrors.push({
+                                    text: (result.item.text || '').slice(0, 50),
+                                    error: result.error
+                                });
+                            }
+                            pl.textContent = (round === 0
+                                ? `正在生成... ${done}/${roundTotal}`
+                                : `第 ${round + 1} 轮重试... ${done}/${roundTotal}`);
+                            pf.style.width = ((done / roundTotal) * 100) + '%';
+                        })
+                )
+            );
+
+            finalFailed = roundFailedErrors;
+            remaining = roundFailedItems;
+
+            if (successResults.length > 0) {
+                renderMainList();
+                updateWorkflowSteps();
+            }
         }
 
-        if (failed.length > 0) {
+        if (finalFailed.length > 0) {
             fd.style.display = 'block';
-            fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 条语音生成失败（已重试2次）：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '…" — ' + f.error).join('<br>')}<br><small style="color:#888;">请检查文本内容或稍后重试</small></div>`;
-            if (success.length > 0) {
-                showToast(`语音部分完成：${success.length} 成功，${failed.length} 失败`, 'warning');
-            } else {
-                showToast(`语音全部失败：${failed.length} 条未成功`, 'error');
-            }
+            fd.innerHTML = `<div class="failed-list"><strong>${MAX_ROUNDS} 轮自动重试后仍有 ${finalFailed.length} 条失败：</strong>${finalFailed.map(f => '&bull; "' + escapeHtml(f.text) + '…" — ' + f.error).join('<br>')}</div>`;
+            showToast(`已完成：${successResults.length} 成功，${finalFailed.length} 失败`, 'warning');
         } else {
             closeModal('modalTts');
-            showToast(`语音生成完成，共 ${success.length} 个音频`, 'success');
+            showToast(`语音生成完成，共 ${successResults.length} 个音频，开始自动下载`, 'success');
         }
+
+        if (successResults.length > 0) {
+            (async () => {
+                for (let i = 0; i < successResults.length; i++) {
+                    const a = successResults[i];
+                    try {
+                        await downloadAudioFile(a.file, a.display || a.file);
+                    } catch (e) { }
+                    if (i < successResults.length - 1) {
+                        await new Promise(r => setTimeout(r, 700));
+                    }
+                }
+            })();
+        }
+
     } catch (err) {
         showToast('语音生成异常: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
         ft.style.display = 'flex';
         pd.style.display = 'none';
-        cb.style.display = '';
+        if (cb) cb.style.display = '';
         pendingTtsItems = [];
     }
 }
-function renderAudioList() {
-    const c = document.getElementById('audioListContainer'),
-        bd = document.getElementById('btnBatchDownloadAudio'),
-        bdel = document.getElementById('btnDelAudio'); if (audioList.length === 0) {
-            c.innerHTML =
-                '<div class="empty-state"><div class="empty-icon">S</div><div class="empty-text">暂无生成音频</div><div class="empty-sub">在翻译结果中勾选条目，点击生成语音即可</div></div>';
-            bd.disabled = true;
-            bdel.disabled = true; return;
-        }
-    c.innerHTML = audioList.map((item, i) =>
-        `<div class="audio-card"><div class="ac-top"><label class="checkbox-wrap"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="audioList[${i}].selected=this.checked;updateToolbarAudio();"></label><span class="badge ${getBadgeClass(item.lang)}">${getLangName(item.lang)}</span><span class="source-tag" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></div><div class="ac-name" title="${escapeHtml(item.display || item.file)}">${escapeHtml(item.display || item.file)}</div><div class="ac-row" style="margin-top:4px;"><button class="btn btn-primary btn-sm" id="playBtn${i}" onclick="togglePlayAudio(${i})">播放</button><button class="btn btn-outline btn-sm" onclick="downloadAudioFile('${escapeAttr(item.file)}','${escapeAttr(item.display || item.file)}')">下载</button><button class="btn btn-ghost btn-sm" style="color:#e54545;" onclick="deleteAudio(${i})">删除</button></div><div id="audioProgressWrap${i}" style="display:none;margin-top:6px;"><div class="audio-progress-bar" onclick="seekAudio(event,${i})"><div class="audio-progress-fill" id="audioProgressFill${i}" style="width:0%;"></div></div><div class="audio-time" id="audioTime${i}">0:00 / 0:00</div></div><audio id="audioEl${i}" style="display:none;" src="${BASE}/api/download-audio/${encodeURIComponent(item.file)}" preload="metadata" onloadedmetadata="onAudioLoaded(${i})" ontimeupdate="onAudioTick(${i})" onended="onAudioEnd(${i})" onerror="onAudioError(${i})"></audio></div>`
-    ).join('');
-    updateToolbarAudio();
-}
 
-function updateToolbarAudio() {
-    const s = audioList.filter(i => i.selected).length;
-    document.getElementById('btnBatchDownloadAudio').disabled = s === 0;
-    document.getElementById('btnDelAudio').disabled = s === 0;
-    document.getElementById('selectAllAudio').checked = audioList.length > 0 && audioList.every(i => i.selected);
-}
-
-function toggleAllAudio() {
-    const c = document.getElementById('selectAllAudio').checked;
-    audioList.forEach(i => i.selected = c);
-    renderAudioList();
-}
-async function deleteAudio(i) {
-    if (!await showConfirm('确定删除该音频记录？')) return; if (currentPlayIdx === i) stopAudio();
-    audioList.splice(i, 1);
-    renderAudioList();
-    updateWorkflowSteps();
-    showToast('已删除', 'success');
-}
-async function deleteSelectedAudio() {
-    const s = audioList.filter(i => i.selected); if (s.length === 0) return showToast(
-        '请先勾选音频', 'warning'); if (!await showConfirm(`确定删除选中的 ${s.length} 个音频？`)) return; if (currentPlayIdx >= 0 && audioList[
-            currentPlayIdx] && audioList[currentPlayIdx].selected) stopAudio(); for (let i = audioList.length - 1; i >=
-                0; i--) { if (audioList[i].selected) audioList.splice(i, 1); }
-    renderAudioList();
-    updateWorkflowSteps();
-    showToast('已批量删除', 'success');
-}
-
-function batchDownloadAudio() {
-    const s = audioList.filter(i => i.selected); if (s.length === 0) return showToast(
-        '请先勾选音频', 'warning');
-    s.forEach(a => downloadAudioFile(a.file, a.display || a.file));
-    showToast('开始批量下载', 'success');
-}
-async function downloadAudioFile(fn, dn) {
-    try {
-        const r = await fetch(BASE + '/api/download-audio/' +
-            encodeURIComponent(fn), { method: 'GET', headers: { 'Accept': 'audio/*,*/*' } }); if (!r.ok) throw new Error(
-                '下载失败'); const b = await r.blob(); const u = URL.createObjectURL(b); const a = document.createElement('a');
-        a.href = u;
-        a.download = dn || fn;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(u);
-    } catch (e) {
-        window.open(BASE + '/api/download-audio/' + encodeURIComponent(fn),
-            '_blank');
-    }
-}
-
-function stopAudio() {
-    if (currentAudioEl) {
-        currentAudioEl.pause();
-        currentAudioEl = null;
-    } const oi = currentPlayIdx;
-    currentPlayIdx = -1; if (oi >= 0) {
-        const w = document.getElementById('audioProgressWrap' + oi); const b = document
-            .getElementById('playBtn' + oi); if (w) w.style.display = 'none'; if (b) b.textContent = '播放';
-    }
-}
-
-function togglePlayAudio(i) {
-    if (currentPlayIdx === i) { stopAudio(); return; }
-    stopAudio();
-    currentPlayIdx = i; const ae = document.getElementById('audioEl' + i); const b = document.getElementById('playBtn' + i); const
-        w = document.getElementById('audioProgressWrap' + i); if (!ae) return;
-    currentAudioEl = ae;
-    ae.volume = 0.7;
-    ae.play().catch(() => {
-        showToast('音频加载失败', 'error');
-        stopAudio();
-    }); if (b) b.textContent = '暂停'; if (w) w.style.display = 'block';
-}
-
-function onAudioLoaded(i) {
-    const ae = document.getElementById('audioEl' + i); const td = document.getElementById(
-        'audioTime' + i); if (ae && td && ae.duration) td.textContent = '0:00 / ' + formatTime(ae.duration);
-}
-
-function onAudioTick(i) {
-    const ae = document.getElementById('audioEl' + i); const f = document.getElementById(
-        'audioProgressFill' + i); const td = document.getElementById('audioTime' + i); if (ae && f && ae.duration) {
-            const p =
-                (ae.currentTime / ae.duration) * 100;
-            f.style.width = p + '%'; if (td) td.textContent = formatTime(ae.currentTime) + ' / ' + formatTime(ae.duration);
-        }
-}
-
-function onAudioEnd(i) {
-    const b = document.getElementById('playBtn' + i); const w = document.getElementById(
-        'audioProgressWrap' + i); const f = document.getElementById('audioProgressFill' + i); if (b) b.textContent =
-            '播放'; if (w) w.style.display = 'none'; if (f) f.style.width = '0%';
-    currentPlayIdx = -1;
-    currentAudioEl = null;
-}
-
-function onAudioError(i) {
-    const b = document.getElementById('playBtn' + i); const w = document.getElementById(
-        'audioProgressWrap' + i); if (b) b.textContent = '播放'; if (w) w.style.display = 'none';
-    currentPlayIdx = -1;
-    currentAudioEl = null;
-    showToast('音频加载出错', 'error');
-}
-
-function seekAudio(e, i) {
-    const ae = document.getElementById('audioEl' + i); if (!ae || !ae.duration) return; const r = e
-        .currentTarget.getBoundingClientRect(); const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-    ae.currentTime = p * ae.duration;
-}
-
-function switchTab(tid, btn) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove(
-        'active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); const c = document.getElementById(
-        tid); if (c) c.classList.add('active'); if (btn) btn.classList.add('active');
-}
+/* ============================================================
+ * 清空 / 初始化
+ * ============================================================ */
 async function clearAllData() {
-    if (!await showConfirm('确定清空所有上传文件、文案、翻译和音频数据？此操作不可恢复！')) return;
-    stopAudio();
-    fileList = [];
-    textList = [];
-    transList = [];
-    audioList = [];
-    document.getElementById('fileListSection').style.display = 'none';
-    document.getElementById('progressSection').style.display = 'none';
-    renderTextList();
-    renderTransList();
-    renderAudioList();
+    if (!await showConfirm('确定清空所有数据？此操作不可恢复！')) return;
+    if (currentInlineAudio) { try { currentInlineAudio.pause(); } catch (e) { } currentInlineAudio = null; currentInlineId = null; }
+    fileList = []; textList = []; transList = []; audioList = []; cardState = {};
+    COPIED = {};
+    try { localStorage.removeItem(COPIED_KEY); } catch (e) { }
+    const fs = document.getElementById('fileListSection');
+    const ps = document.getElementById('progressSection');
+    if (fs) fs.style.display = 'none';
+    if (ps) ps.style.display = 'none';
+    renderFileList();
+    renderMainList();
     updateWorkflowSteps();
-    showToast('全部数据已清空', 'success');
+    showToast('已清空', 'success');
 }
+
 document.addEventListener('DOMContentLoaded', () => {
-    renderTextList();
-    renderTransList();
-    renderAudioList();
+    renderMainList();
     loadVoiceOptions('google');
     updateWorkflowSteps();
+    syncUploadZone();
 
-    // TTS 设置持久化监听 
     const ttsModel = document.getElementById('ttsModel');
     const ttsVoice = document.getElementById('ttsVoice');
     const ttsInterval = document.getElementById('ttsInterval');
     const ttsUseTextName = document.getElementById('ttsUseTextName');
-
     if (ttsModel) ttsModel.addEventListener('change', saveTtsSettings);
     if (ttsVoice) ttsVoice.addEventListener('change', saveTtsSettings);
     if (ttsInterval) ttsInterval.addEventListener('input', () => {
