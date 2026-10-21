@@ -4,7 +4,7 @@
  * transList: [{ id, lang, fromTextId, lines: [str], text, source }]
  * audioList: [{ id, file, display, source, lang, fromTextId, fromTransId }]
  * ============================================================ */
-const BASE = 'https://149.28.88.166:3005';
+const BASE = 'https://tower-pc.tail3cd725.ts.net';
 let fileList = [];
 let textList = [];
 let transList = [];
