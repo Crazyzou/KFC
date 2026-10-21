@@ -819,7 +819,34 @@ function openTranslateDialog(items = null) {
 async function executeTranslate() {
     const rawInput = document.getElementById('translateInput').value.trim();
     if (!rawInput) return showToast('请输入目标语言', 'warning');
-    const parts = rawInput.split(/[,，\n]+/).map(s => s.trim()).filter(s => s);
+
+    // —— 清洗输入：去掉"翻译/译成"等前缀；把 / + 空格 等也当分隔符；过滤掉「二创6」这类附加参数 ——
+    const KNOWN_LANG_NAMES = new Set(Object.values(LANG_CODE_MAP));
+    const cleaned = rawInput.replace(
+        /^\s*(?:请|帮我|帮忙|给我|把|将)?\s*(?:翻译成|翻译为|翻译|译成|译为|译|转成|转为|转)\s*[:：]?\s*/i,
+        ''
+    );
+
+    const isLangToken = t => {
+        const raw = String(t || '').trim();
+        if (!raw) return false;
+        const k = raw.toLowerCase();
+        if (LANG_CODE_MAP[k]) return true;            // 已知代码/别名
+        if (KNOWN_LANG_NAMES.has(raw)) return true;   // 中文语言名
+        if (/^[a-z]{2,3}$/.test(k)) return true;      // 通用 2~3 位代码
+        return false;
+    };
+
+    const parts = cleaned
+        .split(/[,，\n\/／|、;；+＋\s]+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(isLangToken);
+
+    if (!parts.length) {
+        return showToast('未识别到有效目标语言，请输入如：es/pt/de/fr/hi', 'warning');
+    }
+
     const mappedParts = parts.map(p => LANG_CODE_MAP[p.toLowerCase()] || p);
     const input = mappedParts.join(',');
 
