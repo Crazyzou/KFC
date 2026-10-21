@@ -7,40 +7,48 @@
     <title>视频人声转文本工具</title>
     <style>
         :root {
-            --bg: #f5f6f8;
+            --primary: #4f5bd5;
+            --primary-hover: #3e49c2;
+            --primary-light: #eef0fc;
+            --primary-border: #d6dbf7;
+
+            --bg: #f6f7f9;
             --surface: #ffffff;
-            --surface-alt: #f9fafb;
-            --surface-hover: #fdfdfe;
-            --border: #e8eaef;
-            --border-hover: #d5d9e0;
-            --text-primary: #1a1d26;
-            --text-secondary: #555a68;
-            --text-tertiary: #878c99;
-            --text-muted: #b0b5c0;
-            --accent: #4f5ef0;
-            --accent-light: #f0f1ff;
-            --accent-hover: #3d4de0;
-            --success: #0fa87a;
-            --success-light: #edfaf5;
-            --danger: #e54545;
-            --danger-light: #fef5f5;
-            --warning: #d4880a;
-            --warning-light: #fffcf5;
-            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-            --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-            --radius-lg: 12px;
-            --radius-md: 8px;
-            --radius-sm: 6px;
-            --radius-xs: 4px;
+            --surface-alt: #fafbfc;
+            --border: #e6e8ec;
+            --border-strong: #d5d8de;
+
+            --text-1: #1f2330;
+            --text-2: #565b68;
+            --text-3: #8b8f9b;
+            --text-4: #b3b7c0;
+
+            --success: #0e9f6e;
+            --success-light: #eafaf3;
+            --success-border: #bfe9d8;
+            --warn: #b7791f;
+            --warn-light: #fdf8ee;
+            --warn-border: #f0e0c0;
+            --danger: #c0392b;
+            --danger-light: #fdf3f3;
+            --danger-border: #f2d4d4;
+
+            --r-sm: 6px;
+            --r-md: 8px;
+            --r-lg: 12px;
+            --r-full: 999px;
+
+            --shadow-xs: 0 1px 2px rgba(16, 20, 30, .04);
+            --shadow-sm: 0 2px 8px rgba(16, 20, 30, .06);
+
             --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            --transition: 0.18s ease;
+            --transition: .16s ease;
         }
 
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box
         }
 
         html,
@@ -48,83 +56,92 @@
             height: 100%;
             font-family: var(--font);
             background: var(--bg);
-            color: var(--text-primary);
-            font-size: 13.5px;
-            line-height: 1.55;
+            color: var(--text-1);
+            font-size: 14px;
+            line-height: 1.55
         }
 
         ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
+            width: 6px;
+            height: 6px
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #d0d4de;
-            border-radius: 10px;
+            background: #d6d9df;
+            border-radius: 10px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
         }
 
         .app {
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden
         }
 
         .navbar {
-            height: 50px;
+            height: 52px;
+            flex-shrink: 0;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 18px;
-            flex-shrink: 0;
-            z-index: 20;
-            box-shadow: var(--shadow-xs);
+            padding: 0 16px;
+            z-index: 100
         }
 
         .navbar .brand {
             display: flex;
             align-items: center;
-            gap: 9px;
-            font-weight: 650;
-            font-size: 14px;
-            color: var(--text-primary);
-            letter-spacing: -0.01em;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14.5px;
+            color: var(--text-1)
         }
 
         .navbar .brand .icon-dot {
-            width: 30px;
-            height: 30px;
-            border-radius: var(--radius-sm);
-            background: var(--accent);
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            flex-shrink: 0
         }
 
-        .icon-dot::before {
+        .navbar .brand .icon-dot::before {
             content: '';
-            width: 13px;
-            height: 9px;
+            width: 11px;
+            height: 7px;
             border: 2px solid #fff;
-            border-radius: 2px;
+            border-radius: 2px
         }
 
-        .icon-dot::after {
+        .navbar .brand .icon-dot::after {
             content: '';
             position: absolute;
-            right: 7px;
+            right: 5px;
             top: 50%;
             transform: translateY(-50%);
-            border-top: 3.5px solid transparent;
-            border-bottom: 3.5px solid transparent;
-            border-left: 4.5px solid #fff;
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            border-left: 4px solid #fff
+        }
+
+        /* ====== 紧凑主布局：padding 8 / gap 8 ====== */
+        .main-body {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            padding: 8px;
+            gap: 8px
         }
 
         .btn {
@@ -132,9 +149,9 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
-            padding: 6px 13px;
-            border-radius: var(--radius-sm);
-            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: var(--r-md);
+            font-size: 12.5px;
             font-weight: 500;
             cursor: pointer;
             border: 1px solid transparent;
@@ -142,749 +159,1135 @@
             font-family: var(--font);
             white-space: nowrap;
             outline: none;
-            background: #fff;
-            color: var(--text-secondary);
-            user-select: none;
-            letter-spacing: 0.01em;
+            background: transparent;
+            color: var(--text-2);
+            user-select: none
         }
 
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn:active {
-            transform: translateY(0);
+        .btn:disabled {
+            opacity: .45;
+            pointer-events: none;
+            cursor: not-allowed
         }
 
         .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 2px 6px rgba(79, 94, 240, 0.2);
+            background: var(--primary);
+            color: #fff
         }
 
         .btn-primary:hover {
-            background: var(--accent-hover);
-            box-shadow: 0 3px 10px rgba(79, 94, 240, 0.28);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-            box-shadow: 0 2px 6px rgba(15, 168, 122, 0.2);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 3px 10px rgba(15, 168, 122, 0.28);
-            filter: brightness(1.06);
-        }
-
-        .btn-danger {
-            background: #fff;
-            color: var(--danger);
-            border-color: #fcc;
-        }
-
-        .btn-danger:hover {
-            background: var(--danger-light);
-            border-color: #faa;
+            background: var(--primary-hover)
         }
 
         .btn-outline {
-            background: #fff;
+            background: var(--surface);
             border-color: var(--border);
-            color: var(--text-secondary);
+            color: var(--text-2)
         }
 
         .btn-outline:hover {
-            background: var(--surface-alt);
-            border-color: var(--border-hover);
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light)
         }
 
         .btn-ghost {
             background: transparent;
             border-color: transparent;
-            color: var(--text-tertiary);
-            padding: 4px 8px;
-            box-shadow: none;
-            transform: none;
+            color: var(--text-3);
+            padding: 4px 8px
         }
 
         .btn-ghost:hover {
-            background: #f1f3f7;
-            color: var(--text-primary);
-            box-shadow: none;
-            transform: none;
+            background: var(--surface-alt);
+            color: var(--text-1)
+        }
+
+        .btn-ghost.danger:hover {
+            color: var(--danger);
+            background: var(--danger-light)
         }
 
         .btn-sm {
             padding: 4px 10px;
-            font-size: 11.5px;
-            border-radius: var(--radius-xs);
+            font-size: 12px;
+            border-radius: var(--r-sm)
         }
 
         .btn-xs {
-            padding: 3px 7px;
-            font-size: 10.5px;
-            border-radius: 4px;
-        }
-
-        .btn:disabled {
-            opacity: 0.4;
-            pointer-events: none;
-            cursor: not-allowed;
-            box-shadow: none !important;
-            transform: none !important;
-        }
-
-        .main-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            min-height: 0;
-            padding: 10px;
-            gap: 10px;
+            padding: 3px 9px;
+            font-size: 11.5px;
+            border-radius: var(--r-sm)
         }
 
         .sidebar {
-            width: 260px;
+            width: 258px;
             flex-shrink: 0;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
+            height: 100%;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
-            padding: 12px;
-            gap: 10px;
-            z-index: 10;
-            box-shadow: var(--shadow-xs);
+            gap: 8px;
+            padding-right: 2px
         }
 
         .sidebar-section {
-            background: var(--surface-alt);
-            border-radius: var(--radius-md);
-            padding: 12px;
+            background: var(--surface);
             border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 10px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-xs)
         }
 
         .section-title {
-            font-size: 10.5px;
-            font-weight: 700;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-2);
             margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 6px
         }
 
         .section-title .dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
-            background: var(--accent);
-            flex-shrink: 0;
+            background: var(--primary);
+            flex-shrink: 0
         }
 
+        /* ====== 工作流：紧凑行高 ====== */
+        .workflow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 6px 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            flex-shrink: 0;
+            box-shadow: var(--shadow-xs)
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 4px 0;
+            font-size: 12.5px;
+            color: var(--text-3);
+            position: relative;
+            transition: color var(--transition)
+        }
+
+        .workflow-step:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 26px;
+            bottom: -4px;
+            width: 1px;
+            background: var(--border)
+        }
+
+        .ws-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-strong);
+            background: var(--surface);
+            flex-shrink: 0;
+            position: relative;
+            transition: all var(--transition);
+            z-index: 1
+        }
+
+        .workflow-step.done {
+            color: var(--text-1);
+            font-weight: 500
+        }
+
+        .workflow-step.done .ws-dot {
+            background: var(--primary);
+            border-color: var(--primary)
+        }
+
+        .workflow-step.done .ws-dot::after {
+            content: '';
+            position: absolute;
+            left: 4.5px;
+            top: 2.5px;
+            width: 5px;
+            height: 8px;
+            border-right: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(45deg)
+        }
+
+        .workflow-step.active {
+            color: var(--primary);
+            font-weight: 500
+        }
+
+        .workflow-step.active .ws-dot {
+            border-color: var(--primary);
+            background: var(--primary-light)
+        }
+
+        .workflow-step.active .ws-dot::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse-dot 1.4s ease-in-out infinite
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: .5;
+                transform: scale(.8)
+            }
+        }
+
+        /* ====== 上传区：更扁 ====== */
         .upload-zone {
-            border: 2px dashed #dde1ea;
-            border-radius: var(--radius-md);
-            padding: 22px 14px;
+            border: 1.5px dashed var(--border-strong);
+            border-radius: var(--r-md);
+            padding: 14px 12px;
             text-align: center;
             cursor: pointer;
             transition: all var(--transition);
-            background: #fafbfd;
-            color: var(--text-tertiary);
-            padding: 32px 14px;
-            /* 增加垂直内边距，区域变大 */
-            min-height: 500px;
-            /* 设定最小高度，更显眼 */
+            background: var(--surface-alt);
+            color: var(--text-3);
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
+            gap: 7px;
+            min-height: 92px
         }
 
         .upload-zone:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: #fff;
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light)
         }
 
         .upload-zone .upload-icon {
-            width: 36px;
-            height: 36px;
-            margin: 0 auto 6px;
-            border-radius: 8px;
-            background: var(--accent-light);
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: var(--surface);
+            border: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: all var(--transition)
+        }
+
+        .upload-zone:hover .upload-icon {
+            border-color: var(--primary-border);
+            background: var(--surface)
         }
 
         .upload-zone .upload-icon::before {
             content: '';
-            width: 14px;
+            width: 11px;
             height: 2px;
-            background: var(--accent);
+            background: var(--primary);
             border-radius: 2px;
+            position: absolute;
+            bottom: 9px
         }
 
         .upload-zone .upload-icon::after {
             content: '';
             position: absolute;
-            width: 8px;
-            height: 8px;
-            border-top: 2px solid var(--accent);
-            border-left: 2px solid var(--accent);
+            width: 7px;
+            height: 7px;
+            border-top: 2px solid var(--primary);
+            border-left: 2px solid var(--primary);
             transform: rotate(45deg) translate(2px, 2px);
+            top: 7px
         }
 
         .upload-zone .upload-text {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 500;
+            line-height: 1.4
         }
 
         .upload-zone .upload-text span {
-            color: var(--accent);
-            font-weight: 600;
-            text-decoration: underline;
-            text-underline-offset: 2px;
+            color: var(--primary);
+            font-weight: 600
         }
 
-        .upload-hint {
-            font-size: 10px;
-            color: var(--text-tertiary);
-            margin-top: 5px;
-            opacity: 0.7;
-            line-height: 1.4;
+        .upload-zone.is-collapsed {
+            min-height: 0;
+            padding: 8px 10px;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 9px;
+            border-style: solid;
+            border-color: var(--border);
+            border-width: 1px;
+            background: var(--surface);
+            text-align: left;
+            margin-bottom: 8px
+        }
+
+        .upload-zone.is-collapsed:hover {
+            border-color: var(--primary);
+            background: var(--primary-light)
+        }
+
+        .upload-zone.is-collapsed .upload-icon {
+            width: 26px;
+            height: 26px;
+            flex-shrink: 0
+        }
+
+        .upload-zone.is-collapsed .upload-icon::before {
+            width: 9px;
+            bottom: 7px
+        }
+
+        .upload-zone.is-collapsed .upload-icon::after {
+            width: 5px;
+            height: 5px;
+            top: 5px
+        }
+
+        .upload-zone.is-collapsed .upload-text {
+            font-size: 12px;
+            text-align: left
+        }
+
+        /* ====== 文件列表：紧凑 ====== */
+        .file-list-title {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-2);
+            margin: 2px 0 4px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border)
         }
 
         .file-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 10px;
-            background: #fff;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-            margin-bottom: 4px;
-            transition: all var(--transition);
+            padding: 6px 2px;
+            background: transparent;
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0;
+            transition: background var(--transition)
+        }
+
+        .file-item:last-child {
+            border-bottom: none
         }
 
         .file-item:hover {
-            border-color: var(--border-hover);
-            box-shadow: var(--shadow-xs);
+            background: var(--surface-alt)
         }
 
         .file-item .fi-icon {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 6px;
-            background: #eef0f8;
+            background: var(--primary-light);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            color: var(--accent);
+            color: var(--primary);
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700
         }
 
         .file-item .fi-info {
             flex: 1;
-            min-width: 0;
+            min-width: 0
         }
 
         .file-item .fi-name {
-            font-size: 11.5px;
+            font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-1)
         }
 
         .file-item .fi-size {
-            font-size: 10px;
-            color: var(--text-tertiary);
+            font-size: 10.5px;
+            color: var(--text-3)
         }
 
         .file-item .fi-del {
             cursor: pointer;
-            color: var(--text-muted);
+            color: var(--text-4);
             font-size: 14px;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 1px 6px;
+            border-radius: var(--r-sm);
             background: none;
             border: none;
             flex-shrink: 0;
             line-height: 1;
+            transition: all var(--transition)
         }
 
         .file-item .fi-del:hover {
             color: var(--danger);
-            background: var(--danger-light);
+            background: var(--danger-light)
+        }
+
+        #transcribeBtn {
+            width: 100%;
+            margin-top: 8px;
+            justify-content: center
+        }
+
+        .progress-text {
+            font-size: 11.5px;
+            color: var(--text-2);
+            margin-bottom: 6px;
+            font-weight: 500
         }
 
         .progress-bar {
             width: 100%;
-            height: 4px;
-            background: #e8ecf4;
-            border-radius: 10px;
-            overflow: hidden;
+            height: 5px;
+            background: var(--border);
+            border-radius: var(--r-full);
+            overflow: hidden
         }
 
         .progress-fill {
             height: 100%;
-            background: var(--accent);
-            border-radius: 10px;
-            transition: width 0.3s ease;
+            background: var(--primary);
+            border-radius: var(--r-full);
+            transition: width .3s ease
         }
 
         .progress-indeterminate {
             animation: indeterminate 1.5s infinite ease-in-out;
-            width: 30%;
+            width: 30%
         }
 
         @keyframes indeterminate {
             0% {
-                transform: translateX(-130%);
+                transform: translateX(-130%)
             }
 
             100% {
-                transform: translateX(430%);
+                transform: translateX(430%)
             }
         }
 
-        .progress-text {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-
+        /* ====== 主面板：占满剩余宽度，不再居中留白 ====== */
         .main-panel {
             flex: 1;
-            display: flex;
-            flex-direction: row;
-            overflow: hidden;
             min-width: 0;
-            gap: 10px;
-        }
-
-        .tab-nav {
-            display: none;
-        }
-
-        .tab-content {
+            height: 100%;
             display: flex;
             flex-direction: column;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xs);
-            padding: 12px;
+            border-radius: var(--r-lg);
             overflow: hidden;
-            min-width: 0;
+            box-shadow: var(--shadow-xs)
         }
 
-        .tab-content.active {
-            display: flex;
-        }
-
-        #tab-text {
-            flex: 2;
-        }
-
-        #tab-trans {
-            flex: 2;
-        }
-
-        #tab-audio {
-            flex: 1;
-        }
-
-        .tab-toolbar {
+        .toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
+            gap: 8px;
+            padding: 8px 14px;
             border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
-        .toolbar-left,
-        .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .tab-content::before {
-            content: attr(data-panel-title);
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-            display: flex;
-            letter-spacing: 0.01em;
-        }
-
-        #textListContainer,
-        #transListContainer,
-        #audioListContainer {
-            flex: 1;
-            overflow-y: auto;
-            min-height: 0;
-            padding-right: 3px;
-        }
-
-        .card {
-            background: var(--surface-alt);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 10px 12px;
-            margin-bottom: 7px;
-            transition: all var(--transition);
-            border-left: 3px solid transparent;
-        }
-
-        .card:hover {
-            border-color: var(--border-hover);
-            box-shadow: var(--shadow-xs);
-            background: var(--surface-hover);
-        }
-
-        .card:has(input[type="checkbox"]:checked) {
-            border-color: var(--accent);
-            background: #fafbff;
-            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.08);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 6px;
-        }
-
-        .ch-left {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            min-width: 0;
-        }
-
-        .ch-right {
-            display: flex;
-            gap: 2px;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 14px;
-            font-size: 10px;
-            font-weight: 600;
-            flex-shrink: 0;
-            letter-spacing: 0.02em;
-        }
-
-        .badge-gray {
-            background: #eef0f5;
-            color: #5a5f6e;
-        }
-
-        .badge-blue {
-            background: #eef0ff;
-            color: #4f5ef0;
-        }
-
-        .badge-green {
-            background: #edfaf5;
-            color: #0a8a62;
-        }
-
-        .badge-orange {
-            background: #fff9f0;
-            color: #b87a0a;
-        }
-
-        .badge-red {
-            background: #fef5f5;
-            color: #c53030;
-        }
-
-        .badge-source {
-            background: #f5f5ff;
-            color: #5558c0;
-            font-size: 9.5px;
-            padding: 1px 6px;
-            border-radius: 10px;
-            max-width: 110px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            border: 1px solid #e0e0f5;
-            cursor: default;
-        }
-
-        .source-tag {
-            font-size: 10px;
-            color: var(--text-tertiary);
-            max-width: 100px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
-        }
-
-        textarea.card-textarea {
-            width: 100%;
-            min-height: 68px;
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 12px;
-            font-family: var(--font);
-            resize: vertical;
-            background: #fff;
-            color: var(--text-primary);
-            transition: all var(--transition);
-            line-height: 1.5;
-        }
-
-        textarea.card-textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.08);
-            background: #fff;
-        }
-
-        .audio-card {
-            background: var(--surface-alt);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 10px 12px;
-            margin-bottom: 7px;
-            transition: all var(--transition);
-        }
-
-        .audio-card:hover {
-            border-color: var(--border-hover);
-            box-shadow: var(--shadow-xs);
-        }
-
-        .ac-top {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 4px;
-        }
-
-        .ac-name {
-            font-size: 11.5px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 160px;
+        .toolbar .list-title {
+            font-size: 13.5px;
             font-weight: 500;
-        }
-
-        .ac-row {
+            color: var(--text-2);
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 7px
+        }
+
+        .toolbar .list-title::before {
+            content: '';
+            width: 3px;
+            height: 13px;
+            border-radius: 2px;
+            background: var(--primary)
+        }
+
+        .toolbar .list-title b {
+            color: var(--text-1);
+            font-weight: 600
+        }
+
+        #mainListContainer {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px 14px
+        }
+
+        /* ====== 卡片：紧凑 ====== */
+        .mcard {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            --card-accent: var(--primary);
+            --card-accent-soft: var(--primary-light)
+        }
+
+        .mcard:hover {
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-xs)
+        }
+
+        .mcard.c1,
+        .mcard.c2,
+        .mcard.c3 {
+            --card-accent: var(--primary);
+            --card-accent-soft: var(--primary-light)
+        }
+
+        .mcard-head {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap
+        }
+
+        .mcard-head .no {
+            width: 22px;
+            height: 22px;
+            border-radius: var(--r-sm);
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11.5px;
+            font-weight: 600;
+            flex-shrink: 0;
+            transition: all var(--transition)
+        }
+
+        .mcard:hover .mcard-head .no {
+            background: var(--primary-light);
+            border-color: var(--primary-border);
+            color: var(--primary)
+        }
+
+        .mcard-head .src {
+            font-size: 12.5px;
+            color: var(--text-1);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500
+        }
+
+        .mcard-head .head-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0
+        }
+
+        .mcard-head .head-actions .btn-outline {
+            border-color: var(--border);
+            color: var(--text-2)
+        }
+
+        .mcard-head .head-actions .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light)
+        }
+
+        .mcard-origin {
+            padding: 8px 12px
+        }
+
+        .mcard-origin .label-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+            font-size: 10.5px;
+            color: var(--text-3);
+            font-weight: 600;
+            letter-spacing: .04em
+        }
+
+        .mcard-origin .label-row::before {
+            content: '';
+            width: 3px;
+            height: 10px;
+            border-radius: 2px;
+            background: var(--primary)
+        }
+
+        .origin-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 0
+        }
+
+        .oline {
+            display: flex;
+            gap: 7px;
+            align-items: flex-start;
+            border-radius: var(--r-sm);
+            padding: 3px 5px;
+            transition: background var(--transition);
+            border: 1px solid transparent
+        }
+
+        .oline:hover {
+            background: var(--surface-alt)
+        }
+
+        .oline .no {
+            flex-shrink: 0;
+            width: 18px;
+            text-align: right;
+            font-size: 10.5px;
+            color: var(--text-4);
+            font-variant-numeric: tabular-nums;
+            user-select: none;
+            padding-top: 4px
+        }
+
+        .oline .tx {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+            outline: none;
+            min-height: 1.5em;
+            font-size: 13.5px;
+            padding: 2px 3px;
+            line-height: 1.55;
+            border-radius: var(--r-sm);
+            color: var(--text-1)
+        }
+
+        .oline .tx:focus {
+            background: var(--surface);
+            box-shadow: 0 0 0 2px var(--primary-border)
+        }
+
+        .oline .rm {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            border-radius: var(--r-sm);
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-4);
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+            line-height: 1;
+            opacity: 0;
+            transition: all var(--transition)
+        }
+
+        .oline:hover .rm {
+            opacity: .6
+        }
+
+        .oline .rm:hover {
+            color: var(--danger);
+            background: var(--danger-light);
+            opacity: 1;
+            border-color: var(--danger-border)
+        }
+
+        .oline.deleted {
+            background: var(--surface-alt)
+        }
+
+        .oline.deleted .tx {
+            text-decoration: line-through;
+            color: var(--text-4);
+            cursor: not-allowed
+        }
+
+        .oline.deleted .no {
+            color: var(--text-4)
+        }
+
+        .oline.deleted .rm {
+            opacity: .8;
+            color: var(--text-3)
+        }
+
+        .oline.deleted .rm:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+            border-color: var(--primary-border)
+        }
+
+        /* ====== 语言 tab ====== */
+        .lang-tabs {
+            display: flex;
+            gap: 5px;
+            padding: 7px 12px;
+            background: var(--surface-alt);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
+            align-items: center
         }
 
-        .audio-progress-wrap {
-            margin-top: 6px;
+        .lang-tab {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-2);
+            border-radius: var(--r-full);
+            padding: 4px 11px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px
         }
 
-        .audio-progress-bar {
+        .lang-tab:hover {
+            border-color: var(--primary-border);
+            color: var(--primary)
+        }
+
+        .lang-tab.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--surface);
+            font-weight: 600
+        }
+
+        .lang-tab.done {
+            color: var(--success);
+            border-color: var(--success-border);
+            background: var(--surface)
+        }
+
+        .lang-tab.done.active {
+            border-color: var(--success);
+            background: var(--surface);
+            color: var(--success)
+        }
+
+        .lang-tab .cnt {
+            font-size: 10.5px;
+            opacity: .75;
+            font-weight: 500
+        }
+
+        .lang-tabs .empty-hint {
+            font-size: 11.5px;
+            color: var(--text-3)
+        }
+
+        .lang-tabs .btn-tts-all {
+            margin-left: auto;
+            padding: 4px 12px;
+            font-size: 11.5px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            border-radius: var(--r-full);
+            font-weight: 500;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px
+        }
+
+        .lang-tabs .btn-tts-all::before {
+            content: '♪';
+            font-size: 12px;
+            color: var(--primary)
+        }
+
+        .lang-tabs .btn-tts-all:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light)
+        }
+
+        /* ====== 译文 pane ====== */
+        .lang-pane {
+            display: none;
+            padding: 8px 12px
+        }
+
+        .lang-pane.active {
+            display: block
+        }
+
+        .lines {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 6px
+        }
+
+        .line {
+            display: flex;
+            gap: 7px;
+            align-items: flex-start;
+            border-radius: var(--r-sm);
+            padding: 3px 5px;
+            transition: all var(--transition);
+            border: 1px solid transparent
+        }
+
+        .line:hover {
+            background: var(--surface-alt)
+        }
+
+        .line.done {
+            background: transparent;
+            border-color: transparent;
+            box-shadow: inset 2px 0 0 var(--success)
+        }
+
+        .line .no {
+            flex-shrink: 0;
+            width: 18px;
+            text-align: right;
+            font-size: 10.5px;
+            color: var(--text-4);
+            font-variant-numeric: tabular-nums;
+            user-select: none;
+            padding-top: 4px
+        }
+
+        .line.done .no {
+            color: var(--success)
+        }
+
+        .line .tx {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+            outline: none;
+            min-height: 1.5em;
+            font-size: 13.5px;
+            padding: 2px 3px;
+            line-height: 1.55;
+            border-radius: var(--r-sm);
+            color: var(--text-1)
+        }
+
+        .line .tx:focus {
+            background: var(--surface);
+            box-shadow: 0 0 0 2px var(--primary-border)
+        }
+
+        .line .cp {
+            flex-shrink: 0;
+            font-family: inherit;
+            font-size: 11.5px;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--text-3);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--r-sm);
+            padding: 4px 9px;
+            transition: all var(--transition);
+            white-space: nowrap;
+            margin-top: 1px;
+            opacity: .5;
+            font-weight: 500
+        }
+
+        .line:hover .cp {
+            opacity: 1;
+            border-color: var(--border);
+            background: var(--surface)
+        }
+
+        .line .cp:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light)
+        }
+
+        .line .cp.done {
+            color: var(--success);
+            opacity: 1;
+            border-color: transparent;
+            background: transparent
+        }
+
+        /* ====== 音频条 ====== */
+        .audio-inline {
+            margin-top: 8px;
+            padding: 9px 12px;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md)
+        }
+
+        .audio-inline .ai-head {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 8px
+        }
+
+        .audio-inline .play-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10.5px;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            font-family: inherit
+        }
+
+        .audio-inline .play-btn:hover {
+            background: var(--primary-hover)
+        }
+
+        .audio-inline .play-btn:active {
+            transform: scale(.96)
+        }
+
+        .audio-inline .ai-name {
+            font-size: 12px;
+            color: var(--text-1);
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500
+        }
+
+        .audio-inline .ai-dl {
+            font-size: 11.5px;
+            color: var(--text-3);
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 3px 8px;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+            font-weight: 500
+        }
+
+        .audio-inline .ai-dl:hover {
+            color: var(--primary);
+            background: var(--surface);
+            border-color: var(--primary-border)
+        }
+
+        .audio-inline .ai-bar {
             width: 100%;
-            height: 4px;
-            background: #e2e6f0;
-            border-radius: 10px;
+            height: 5px;
+            background: var(--border);
+            border-radius: var(--r-full);
             cursor: pointer;
             overflow: hidden;
+            transition: height .15s
         }
 
-        .audio-progress-bar:hover {
-            height: 6px;
+        .audio-inline .ai-bar:hover {
+            height: 7px
         }
 
-        .audio-progress-fill {
+        .audio-inline .ai-fill {
             height: 100%;
-            background: var(--accent);
-            border-radius: 10px;
-            transition: width 0.06s linear;
-            pointer-events: none;
+            background: var(--primary);
+            border-radius: var(--r-full);
+            transition: width .06s linear;
+            pointer-events: none
         }
 
-        .audio-time {
-            font-size: 10px;
-            color: var(--text-tertiary);
-            text-align: right;
-            margin-top: 2px;
+        .audio-inline .ai-foot {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 10.5px;
+            color: var(--text-3);
             font-variant-numeric: tabular-nums;
+            font-weight: 500
         }
 
+        /* ====== 空状态 ====== */
         .empty-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 36px 14px;
-            color: var(--text-tertiary);
+            padding: 40px 16px;
+            color: var(--text-3);
             text-align: center;
-            gap: 6px;
-            height: 100%;
+            gap: 8px
         }
 
         .empty-state .empty-icon {
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             margin-bottom: 2px;
-            border-radius: 10px;
-            background: #f5f6fa;
+            border-radius: 14px;
+            background-color: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            font-size: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--border);
-            font-size: 18px;
-            color: var(--text-muted);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f5bd5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M8 13h8'/%3E%3Cpath d='M8 17h5'/%3E%3C/svg%3E");
+            background-size: 24px 24px;
+            background-repeat: no-repeat;
+            background-position: center
         }
 
         .empty-state .empty-text {
-            font-size: 12.5px;
-            font-weight: 500;
-            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-1)
         }
 
         .empty-state .empty-sub {
-            font-size: 10.5px;
-            opacity: 0.65;
-            max-width: 210px;
-            line-height: 1.4;
+            font-size: 12px;
+            color: var(--text-3);
+            max-width: 300px;
+            line-height: 1.6
         }
 
-        .checkbox-wrap {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            font-size: 11.5px;
-            color: var(--text-secondary);
-            user-select: none;
-        }
-
-        .checkbox-wrap input[type="checkbox"] {
-            accent-color: var(--accent);
-            width: 14px;
-            height: 14px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-
+        /* ====== Modal ====== */
         .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(12, 14, 24, 0.45);
-            z-index: 100;
+            inset: 0;
+            background: rgba(16, 20, 30, .42);
+            z-index: 200;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.14s ease;
+            animation: fadeIn .14s ease
         }
 
         .modal-overlay.show {
-            display: flex;
+            display: flex
         }
 
         @keyframes fadeIn {
             from {
-                opacity: 0;
+                opacity: 0
             }
 
             to {
-                opacity: 1;
+                opacity: 1
             }
         }
 
         .modal {
-            background: #fff;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            width: 440px;
+            background: var(--surface);
+            border-radius: var(--r-lg);
+            width: 460px;
             max-width: 93vw;
             max-height: 85vh;
             overflow-y: auto;
-            animation: modalIn 0.18s ease;
+            animation: modalIn .18s ease;
             border: 1px solid var(--border);
+            box-shadow: 0 20px 50px rgba(16, 20, 30, .2)
         }
 
         @keyframes modalIn {
             from {
                 opacity: 0;
-                transform: translateY(8px) scale(0.98);
+                transform: translateY(6px) scale(.98)
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform: translateY(0) scale(1)
             }
         }
 
         .modal-header {
-            padding: 14px 16px;
+            padding: 13px 16px;
             border-bottom: 1px solid var(--border);
             font-weight: 600;
-            font-size: 14px;
+            font-size: 14.5px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            color: var(--text-primary);
+            color: var(--text-1)
         }
 
         .modal-close {
             cursor: pointer;
             background: none;
             border: none;
-            font-size: 16px;
-            color: var(--text-tertiary);
-            padding: 3px 8px;
-            border-radius: 4px;
+            font-size: 19px;
+            color: var(--text-3);
+            padding: 2px 8px;
+            border-radius: var(--r-sm);
+            line-height: 1;
+            transition: all var(--transition)
         }
 
         .modal-close:hover {
-            background: #f1f3f7;
-            color: var(--text-primary);
+            background: var(--surface-alt);
+            color: var(--text-1)
         }
 
         .modal-body {
-            padding: 16px;
+            padding: 14px 16px
         }
 
         .modal-footer {
@@ -894,183 +1297,172 @@
             justify-content: flex-end;
             gap: 7px;
             background: var(--surface-alt);
-            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            border-radius: 0 0 var(--r-lg) var(--r-lg)
         }
 
         .modal textarea,
         .modal input[type="text"],
         .modal select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 8px 11px;
             border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 12px;
+            border-radius: var(--r-md);
+            font-size: 13px;
             font-family: var(--font);
-            background: #fafbfd;
-            color: var(--text-primary);
-            transition: all var(--transition);
+            background: var(--surface);
+            color: var(--text-1);
+            transition: all var(--transition)
         }
 
         .modal textarea:focus,
         .modal input[type="text"]:focus,
         .modal select:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(79, 94, 240, 0.07);
-            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light)
         }
 
         .modal label {
             display: block;
-            font-size: 11.5px;
+            font-size: 12.5px;
             font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 3px;
-            margin-top: 10px;
+            color: var(--text-2);
+            margin-bottom: 5px;
+            margin-top: 12px
+        }
+
+        .modal label:first-child {
+            margin-top: 0
         }
 
         .modal .form-row {
             display: flex;
             gap: 7px;
-            align-items: center;
+            align-items: center
         }
 
         .modal .form-row select {
-            flex: 1;
+            flex: 1
         }
 
         .hint {
-            font-size: 10.5px;
-            color: var(--text-tertiary);
-            margin-top: 4px;
-            opacity: 0.7;
-            line-height: 1.4;
+            font-size: 11.5px;
+            color: var(--text-3);
+            margin-top: 5px;
+            line-height: 1.5
+        }
+
+        .tts-summary {
+            background: var(--warn-light);
+            border: 1px solid var(--warn-border);
+            color: var(--warn);
+            padding: 8px 11px;
+            border-radius: var(--r-md);
+            font-size: 12px;
+            margin-bottom: 12px;
+            font-weight: 500;
+            line-height: 1.5
         }
 
         .slider-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 9px
         }
 
         .slider-row input[type="range"] {
             flex: 1;
-            accent-color: var(--accent);
-            cursor: pointer;
+            accent-color: var(--primary);
+            cursor: pointer
         }
 
         .slider-val {
-            font-size: 11.5px;
+            font-size: 12.5px;
             font-weight: 600;
-            color: var(--text-primary);
-            min-width: 28px;
+            color: var(--text-1);
+            min-width: 32px;
             text-align: center;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .toast-msg {
-            animation: toastIn 0.3s ease;
-        }
-
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        .workflow-steps {
-            display: flex;
-            gap: 3px;
-            margin-bottom: 2px;
-        }
-
-        .workflow-step {
-            flex: 1;
-            height: 2.5px;
-            border-radius: 8px;
-            background: #e2e6f0;
-            transition: all 0.3s ease;
-        }
-
-        .workflow-step.done {
-            background: var(--accent);
-        }
-
-        .workflow-step.active {
-            background: var(--accent);
-            animation: pulse-step 1.4s infinite;
-        }
-
-        @keyframes pulse-step {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.45;
-            }
+            font-variant-numeric: tabular-nums
         }
 
         .failed-list {
-            background: #fffafa;
-            border: 1px solid #fdd;
-            border-radius: var(--radius-sm);
+            background: var(--danger-light);
+            border: 1px solid var(--danger-border);
+            border-radius: var(--r-md);
             padding: 9px 12px;
             margin-top: 7px;
-            font-size: 11.5px;
-            color: #c53030;
-            max-height: 110px;
+            font-size: 12px;
+            color: var(--danger);
+            max-height: 120px;
             overflow-y: auto;
-            line-height: 1.5;
+            line-height: 1.55
         }
 
         .failed-list strong {
             display: block;
             margin-bottom: 3px;
-            font-size: 12px;
+            font-size: 12.5px
         }
 
-        @media (max-width: 1200px) {
-            #tab-text {
-                flex: 1.8;
+        .toast-msg {
+            animation: toastIn .3s ease
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px)
             }
 
-            #tab-trans {
-                flex: 1.2;
-            }
-
-            #tab-audio {
-                flex: 1;
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0)
             }
         }
 
-        @media (max-width: 960px) {
+        @media (max-width:860px) {
+            .app {
+                height: auto;
+                overflow: visible
+            }
+
             .main-body {
                 flex-direction: column;
-                overflow-y: auto;
+                height: auto;
+                overflow: visible;
+                padding: 8px
             }
 
             .sidebar {
                 width: 100%;
-                flex-shrink: 0;
+                height: auto;
                 max-height: none;
+                overflow: visible
+            }
+
+            .workflow-steps {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px
+            }
+
+            .workflow-step {
+                flex: 1;
+                min-width: 110px
+            }
+
+            .workflow-step:not(:last-child)::before {
+                display: none
             }
 
             .main-panel {
-                flex-direction: column;
                 height: auto;
+                min-height: 400px
             }
 
-            .tab-content {
-                min-height: 300px;
+            #mainListContainer {
+                overflow: visible;
+                max-height: none
             }
         }
     </style>
@@ -1082,125 +1474,76 @@
             <div class="brand">
                 <div class="icon-dot"></div><span>视频人声转文本</span>
             </div>
-            <div class="navbar-actions"><button class="btn btn-danger btn-sm" onclick="clearAllData()">清空数据</button>
+            <div class="navbar-actions">
+                <button class="btn btn-ghost btn-sm danger" onclick="clearAllData()">清空数据</button>
             </div>
         </nav>
+
         <div class="main-body">
             <aside class="sidebar">
                 <div class="workflow-steps" id="workflowSteps">
-                    <div class="workflow-step" id="stepUpload"></div>
-                    <div class="workflow-step" id="stepTranscribe"></div>
-                    <div class="workflow-step" id="stepTranslate"></div>
-                    <div class="workflow-step" id="stepAudio"></div>
+                    <div class="workflow-step" id="stepUpload">
+                        <span class="ws-dot"></span><span class="ws-label">上传素材</span>
+                    </div>
+                    <div class="workflow-step" id="stepTranscribe">
+                        <span class="ws-dot"></span><span class="ws-label">语音转录</span>
+                    </div>
+                    <div class="workflow-step" id="stepTranslate">
+                        <span class="ws-dot"></span><span class="ws-label">多语翻译</span>
+                    </div>
+                    <div class="workflow-step" id="stepAudio">
+                        <span class="ws-dot"></span><span class="ws-label">生成语音</span>
+                    </div>
                 </div>
+
                 <div class="sidebar-section">
-                    <div class="section-title"><span class="dot"></span>文件上传</div>
+                    <div class="section-title"><span class="dot"></span>素材</div>
                     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                         <div class="upload-icon"></div>
                         <div class="upload-text">拖拽文件到此处，或<span>点击上传</span></div>
                     </div>
-                    <div class="upload-hint">MP4 / AVI / MOV / MKV / WEBM / MP3 / M4A / AAC / OGG / FLAC / WAV &middot;
-                        单文件≤1GB</div>
                     <input type="file" id="fileInput" style="display:none" multiple accept="video/*,audio/*"
                         onchange="handleFileInput(event)">
+                    <div id="fileListSection" style="display:none;">
+                        <div class="file-list-title" id="fileListTitle">已选择文件 (0)</div>
+                        <div id="fileListContainer"></div>
+                        <button class="btn btn-primary" id="transcribeBtn" onclick="startTranscribe()">开始转录</button>
+                    </div>
                 </div>
-                <div class="sidebar-section" id="fileListSection" style="display:none;">
-                    <div class="section-title" id="fileListTitle">已选择文件 (0)</div>
-                    <div id="fileListContainer"></div>
-                    <button class="btn btn-primary" id="transcribeBtn" onclick="startTranscribe()"
-                        style="width:100%;margin-top:7px;justify-content:center;">开始转录</button>
-                </div>
+
                 <div class="sidebar-section" id="progressSection" style="display:none;">
-                    <div class="section-title">处理进度</div>
+                    <div class="section-title"><span class="dot"></span>处理进度</div>
                     <div class="progress-text" id="progressLabel">准备中...</div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill" style="width:0%;"></div>
                     </div>
                 </div>
             </aside>
-            <div class="main-panel">
-                <div class="tab-nav">
-                    <button class="tab-btn active" data-tab="tab-text"
-                        onclick="switchTab('tab-text', this)">原始文案</button>
-                    <button class="tab-btn" data-tab="tab-trans" onclick="switchTab('tab-trans', this)">翻译结果</button>
-                    <button class="tab-btn" data-tab="tab-audio" onclick="switchTab('tab-audio', this)">音频列表</button>
+
+            <main class="main-panel">
+                <div class="toolbar">
+                    <span class="list-title">文案列表 <b id="listCount">0</b></span>
+                    <button class="btn btn-outline btn-sm" onclick="addTextManually()">+ 新增文案</button>
                 </div>
-                <div class="tab-content active" id="tab-text" data-panel-title="原始文案">
-                    <div class="tab-toolbar">
-                        <div class="toolbar-left">
-                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllText"
-                                    onchange="toggleAllText()"> 全选</label>
-                            <button class="btn btn-outline btn-sm" onclick="addTextManually()">+ 新增</button>
-                        </div>
-                        <div class="toolbar-right">
-                            <button class="btn btn-success btn-sm" id="btnTranslate" onclick="openTranslateDialog()"
-                                disabled>翻译选中</button>
-                            <button class="btn btn-danger btn-sm" id="btnDelText" onclick="deleteSelectedText()"
-                                disabled>删除选中</button>
-                        </div>
-                    </div>
-                    <div id="textListContainer">
-                        <div class="empty-state">
-                            <div class="empty-icon">T</div>
-                            <div class="empty-text">暂无转录文案</div>
-                            <div class="empty-sub">上传文件并点击开始转录后，文案会自动出现在这里</div>
-                        </div>
+                <div id="mainListContainer">
+                    <div class="empty-state">
+                        <div class="empty-icon">文</div>
+                        <div class="empty-text">暂无文案</div>
+                        <div class="empty-sub">上传文件开始转录，或点击「+ 新增文案」手动输入</div>
                     </div>
                 </div>
-                <div class="tab-content" id="tab-trans" data-panel-title="翻译结果">
-                    <div class="tab-toolbar">
-                        <div class="toolbar-left">
-                            <label class="checkbox-wrap"><input type="checkbox" id="selectAllTrans"
-                                    onchange="toggleAllTrans()"> 全选</label>
-                            <button class="btn btn-outline btn-sm" onclick="addTransManually()">+ 新增</button>
-                        </div>
-                        <div class="toolbar-right">
-                            <button class="btn btn-success btn-sm" id="btnDownloadTrans" onclick="batchDownloadTrans()"
-                                disabled>下载TXT</button>
-                            <button class="btn btn-primary btn-sm" id="btnTts" onclick="openTtsDialog()"
-                                disabled>生成语音</button>
-                            <button class="btn btn-danger btn-sm" id="btnDelTrans" onclick="deleteSelectedTrans()"
-                                disabled>删除</button>
-                        </div>
-                    </div>
-                    <div id="transListContainer">
-                        <div class="empty-state">
-                            <div class="empty-icon">A</div>
-                            <div class="empty-text">暂无翻译内容</div>
-                            <div class="empty-sub">在原始文案中勾选条目，点击翻译选中即可生成</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-content" id="tab-audio" data-panel-title="音频列表">
-                    <div class="tab-toolbar">
-                        <div class="toolbar-left"><label class="checkbox-wrap"><input type="checkbox"
-                                    id="selectAllAudio" onchange="toggleAllAudio()"> 全选</label></div>
-                        <div class="toolbar-right">
-                            <button class="btn btn-primary btn-sm" id="btnBatchDownloadAudio"
-                                onclick="batchDownloadAudio()" disabled>批量下载</button>
-                            <button class="btn btn-danger btn-sm" id="btnDelAudio" onclick="deleteSelectedAudio()"
-                                disabled>删除</button>
-                        </div>
-                    </div>
-                    <div id="audioListContainer">
-                        <div class="empty-state">
-                            <div class="empty-icon">S</div>
-                            <div class="empty-text">暂无生成音频</div>
-                            <div class="empty-sub">在翻译结果中勾选条目，点击生成语音即可</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </main>
         </div>
     </div>
+
     <div class="modal-overlay" id="modalTranslate">
         <div class="modal">
-            <div class="modal-header"><span>批量翻译设置</span><button class="modal-close" id="modalTranslateClose"
+            <div class="modal-header"><span>翻译设置</span><button class="modal-close" id="modalTranslateClose"
                     onclick="closeModal('modalTranslate')">&times;</button></div>
             <div class="modal-body" id="translateBody">
                 <label for="translateInput">目标语言（用逗号或换行分隔）</label>
-                <textarea id="translateInput" rows="3" placeholder="例如：葡萄牙语、英语、日语&#10;按 Enter 快速开始翻译"></textarea>
-                <div class="hint">系统将自动识别所有已勾选文案并翻译为指定语言</div>
+                <textarea id="translateInput" rows="3" placeholder="例如：葡萄牙语、英语、日语"></textarea>
+                <div class="hint">按原文整体翻译（AI 本土化，保持句式），完成后自动下载译文</div>
                 <div id="translateProgress" style="display:none;margin-top:12px;">
                     <div class="progress-text" id="translateProgressLabel">正在翻译... 0/0</div>
                     <div class="progress-bar">
@@ -1209,30 +1552,39 @@
                 </div>
                 <div id="translateFailedList" style="display:none;"></div>
             </div>
-            <div class="modal-footer" id="translateFooter"><button class="btn btn-outline"
-                    onclick="closeModal('modalTranslate')">取消</button><button class="btn btn-primary"
-                    id="btnConfirmTranslate" onclick="executeTranslate()">开始翻译</button></div>
+            <div class="modal-footer" id="translateFooter">
+                <button class="btn btn-outline" onclick="closeModal('modalTranslate')">取消</button>
+                <button class="btn btn-primary" id="btnConfirmTranslate" onclick="executeTranslate()">开始翻译</button>
+            </div>
         </div>
     </div>
+
     <div class="modal-overlay" id="modalTts">
         <div class="modal">
             <div class="modal-header"><span>语音生成设置</span><button class="modal-close" id="modalTtsClose"
                     onclick="closeModal('modalTts')">&times;</button></div>
             <div class="modal-body" id="ttsBody">
-                <label for="ttsModel">模型选择</label><select id="ttsModel" onchange="onTtsModelChange()">
+                <div class="tts-summary" id="ttsSummary">即将生成 1 个音频</div>
+                <label for="ttsModel">模型选择</label>
+                <select id="ttsModel" onchange="onTtsModelChange()">
                     <option value="google">谷歌 (Google)</option>
                     <option value="aliyun">阿里云 (Aliyun)</option>
                 </select>
                 <label for="ttsVoice">语音音色</label>
-                <div class="form-row"><select id="ttsVoice" style="flex:1;"></select><button
-                        class="btn btn-outline btn-sm" id="btnVoiceDemo" onclick="playVoiceDemo()">试听</button></div>
-                <div id="ttsIntervalRow"><label for="ttsInterval">段落间隔（秒）</label>
-                    <div class="slider-row"><input type="range" id="ttsInterval" min="0" max="3" step="0.1" value="0.3"
-                            oninput="document.getElementById('ttsIntervalVal').textContent=this.value"><span
-                            class="slider-val" id="ttsIntervalVal">0.3</span></div>
+                <div class="form-row">
+                    <select id="ttsVoice" style="flex:1;"></select>
+                    <button class="btn btn-outline btn-sm" id="btnVoiceDemo" onclick="playVoiceDemo()">试听</button>
+                </div>
+                <div id="ttsIntervalRow">
+                    <label for="ttsInterval">段落间隔（秒）</label>
+                    <div class="slider-row">
+                        <input type="range" id="ttsInterval" min="0" max="3" step="0.1" value="0.3"
+                            oninput="document.getElementById('ttsIntervalVal').textContent=this.value">
+                        <span class="slider-val" id="ttsIntervalVal">0.3</span>
+                    </div>
                 </div>
                 <label style="margin-top:10px;"><input type="checkbox" id="ttsUseTextName"
-                        style="accent-color:var(--accent);"> 使用原始文案作为文件名</label>
+                        style="accent-color:var(--primary);margin-right:5px;"> 使用原始文案作为文件名</label>
                 <div id="ttsProgress" style="display:none;margin-top:12px;">
                     <div class="progress-text" id="ttsProgressLabel">正在生成... 0/0</div>
                     <div class="progress-bar">
@@ -1241,33 +1593,25 @@
                 </div>
                 <div id="ttsFailedList" style="display:none;"></div>
             </div>
-            <div class="modal-footer" id="ttsFooter"><button class="btn btn-outline"
-                    onclick="closeModal('modalTts')">取消</button><button class="btn btn-primary" id="btnConfirmTts"
-                    onclick="executeTts()">确认生成</button></div>
+            <div class="modal-footer" id="ttsFooter">
+                <button class="btn btn-outline" onclick="closeModal('modalTts')">取消</button>
+                <button class="btn btn-primary" id="btnConfirmTts" onclick="executeTts()">确认生成</button>
+            </div>
         </div>
     </div>
+
     <div class="modal-overlay" id="modalAddText">
         <div class="modal">
             <div class="modal-header"><span>新增原始文案</span><button class="modal-close"
                     onclick="closeModal('modalAddText')">&times;</button></div>
             <div class="modal-body"><textarea id="addTextInput" rows="5" placeholder="输入文本内容..."></textarea></div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('modalAddText')">取消</button><button class="btn btn-primary"
-                    onclick="saveAddText()">保存</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalAddText')">取消</button>
+                <button class="btn btn-primary" onclick="saveAddText()">保存</button>
+            </div>
         </div>
     </div>
-    <div class="modal-overlay" id="modalAddTrans">
-        <div class="modal">
-            <div class="modal-header"><span>新增翻译</span><button class="modal-close"
-                    onclick="closeModal('modalAddTrans')">&times;</button></div>
-            <div class="modal-body"><label for="addTransLang">语言标识（可选）</label><input type="text" id="addTransLang"
-                    placeholder="zh / en / pt / jp / kr"><label for="addTransText">翻译内容</label><textarea
-                    id="addTransText" rows="4" placeholder="输入翻译文本..."></textarea></div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('modalAddTrans')">取消</button><button class="btn btn-primary"
-                    onclick="saveAddTrans()">保存</button></div>
-        </div>
-    </div>
+
     <audio id="demoAudio" style="display:none;"></audio>
     <script src="./js/trans.js"></script>
 </body>
