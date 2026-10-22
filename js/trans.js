@@ -144,7 +144,7 @@ function showConfirm(msg) {
 /* ============================================================
  * 复制 / 下载
  * ============================================================ */
-function copyText(t) {
+function copyText(t, okMsg) {
     try {
         const ta = document.createElement('textarea');
         ta.value = t;
@@ -153,10 +153,12 @@ function copyText(t) {
         ta.select();
         const ok = document.execCommand('copy');
         document.body.removeChild(ta);
-        if (ok) showToast('已复制', 'success');
+        if (ok) showToast(okMsg || '已复制', 'success');
         else showToast('复制失败', 'error');
+        return ok;
     } catch (e) {
         showToast('复制失败', 'error');
+        return false;
     }
 }
 function downloadTxt(t, name) {
@@ -507,6 +509,8 @@ function renderLangPane(item, t, isActive) {
     const textItem = textList.find(x => x.id === t.fromTextId);
     const origDeleted = (textItem && textItem.deletedLines) || [];
 
+    const visibleIdx = lines.map((_, i) => i).filter(i => !origDeleted.includes(i));
+
     const visibleLinesHtml = lines.map((line, i) => {
         if (origDeleted.includes(i)) return '';
         const done = isCopied(t.id, i);
@@ -542,8 +546,16 @@ function renderLangPane(item, t, isActive) {
       </div>`
         : '';
 
+    const paneActionsHtml = visibleIdx.length > 0
+        ? `<div class="pane-actions">
+      <button class="btn btn-outline btn-xs" onclick="copyAllTransLines('${escapeAttr(t.id)}',this)">复制全部译文</button>
+      <span class="pane-hint">共 ${visibleIdx.length} 行</span>
+    </div>`
+        : '';
+
     return `
   <div class="lang-pane${isActive ? ' active' : ''}" data-lang="${escapeAttr(t.lang)}">
+    ${paneActionsHtml}
     <div class="lines">${visibleLinesHtml || '<div style="color:#999;font-size:12px;padding:6px;">该语言暂无可见译文行</div>'}</div>
     ${audioHtml}
   </div>`;
@@ -616,6 +628,38 @@ function updateLangTab(transId) {
     const done = p.total > 0 && p.done === p.total;
     tab.classList.toggle('done', done);
     tab.innerHTML = `${escapeHtml(getLangName(t.lang))} <span class="cnt">${p.done}/${p.total}${done ? ' ✓' : ''}</span>`;
+}
+
+function copyAllTransLines(transId, btn) {
+    const t = transList.find(x => x.id === transId);
+    if (!t || !t.lines) return;
+    const textItem = textList.find(x => x.id === t.fromTextId);
+    const origDeleted = (textItem && textItem.deletedLines) || [];
+    const visibleIdx = t.lines.map((_, i) => i).filter(i => !origDeleted.includes(i));
+    const parts = visibleIdx
+        .map(i => String(t.lines[i] || ''))
+        .filter(s => s.trim());
+
+    if (!parts.length) return showToast('没有可复制的译文', 'warning');
+    if (!copyText(parts.join('\n'), `已复制全部 ${parts.length} 行译文`)) return;
+
+    // 标记可见行为已复制
+    visibleIdx.forEach(i => markCopied(transId, i));
+
+    // 同步当前 pane 内的行状态
+    const pane = btn ? btn.closest('.lang-pane') : null;
+    if (pane) {
+        pane.querySelectorAll('.line').forEach(lineEl => {
+            const idx = parseInt(lineEl.dataset.idx, 10);
+            if (origDeleted.includes(idx)) return;
+            lineEl.classList.add('done');
+            const cp = lineEl.querySelector('.cp');
+            if (cp) { cp.classList.add('done'); cp.textContent = '已复制 ✓'; }
+        });
+    }
+
+    // 同步语种 tab 的进度
+    updateLangTab(transId);
 }
 
 /* ============================================================
@@ -935,24 +979,13 @@ async function executeTranslate() {
         transList.push(...newTransList);
         renderMainList();
 
-        if (newTransList.length > 0) {
-            let out = '';
-            newTransList.forEach(t => {
-                const textItem = textList.find(x => x.id === t.fromTextId);
-                const origDeleted = (textItem && textItem.deletedLines) || [];
-                const visibleIdx = t.lines.map((_, i) => i).filter(i => !origDeleted.includes(i));
-                out += `[${getLangName(t.lang)}] ${t.source}\n` + visibleIdx.map(i => t.lines[i]).join('\n') + '\n\n';
-            });
-            downloadTxt(out, nowFileName());
-        }
-
         if (failed.length > 0) {
             fd.style.display = 'block';
             fd.innerHTML = `<div class="failed-list"><strong>以下 ${failed.length} 项翻译失败：</strong>${failed.map(f => '&bull; "' + escapeHtml(f.text) + '" → ' + f.lang + ' (' + f.error + ')').join('<br>')}</div>`;
             showToast(`翻译部分完成：${newTransList.length} 成功，${failed.length} 失败`, 'warning');
         } else {
             closeModal('modalTranslate');
-            showToast(`翻译完成，共 ${newTransList.length} 个语种，已自动下载`, 'success');
+            showToast(`翻译完成，共 ${newTransList.length} 个语种`, 'success');
         }
     } catch (err) {
         showToast('翻译失败: ' + err.message, 'error');
