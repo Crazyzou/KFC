@@ -27,6 +27,7 @@ const AI_CONFIG = {
 };
 const AI_TRANSLATE_MAX_CHARS = 8000;   // 单块最大字符数，块间并行
 const AI_TRANSLATE_TIMEOUT = 90000;    // 单次请求超时 90s
+const TRANSLATE_TWO_PASS = true;   // 两段式：直译 → 本地化重写；关掉则只跑第一段
 
 /* 语言别名 → 中文名 */
 const LANG_CODE_MAP = {
@@ -43,6 +44,236 @@ const LANG_CODE_MAP = {
     'es': '西班牙语', 'fr': '法语', 'de': '德语',
     'it': '意大利语', 'ru': '俄语'
 };
+
+/* ============================================================
+ * 语言画像：地区变体 + 本土化要点 + few-shot 改写示例
+ * ============================================================ */
+const LANG_LOCAL_PROFILE = {
+    pt: {
+        label: '巴西葡萄牙语（pt-BR）',
+        guide: [
+            '口语用 você，不用 tu；物主代词前通常省略冠词（写 seus lábios，不写 os seus lábios）。',
+            '口语和广告里用 pra 代替 para、tá 代替 está、a gente 代替 nós。',
+            '避免书面词：revelar → dizer / mostrar / entregar；realizar → fazer；utilizar → usar。',
+            '广告、测试、口播类文案要短、有钩子感，像当地社交广告一样能直接念出来；疑问句常用 Será que...? 开头。',
+            '祈使句用 você 形式（Descubra、Faça、Confira），不要用 tu 形式（Descobre、Faz）。',
+            '避免欧洲葡语词汇：celular（不用 telemóvel）、ônibus（不用 autocarro）、banheiro（不用 casa de banho）。'
+        ],
+        examples: [
+            { stiff: 'Os seus lábios podem revelar de que país você é?', natural: 'Seus lábios dizem de que país você é?' },
+            { stiff: 'Realize o teste agora!', natural: 'Faça o teste agora!' }
+        ]
+    },
+    en: {
+        label: '美式英语（en-US）',
+        guide: [
+            '用美式拼写与用法（color、realize、gotten、apartment），避免英式表达。',
+            "口语可用缩写（it's、you're、gonna），广告用短句和祈使句。",
+            '广告常用 You + 动词开头（Discover、Find out、Take the test），或 What/Which 开头勾好奇心。',
+            '避免过度正式：purchase → buy、utilize → use、commence → start、assist → help。'
+        ],
+        examples: [
+            { stiff: 'Can your lips reveal which country you are from?', natural: "Can your lips tell where you're from?" },
+            { stiff: 'Please conduct the test immediately.', natural: 'Take the test now!' }
+        ]
+    },
+    es: {
+        label: '拉丁美洲西班牙语（es-419）',
+        guide: [
+            '用 ustedes，不用 vosotros；避免西班牙本土变位和词汇。',
+            '广告口语用 tú 拉近距离，正式场景用 usted；同一篇内保持一致。',
+            '避免西班牙用法：computadora（不用 ordenador）、celular（不用 móvil）、carro（不用 coche）。',
+            '广告用短句、祈使句；疑问句常用 ¿Cuál es tu...? / ¿Qué tipo de... eres?。',
+            '感叹号和疑问号要成对倒置（¡...!、¿...?）。'
+        ],
+        examples: [
+            { stiff: '¿Tus labios pueden revelar de qué país eres?', natural: '¿Tus labios dicen de qué país eres?' },
+            { stiff: '¡Realiza la prueba ahora!', natural: '¡Haz la prueba ahora!' }
+        ]
+    },
+    ja: {
+        label: '日语（ja-JP）',
+        guide: [
+            '广告常用体言止め和短句；敬体与常体按场景统一，不要混用。',
+            '口语可用「〜だよね」「〜かも」「〜っぽい」等软化表达。',
+            '广告祈使常用「〜してみよう」「今すぐチェック」「今すぐ診断」，少用「テスト」这种硬词。',
+            '避免直译中文的「あなたの〜でわかる？」，改用「〜を見ればわかる？」「〜っぽい？」。',
+            '人称代词能省则省；标点用全角（。、！？）。'
+        ],
+        examples: [
+            { stiff: 'あなたの唇でどこの国出身かわかる？', natural: '唇を見れば出身国がわかる？' },
+            { stiff: '今すぐテストを実施してください。', natural: '今すぐチェック！' }
+        ]
+    },
+    ko: {
+        label: '韩语（ko-KR）',
+        guide: [
+            '广告常用 해요체 或短句；轻量广告避免过度敬语（합니다체）。',
+            '口语可用「~해 보세요」「~인가요?」「~네요」等自然收尾。',
+            '避免照搬中文语序；主语能省则省。',
+            '广告祈使常用「지금 바로 확인!」「~해 보세요」，少用「테스트를 진행하세요」这种公文式。'
+        ],
+        examples: [
+            { stiff: '당신의 입술로 어느 나라 출신인지 알 수 있나요?', natural: '입술만 보면 어느 나라 사람인지 알 수 있을까?' },
+            { stiff: '지금 테스트를 진행하세요.', natural: '지금 바로 확인해 보세요!' }
+        ]
+    },
+    ar: {
+        label: '阿拉伯语（现代标准阿拉伯语，广告可带海湾/埃及口语色彩）',
+        guide: [
+            '书面基调用现代标准阿拉伯语（MSA）；广告可按目标市场加入海湾或埃及口语色彩，但同一篇内统一。',
+            '广告用简短、有节奏的句式，避免逐字直译和过长从句。',
+            '避免公文式动词：قم بإجراء → جرّب / اختبر。',
+            '疑问句常用 هل...? / ما هو...? / كيف...?；标点用阿拉伯语标点（، ؛ ؟）。'
+        ],
+        examples: [
+            { stiff: 'هل يمكن لشفتيك أن تكشف من أي بلد أنت؟', natural: 'شفتاك تكشفان من أي بلد أنت؟' },
+            { stiff: 'قم بإجراء الاختبار الآن!', natural: 'جرّب الآن!' }
+        ]
+    },
+    hi: {
+        label: '印地语（hi-IN）',
+        guide: [
+            '主体保持印地语自然表达；广告可少量 Hinglish 混排，但不要整句英文。',
+            '人称用 आप（正式/广告常用）或 तुम（亲近），按品牌调性统一。',
+            '避免梵语化书面词：करें 而非 सम्पन्न करें；परीक्षण → टेस्ट / आज़माएँ。',
+            '广告疑问句常用 "क्या आप...?"；祈使句用 "आज़माएँ" / "देखें"。'
+        ],
+        examples: [
+            { stiff: 'क्या आपके होंठ बता सकते हैं कि आप किस देश से हैं?', natural: 'आपके होंठ बताते हैं आप किस देश से हैं?' },
+            { stiff: 'अभी परीक्षण करें!', natural: 'अभी आज़माएँ!' }
+        ]
+    },
+    id: {
+        label: '印度尼西亚语（id-ID）',
+        guide: [
+            '口语化、短句；避免马来语用法。',
+            '人称用 Anda（正式/广告常用）或 kamu（亲近），按品牌调性统一。',
+            '避免书面词：menggunakan → pakai；melakukan → lakukan；membeli → beli。',
+            '广告常用 "Yuk, coba!" / "Cek sekarang!" / "Temukan!"；疑问句常用 "Apa ... kamu?"。'
+        ],
+        examples: [
+            { stiff: 'Apakah bibir Anda dapat mengungkapkan dari negara mana Anda berasal?', natural: 'Bibir Anda bisa ungkap asal negara, lho!' },
+            { stiff: 'Lakukan tes sekarang!', natural: 'Coba sekarang!' }
+        ]
+    },
+    ms: {
+        label: '马来语（ms-MY）',
+        guide: [
+            '与印尼语区分：kereta 指汽车（印尼语指火车）、pejabat 指办公室。',
+            '人称用 Anda / awak，广告以 Anda 为主。',
+            '避免印尼语借词和口语缩略（gimana、nggak）。',
+            '广告常用 "Jom cuba!" / "Cuba sekarang!" / "Ketahui sekarang!"。'
+        ],
+        examples: [
+            { stiff: 'Bolehkah bibir anda mendedahkan dari negara mana anda berasal?', natural: 'Bibir anda boleh dedah asal negara anda?' },
+            { stiff: 'Lakukan ujian sekarang!', natural: 'Jom cuba sekarang!' }
+        ]
+    },
+    th: {
+        label: '泰语（th-TH）',
+        guide: [
+            '广告用口语短句；礼貌词 ครับ/ค่ะ 按场景取舍，广告中可省略以显轻快。',
+            '避免直译中文语序；泰语定语后置、语序灵活，按母语习惯调整。',
+            '广告常用 "ลองเลย!" / "เช็กเลย!" / "ค้นพบ!"；避免 "ดำเนินการทดสอบ" 这种公文式。',
+            '不空格分词；标点尽量少用，靠句末语气词断句。'
+        ],
+        examples: [
+            { stiff: 'ริมฝีปากของคุณสามารถเปิดเผยว่าคุณมาจากประเทศใด?', natural: 'แค่ดูริมฝีปากก็รู้ว่าคุณมาจากประเทศไหน?' },
+            { stiff: 'ดำเนินการทดสอบทันที!', natural: 'ลองเลย!' }
+        ]
+    },
+    vi: {
+        label: '越南语（vi-VN）',
+        guide: [
+            '广告用口语短句；避免直译中文语序。',
+            '人称用 bạn（亲近/广告常用）或 quý khách（正式），按品牌调性统一。',
+            '广告常用 "Thử ngay!" / "Khám phá ngay!" / "Xem ngay!"；避免 "thực hiện bài kiểm tra" 这种书面式。',
+            '疑问句常用 "Bạn là...?" / "Bạn có...?"。'
+        ],
+        examples: [
+            { stiff: 'Đôi môi của bạn có thể tiết lộ bạn đến từ quốc gia nào?', natural: 'Nhìn môi là biết bạn đến từ nước nào?' },
+            { stiff: 'Hãy thực hiện bài kiểm tra ngay!', natural: 'Thử ngay!' }
+        ]
+    },
+    ru: {
+        label: '俄语（ru-RU）',
+        guide: [
+            '广告用短句、口语化；避免公文式表达和过多被动语态。',
+            '人称用 ты（亲近/广告常用）或 вы（正式），按品牌调性统一。',
+            '避免书面词：использовать → пользоваться；осуществлять → делать；провести тест → проверить。',
+            '广告常用 "Узнай!" / "Попробуй сейчас!" / "Проверь!"。'
+        ],
+        examples: [
+            { stiff: 'Могут ли ваши губы раскрыть, из какой вы страны?', natural: 'По губам можно понять, откуда ты?' },
+            { stiff: 'Проведите тест немедленно!', natural: 'Проверь сейчас!' }
+        ]
+    },
+    fr: {
+        label: '法语（fr-FR）',
+        guide: [
+            '广告可用 tu 拉近距离（视品牌调性），正式场景用 vous；同一篇内统一。',
+            '口语可用 on 代替 nous；避免过度书面：effectuer → faire；réaliser → faire。',
+            '广告常用 "Découvrez" / "Testez maintenant!" / "Découvre"；避免 "Veuillez effectuer..." 这种公文式。',
+            '疑问句常用 "Quel... êtes-vous?"；标点前按需加不换行空格。'
+        ],
+        examples: [
+            { stiff: 'Vos lèvres peuvent-elles révéler de quel pays vous êtes?', natural: "Vos lèvres disent d'où vous venez?" },
+            { stiff: 'Veuillez effectuer le test immédiatement.', natural: 'Faites le test maintenant!' }
+        ]
+    },
+    de: {
+        label: '德语（de-DE）',
+        guide: [
+            '广告可用 du 拉近距离（视品牌调性）；句子别太长，避免多层嵌套从句。',
+            "口语可用缩写（gibt's、geht's）。",
+            '避免书面词：verwenden → nutzen；durchführen → machen；erwerben → kaufen。',
+            '广告常用 "Finde heraus!" / "Jetzt testen!" / "Entdecke!"。'
+        ],
+        examples: [
+            { stiff: 'Können Ihre Lippen verraten, aus welchem Land Sie kommen?', natural: 'Verraten deine Lippen, woher du kommst?' },
+            { stiff: 'Führen Sie den Test jetzt durch.', natural: 'Finde es jetzt heraus!' }
+        ]
+    },
+    it: {
+        label: '意大利语（it-IT）',
+        guide: [
+            '广告用短句、口语化；避免书面腔和过长从句。',
+            '人称用 tu（广告常用）或 Lei（正式），按品牌调性统一。',
+            '广告常用 "Scopri" / "Prova ora!" / "Svela"；避免 "Effettua il test" 这种书面式。'
+        ],
+        examples: [
+            { stiff: 'Le tue labbra possono rivelare da quale paese vieni?', natural: 'Le tue labbra dicono da dove vieni?' },
+            { stiff: 'Effettua il test immediatamente!', natural: 'Scopri ora!' }
+        ]
+    },
+    zh: {
+        label: '简体中文（zh-CN）',
+        guide: [
+            '广告用短句、口语化；避免过度书面：进行 → 做、使用 → 用、予以 → 给。',
+            '广告常用 "测一测" / "立即体验" / "来看看"；避免 "请立即进行测试" 这种公告式。',
+            '疑问句常用 "你是哪种...？" / "你来自哪里？"。'
+        ],
+        examples: [
+            { stiff: '您的嘴唇能够揭示您来自哪个国家吗？', natural: '你的嘴唇能看出你来自哪个国家？' },
+            { stiff: '请立即进行测试。', natural: '现在测一测！' }
+        ]
+    }
+};
+
+const LANG_ALIAS_TO_BASE = {
+    cn: 'zh', jp: 'ja', kr: 'ko', in: 'hi', sa: 'ar', vn: 'vi',
+    ind: 'id', indonesia: 'id', indonesian: 'id'
+};
+
+function getLangProfile(lc) {
+    let k = String(lc || '').trim().toLowerCase().replace(/_/g, '-');
+    if (!k) return null;
+    if (LANG_LOCAL_PROFILE[k]) return LANG_LOCAL_PROFILE[k];
+    let base = k.split('-')[0];
+    if (LANG_ALIAS_TO_BASE[base]) base = LANG_ALIAS_TO_BASE[base];
+    return LANG_LOCAL_PROFILE[base] || null;
+}
 
 /* ============================================================
  * 工具
@@ -491,8 +722,13 @@ function renderCard(item, idx) {
         <button class="btn btn-ghost btn-xs danger" onclick="deleteTextById('${escapeAttr(item.id)}')">删除</button>
       </div>
     </div>
-    <div class="mcard-origin">
-      <div class="label-row">原文<button class="btn btn-ghost btn-xs add-line-btn" onclick="addOriginLine('${escapeAttr(item.id)}')">+ 添加行</button></div>
+        <div class="mcard-origin">
+      <div class="label-row">原文
+        <div class="origin-actions">
+          <button class="btn btn-ghost btn-xs" onclick="copyOriginText('${escapeAttr(item.id)}')">复制原文</button>
+          <button class="btn btn-ghost btn-xs" onclick="addOriginLine('${escapeAttr(item.id)}')">+ 添加行</button>
+        </div>
+      </div>
       <div class="origin-lines">${originLinesHtml}</div>
     </div>
     ${langs.length > 0
@@ -605,7 +841,21 @@ function updateTransLine(transId, idx, val) {
     }
 }
 
-/* 新增：追加一行原文并自动聚焦 */
+/* 一键复制原文（跳过已删除行和空行） */
+function copyOriginText(textId) {
+    const t = textList.find(x => x.id === textId);
+    if (!t) return;
+    const deleted = t.deletedLines || [];
+    const parts = (t.lines || [])
+        .map((s, i) => ({ s, i }))
+        .filter(x => !deleted.includes(x.i))
+        .map(x => String(x.s || '').trim())
+        .filter(Boolean);
+    if (!parts.length) return showToast('没有可复制的原文', 'warning');
+    copyText(parts.join('\n'), `已复制原文 ${parts.length} 行`);
+}
+
+/* 追加一行原文并自动聚焦 */
 function addOriginLine(textId) {
     const t = textList.find(x => x.id === textId);
     if (!t) return;
@@ -802,21 +1052,80 @@ async function aiChat(prompt, { temperature = 0.3, retries = 2, timeout = AI_TRA
     }
 }
 
-function buildTranslatePrompt(chunk, langName) {
+/* Pass 1：带 few-shot 的本地化翻译 */
+function buildTranslatePrompt(chunk, langName, langCode) {
     const body = chunk.map(c => `${c.no}. ${c.text}`).join('\n');
-    return `你是资深本地化译者。请将下列带编号的文本逐条翻译成【${langName}】。
+    const profile = getLangProfile(langCode);
+    const langLabel = profile ? profile.label : langName;
+    const guide = profile && profile.guide && profile.guide.length
+        ? '\n【该语言特别注意】\n' + profile.guide.map(g => '- ' + g).join('\n')
+        : '';
+    const examples = profile && profile.examples && profile.examples.length
+        ? '\n【改写示例（生硬 → 地道）】\n' +
+        profile.examples.map(e => `生硬：${e.stiff}\n地道：${e.natural}`).join('\n')
+        : '';
 
-严格遵循：
-1. 每条与输入编号一一对应，输出格式必须是“编号. 译文”。
-2. 不合并、不拆分、不遗漏任何编号；输入多少条，输出就多少条。
-3. 保持原意与句式结构，不增删信息。
-4. 使用【${langName}】母语者日常自然、地道的表达（本土化），避免逐字直译与翻译腔。
-5. 只输出翻译结果，不要解释、不要加代码块标记、不要额外空行。
+    return `你不是翻译，你是【${langLabel}】的本地化文案作者。你的工作不是把中文逐句换成${langLabel}，而是用${langLabel}母语者日常说话、当地文案人写作的方式，把原文的意思重新表达出来。
 
-原文：
+【第一步：内部判断，不要输出】
+先判断每条文本的体裁（广告/互动测试/口播/说明/正式）和想达到的效果（勾好奇/催点击/说明信息/建立信任）。
+
+【第二步：按体裁重写】
+- 广告、互动测试、口播：短句、口语、有钩子感，能直接念出来；疑问句和祈使句按当地广告习惯重写，不要照搬中文结构。
+- 说明、正式文本：保持对应正式度，但仍是母语者自然的写法，不要公文腔。
+
+【反直译清单（出现任意一条就算失败）】
+- 逐词对应中文语序
+- 疑问句/祈使句照搬中文结构（如"你的X能Y吗？"直译成"Can your X Y?"）
+- 用目标语言的书面词去对应中文的书面词，而不是换成当地口语词
+- 保留中文的连接词和过渡词（如"因此""并且""从而"）
+- 为了"准确"而牺牲"像人说的话"
+
+【硬性格式】
+1. 每条与输入编号一一对应，输出格式"编号. 译文"。
+2. 不合并、不拆分、不遗漏编号；输入多少条，输出多少条。
+3. 只输出译文，不要解释、不要代码块、不要额外空行。${guide}${examples}
+
+【原文】
 ${body}
 
-翻译结果：`;
+【翻译结果】`;
+}
+
+/* Pass 2：本地化重写（只对 Pass 1 的直译稿做润色） */
+function buildPolishPrompt(chunk, draftMap, langName, langCode) {
+    const profile = getLangProfile(langCode);
+    const langLabel = profile ? profile.label : langName;
+    const guide = profile && profile.guide && profile.guide.length
+        ? '\n【该语言特别注意】\n' + profile.guide.map(g => '- ' + g).join('\n')
+        : '';
+    const original = chunk.map(c => `${c.no}. ${c.text}`).join('\n');
+    const draft = chunk.map(c => `${c.no}. ${draftMap.get(c.no) || ''}`).join('\n');
+
+    return `下面是一份【${langLabel}】直译稿，以及对应的中文原文。直译稿语法正确、能看懂，但读起来像翻译，不像当地人说的话。
+
+【中文原文】
+${original}
+
+【直译稿】
+${draft}
+
+【任务】
+把直译稿逐条重写成【${langLabel}】母语者日常会说、像当地广告文案人写的样子。
+
+【重写要求】
+- 意思不变，信息不增不减。
+- 可以调整语序、换词、拆句合句、省略冗余成分。
+- 广告/互动测试/口播类：要口语化、有钩子感、句子短，能直接念出来。
+- 说明/正式类：保持正式度，但去掉翻译腔。
+- 不要保留直译稿的句式和用词习惯。${guide}
+
+【硬性格式】
+1. 每条与输入编号一一对应，输出格式"编号. 译文"。
+2. 不合并、不拆分、不遗漏编号；输入多少条，输出多少条。
+3. 只输出重写结果，不要解释、不要代码块、不要额外空行。
+
+【重写结果】`;
 }
 
 function parseNumberedTranslation(text, expectedNos) {
@@ -843,7 +1152,7 @@ function parseNumberedTranslation(text, expectedNos) {
     return map;
 }
 
-async function translateTextItem(textItem, langName) {
+async function translateTextItem(textItem, langName, langCode) {
     const linesSrc = textItem.lines || [];
     const deleted = textItem.deletedLines || [];
     const active = [];
@@ -868,9 +1177,29 @@ async function translateTextItem(textItem, langName) {
     if (cur.length) chunks.push(cur);
 
     const chunkResults = await Promise.all(chunks.map(async chunk => {
-        const prompt = buildTranslatePrompt(chunk, langName);
-        const raw = await aiChat(prompt, { temperature: 0.3, timeout: AI_TRANSLATE_TIMEOUT });
-        return { chunk, map: parseNumberedTranslation(raw, chunk.map(c => c.no)) };
+        const nos = chunk.map(c => c.no);
+
+        // Pass 1：本地化翻译（temperature 0.6）
+        const prompt = buildTranslatePrompt(chunk, langName, langCode);
+        const raw = await aiChat(prompt, { temperature: 0.6, timeout: AI_TRANSLATE_TIMEOUT });
+        let map = parseNumberedTranslation(raw, nos);
+
+        // Pass 2：本地化重写（temperature 0.7）；失败则回退到 Pass 1
+        if (TRANSLATE_TWO_PASS) {
+            try {
+                const polishPrompt = buildPolishPrompt(chunk, map, langName, langCode);
+                const raw2 = await aiChat(polishPrompt, { temperature: 0.7, timeout: AI_TRANSLATE_TIMEOUT });
+                const map2 = parseNumberedTranslation(raw2, nos);
+                nos.forEach(no => {
+                    const v = map2.get(no);
+                    if (v && v.trim()) map.set(no, v);
+                });
+            } catch (e) {
+                console.warn('润色轮失败，使用 Pass 1 结果：', e && e.message);
+            }
+        }
+
+        return { chunk, map };
     }));
 
     const out = new Array(linesSrc.length).fill('');
@@ -882,7 +1211,6 @@ async function translateTextItem(textItem, langName) {
     }
     return out;
 }
-
 /* ============================================================
  * 翻译入口（整体翻译 + 多语言并行）
  * ============================================================ */
@@ -992,7 +1320,7 @@ async function executeTranslate() {
         pf.style.width = '0%';
 
         await Promise.allSettled(tasks.map(task =>
-            translateTextItem(task.textItem, task.langName)
+            translateTextItem(task.textItem, task.langName, task.lc)
                 .then(lines => {
                     if (lines && lines.length) {
                         newTransList.push({
@@ -1305,7 +1633,6 @@ async function retryTtsSingle(transId, btn) {
     const useTextName = !!(saved && saved.useTextName);
 
     if (!voice) {
-        // 没有保存过音色 → 打开弹窗，让用户先选
         pendingTtsItems = [item];
         await openTtsDialogInternal([item]);
         return;
