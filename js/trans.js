@@ -14,6 +14,7 @@ let cardState = {};
 let pendingTtsItems = [];
 let pendingTranslateItems = null;
 let voiceListCache = { google: [], aliyun: [] };
+let ttsFailedMap = {};   // transId -> 错误信息（用于单条重试按钮）
 const TTS_SETTINGS_KEY = 'tts_settings';
 
 /* ============================================================
@@ -70,6 +71,26 @@ function getLangName(c) {
     const k = String(c || '').toLowerCase();
     return m[k] || c || '未知';
 }
+
+/**
+ * 把用户输入的语种 token（中文名 / 代码）解析为内部语言代码。
+ * 优先复用 items 里已有的语言代码，避免 zh/cn、ja/jp 这类别名被改写。
+ */
+function resolveLangCode(token, items) {
+    const raw = String(token || '').trim();
+    if (!raw) return '';
+    const k = raw.toLowerCase();
+    if (LANG_CODE_MAP[k]) return k;
+    const list = items || [];
+    for (const it of list) {
+        if (getLangName(it.lang) === raw) return it.lang;
+    }
+    for (const [code, cn] of Object.entries(LANG_CODE_MAP)) {
+        if (cn === raw) return code;
+    }
+    return raw;
+}
+
 function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
@@ -466,11 +487,12 @@ function renderCard(item, idx) {
       <span class="src" title="${escapeHtml(item.source)}">${escapeHtml(item.source)}</span>
       <div class="head-actions">
         <button class="btn btn-outline btn-xs" onclick="singleTranslate('${escapeAttr(item.id)}')">翻译</button>
+        <button class="btn btn-outline btn-xs" onclick="openTtsForCard('${escapeAttr(item.id)}')">语音</button>
         <button class="btn btn-ghost btn-xs danger" onclick="deleteTextById('${escapeAttr(item.id)}')">删除</button>
       </div>
     </div>
     <div class="mcard-origin">
-      <div class="label-row">原文</div>
+      <div class="label-row">原文<button class="btn btn-ghost btn-xs add-line-btn" onclick="addOriginLine('${escapeAttr(item.id)}')">+ 添加行</button></div>
       <div class="origin-lines">${originLinesHtml}</div>
     </div>
     ${langs.length > 0
@@ -525,6 +547,7 @@ function renderLangPane(item, t, isActive) {
     </div>`;
     }).join('');
 
+    const failErr = audio ? '' : (ttsFailedMap[t.id] || '');
     const audioHtml = audio
         ? `<div class="audio-inline">
         <div class="ai-head">
@@ -544,7 +567,12 @@ function renderLangPane(item, t, isActive) {
         <audio id="audioEl_${escapeAttr(t.id)}" style="display:none;" preload="metadata"
           src="${BASE}/api/download-audio/${encodeURIComponent(audio.file)}"></audio>
       </div>`
-        : '';
+        : (failErr
+            ? `<div class="tts-failed">
+          <span class="tts-failed-tip" title="${escapeAttr(failErr)}">语音生成失败：${escapeHtml(failErr)}</span>
+          <button class="btn btn-outline btn-xs" onclick="retryTtsSingle('${escapeAttr(t.id)}',this)">重新生成语音</button>
+        </div>`
+            : '');
 
     const paneActionsHtml = visibleIdx.length > 0
         ? `<div class="pane-actions">
@@ -575,6 +603,30 @@ function updateTransLine(transId, idx, val) {
         t.lines[idx] = val;
         t.text = t.lines.join('\n');
     }
+}
+
+/* 新增：追加一行原文并自动聚焦 */
+function addOriginLine(textId) {
+    const t = textList.find(x => x.id === textId);
+    if (!t) return;
+    t.lines.push('');
+    renderMainList();
+    setTimeout(() => {
+        const card = document.querySelector(`.mcard[data-textid="${textId}"]`);
+        if (!card) return;
+        const els = card.querySelectorAll('.mcard-origin .oline .tx');
+        const last = els[els.length - 1];
+        if (!last) return;
+        last.focus();
+        try {
+            const range = document.createRange();
+            range.selectNodeContents(last);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch (e) { }
+    }, 0);
 }
 
 function toggleOriginLineDel(textId, idx) {
@@ -643,10 +695,8 @@ function copyAllTransLines(transId, btn) {
     if (!parts.length) return showToast('没有可复制的译文', 'warning');
     if (!copyText(parts.join('\n'), `已复制全部 ${parts.length} 行译文`)) return;
 
-    // 标记可见行为已复制
     visibleIdx.forEach(i => markCopied(transId, i));
 
-    // 同步当前 pane 内的行状态
     const pane = btn ? btn.closest('.lang-pane') : null;
     if (pane) {
         pane.querySelectorAll('.line').forEach(lineEl => {
@@ -658,7 +708,6 @@ function copyAllTransLines(transId, btn) {
         });
     }
 
-    // 同步语种 tab 的进度
     updateLangTab(transId);
 }
 
@@ -786,7 +835,6 @@ function parseNumberedTranslation(text, expectedNos) {
             map.set(curNo, prev ? prev + ' ' + line : line);
         }
     }
-    // 兜底：完全没有编号时，按行顺序对齐
     if (map.size === 0) {
         const arr = lines.map(s => s.replace(/\*\*/g, '').trim()).filter(Boolean);
         expectedNos.forEach((no, i) => map.set(no, arr[i] || ''));
@@ -795,7 +843,6 @@ function parseNumberedTranslation(text, expectedNos) {
     return map;
 }
 
-/* 整体翻译一个文案到指定语言，返回与原文等长的 lines 数组 */
 async function translateTextItem(textItem, langName) {
     const linesSrc = textItem.lines || [];
     const deleted = textItem.deletedLines || [];
@@ -807,7 +854,6 @@ async function translateTextItem(textItem, langName) {
     });
     if (active.length === 0) return new Array(linesSrc.length).fill('');
 
-    // 分块（块内整体翻译；块间并行）
     const chunks = [];
     let cur = [], curLen = 0;
     for (const item of active) {
@@ -864,7 +910,6 @@ async function executeTranslate() {
     const rawInput = document.getElementById('translateInput').value.trim();
     if (!rawInput) return showToast('请输入目标语言', 'warning');
 
-    // —— 清洗输入：去掉"翻译/译成"等前缀；把 / + 空格 等也当分隔符；过滤掉「二创6」这类附加参数 ——
     const KNOWN_LANG_NAMES = new Set(Object.values(LANG_CODE_MAP));
     const cleaned = rawInput.replace(
         /^\s*(?:请|帮我|帮忙|给我|把|将)?\s*(?:翻译成|翻译为|翻译|译成|译为|译|转成|转为|转)\s*[:：]?\s*/i,
@@ -875,9 +920,9 @@ async function executeTranslate() {
         const raw = String(t || '').trim();
         if (!raw) return false;
         const k = raw.toLowerCase();
-        if (LANG_CODE_MAP[k]) return true;            // 已知代码/别名
-        if (KNOWN_LANG_NAMES.has(raw)) return true;   // 中文语言名
-        if (/^[a-z]{2,3}$/.test(k)) return true;      // 通用 2~3 位代码
+        if (LANG_CODE_MAP[k]) return true;
+        if (KNOWN_LANG_NAMES.has(raw)) return true;
+        if (/^[a-z]{2,3}$/.test(k)) return true;
         return false;
     };
 
@@ -918,7 +963,6 @@ async function executeTranslate() {
         let langs = lj.extractedLanguages || [];
         if (!langs.length) throw new Error('未识别到有效目标语言');
 
-        // 按 lang code 去重
         const seen = new Set();
         langs = langs.filter(lo => {
             const code = String(lo.ttsCode || lo.language || '').toLowerCase();
@@ -931,7 +975,6 @@ async function executeTranslate() {
         if (sel.length === 0) throw new Error('没有可翻译的条目');
         pendingTranslateItems = null;
 
-        // 每个 (文案, 语言) 一个整体翻译任务（请求数 = 语言数 × 文案数）
         const tasks = [];
         sel.forEach(textItem => {
             langs.forEach(lo => {
@@ -1021,7 +1064,11 @@ function saveAddText() {
 }
 function deleteTextById(textId) {
     const transOfThis = transList.filter(x => x.fromTextId === textId);
-    transOfThis.forEach(tr => { delete COPIED[tr.id]; });
+    transOfThis.forEach(tr => {
+        delete COPIED[tr.id];
+        delete ttsFailedMap[tr.id];
+    });
+    delete ttsFailedMap['orig_' + textId];
     textList = textList.filter(x => x.id !== textId);
     transList = transList.filter(x => x.fromTextId !== textId);
     audioList = audioList.filter(x => x.fromTextId !== textId);
@@ -1125,17 +1172,56 @@ async function playVoiceDemo() {
 /* ============================================================
  * 语音生成
  * ============================================================ */
+
+/* 根据 transId 还原 TTS item（含无译文时的伪条目 orig_<textId>） */
+function getTtsItemById(transId) {
+    const t = transList.find(x => x.id === transId);
+    if (t) return t;
+    if (String(transId).startsWith('orig_')) {
+        const textId = transId.slice(5);
+        const textItem = textList.find(x => x.id === textId);
+        if (!textItem) return null;
+        const deleted = textItem.deletedLines || [];
+        const text = textItem.lines
+            .filter((_, i) => !deleted.includes(i))
+            .join('\n')
+            .trim();
+        if (!text) return null;
+        return {
+            id: transId,
+            lang: 'zh',
+            fromTextId: textId,
+            text,
+            source: textItem.source
+        };
+    }
+    return null;
+}
+
 async function openTtsForCard(textId) {
-    const transOfThis = transList.filter(t => t.fromTextId === textId);
-    if (transOfThis.length === 0) return showToast('该卡片暂无译文', 'warning');
-    pendingTtsItems = transOfThis;
-    await openTtsDialogInternal(transOfThis);
+    const textItem = textList.find(t => t.id === textId);
+    if (!textItem) return showToast('文案不存在', 'warning');
+
+    let items = transList.filter(t => t.fromTextId === textId);
+
+    if (items.length === 0) {
+        const fallback = getTtsItemById('orig_' + textId);
+        if (!fallback) return showToast('该文案没有可生成语音的内容', 'warning');
+        items = [fallback];
+    }
+
+    pendingTtsItems = items;
+    await openTtsDialogInternal(items);
 }
 async function openTtsDialogInternal(items) {
-    const langs = [...new Set(items.map(i => i.lang))];
     const summary = document.getElementById('ttsSummary');
     if (summary) {
-        summary.textContent = `即将生成 ${items.length} 个音频（${langs.length} 个语种：${langs.map(l => getLangName(l)).join('、')}），完成后自动下载`;
+        summary.textContent = `即将生成 ${items.length} 个音频，完成后自动下载`;
+    }
+    const langInput = document.getElementById('ttsLangInput');
+    if (langInput) {
+        const langs = [...new Set(items.map(i => i.lang))];
+        langInput.value = langs.map(l => getLangName(l)).join('、');
     }
     const saved = loadTtsSettings();
     const modelToLoad = saved && saved.model ? saved.model : 'google';
@@ -1207,6 +1293,49 @@ async function generateTtsForTrans(item, voice, model, interval, useTextName, ma
     return { success: false, item, error: lastErr };
 }
 
+/* 单条重试：仅重新生成某个 transId 的语音 */
+async function retryTtsSingle(transId, btn) {
+    const item = getTtsItemById(transId);
+    if (!item) return showToast('找不到该译文', 'warning');
+
+    const saved = loadTtsSettings();
+    const voice = saved && saved.voice;
+    const model = (saved && saved.model) || 'google';
+    const interval = saved && saved.interval !== undefined ? (parseFloat(saved.interval) || 0) : 0.3;
+    const useTextName = !!(saved && saved.useTextName);
+
+    if (!voice) {
+        // 没有保存过音色 → 打开弹窗，让用户先选
+        pendingTtsItems = [item];
+        await openTtsDialogInternal([item]);
+        return;
+    }
+
+    const oldText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
+    try {
+        const res = await generateTtsForTrans(item, voice, model, interval, useTextName, 3);
+        if (res.success) {
+            delete ttsFailedMap[transId];
+            audioList = audioList.filter(a => a.fromTransId !== res.result.fromTransId);
+            audioList.push(res.result);
+            renderMainList();
+            updateWorkflowSteps();
+            showToast('语音已重新生成，开始下载', 'success');
+            downloadAudioFile(res.result.file, res.result.display || res.result.file);
+        } else {
+            ttsFailedMap[transId] = res.error || '未知错误';
+            renderMainList();
+            showToast('重新生成失败：' + (res.error || '未知错误'), 'error');
+        }
+    } finally {
+        if (btn && document.body.contains(btn)) {
+            btn.disabled = false;
+            btn.textContent = oldText || '重新生成语音';
+        }
+    }
+}
+
 async function executeTts() {
     const voice = document.getElementById('ttsVoice').value;
     const model = document.getElementById('ttsModel').value;
@@ -1214,6 +1343,24 @@ async function executeTts() {
     const useTextName = document.getElementById('ttsUseTextName').checked;
     if (!voice) return showToast('请选择音色', 'warning');
     if (pendingTtsItems.length === 0) return showToast('没有待处理的条目', 'warning');
+
+    /* —— 应用「目标语种」输入 —— */
+    const langRaw = (document.getElementById('ttsLangInput').value || '').trim();
+    if (langRaw) {
+        const tokens = langRaw.split(/[,，、;；\/\s]+/).map(s => s.trim()).filter(Boolean);
+        if (tokens.length === 1) {
+            const code = resolveLangCode(tokens[0], pendingTtsItems);
+            pendingTtsItems = pendingTtsItems.map(it => ({ ...it, lang: code }));
+        } else if (tokens.length === pendingTtsItems.length) {
+            const base = pendingTtsItems;
+            pendingTtsItems = base.map((it, i) => ({ ...it, lang: resolveLangCode(tokens[i], base) }));
+        } else {
+            return showToast(`语种数量(${tokens.length})与待生成条目(${pendingTtsItems.length})不一致`, 'warning');
+        }
+    }
+
+    saveTtsSettings();
+    pendingTtsItems.forEach(it => { delete ttsFailedMap[it.id]; });
 
     const btn = document.getElementById('btnConfirmTts');
     const pd = document.getElementById('ttsProgress');
@@ -1256,10 +1403,12 @@ async function executeTts() {
                             done++;
                             if (result.success) {
                                 successResults.push(result.result);
+                                delete ttsFailedMap[result.result.fromTransId];
                                 audioList = audioList.filter(a => a.fromTransId !== result.result.fromTransId);
                                 audioList.push(result.result);
                             } else {
                                 roundFailedItems.push(result.item);
+                                ttsFailedMap[result.item.id] = result.error || '未知错误';
                                 roundFailedErrors.push({
                                     text: (result.item.text || '').slice(0, 50),
                                     error: result.error
@@ -1281,6 +1430,8 @@ async function executeTts() {
                 updateWorkflowSteps();
             }
         }
+
+        renderMainList();
 
         if (finalFailed.length > 0) {
             fd.style.display = 'block';
@@ -1324,6 +1475,7 @@ async function clearAllData() {
     if (currentInlineAudio) { try { currentInlineAudio.pause(); } catch (e) { } currentInlineAudio = null; currentInlineId = null; }
     fileList = []; textList = []; transList = []; audioList = []; cardState = {};
     COPIED = {};
+    ttsFailedMap = {};
     try { localStorage.removeItem(COPIED_KEY); } catch (e) { }
     const fs = document.getElementById('fileListSection');
     const ps = document.getElementById('progressSection');
