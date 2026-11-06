@@ -2,5 +2,5 @@
 git add .
 git commit -m "update %date% %time%"
 git commit --allow-empty -m "re-deploy pages"
-git push origin main
+git push --force origin main
 pause
