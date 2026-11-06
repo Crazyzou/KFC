@@ -1,7 +1,7 @@
 // ================== AI 处理器类 ==================
 class AITitleProcessor {
     constructor() {
-        this.apiKey = "6869437c-0d6b-42ee-8c6d-4c865ca9b475";
+        this.apiKey = "REMOVED_SECRET";
         this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
     }
     async getAIResponse(prompt, retries = 2) {

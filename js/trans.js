@@ -21,7 +21,7 @@ const TTS_SETTINGS_KEY = 'tts_settings';
  * AI 翻译配置（DeepSeek / 火山引擎方舟）
  * ============================================================ */
 const AI_CONFIG = {
-    apiKey: '6869437c-0d6b-42ee-8c6d-4c865ca9b475',
+    apiKey: 'REMOVED_SECRET',
     apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
     model: 'deepseek-v4-1-flash-260910'
 };

@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameTube Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-hover: #3a56d4;
+            --accent: #E4002B;
+            --text: #2b2d42;
+            --text-secondary: #5a6268;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --border: #dee2e6;
+            --muted: #f1f3f5;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 1.25rem;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .brand h1 {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.01em;
+            line-height: 1.2;
+        }
+
+        .brand p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .header-stats strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .card-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 13px;
+            padding: .5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            user-select: none;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .btn:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: var(--muted);
+        }
+
+        .btn-sm {
+            padding: .35rem .75rem;
+            font-size: 12px;
+        }
+
+        .btn-xs {
+            padding: .2rem .55rem;
+            font-size: 11px;
+        }
+
+        .input {
+            display: block;
+            width: 100%;
+            padding: .5rem .75rem;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color .15s ease;
+        }
+
+        .input:focus {
+            border-color: var(--primary);
+        }
+
+        .input-sm {
+            padding: .35rem .6rem;
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: .15rem .5rem;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 6px;
+            background: var(--muted);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .badge-primary {
+            background: #eef2ff;
+            color: var(--primary);
+            border-color: #c7d2fe;
+        }
+
+        .badge-accent {
+            background: #fff0f2;
+            color: var(--accent);
+            border-color: #f5c2ca;
+        }
+
+        .onboarding {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+
+        .onboarding-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .onboarding-text {
+            flex: 1;
+            color: #3730a3;
+        }
+
+        .onboarding-text strong {
+            font-weight: 600;
+        }
+
+        .capture-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .channel-section {
+            margin-bottom: 12px;
+        }
+
+        .channel-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .channel-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 100px;
+            overflow-y: auto;
+            padding: 8px;
+            background: var(--muted);
+            border-radius: 8px;
+            min-height: 44px;
+        }
+
+        .capture-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-bottom: 8px;
+        }
+
+        .toolbar-search {
+            flex: 1;
+            min-width: 200px;
+            max-width: 360px;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .advanced-filter {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: var(--muted);
+            border-radius: 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .dropdown summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 4px);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+            min-width: 120px;
+            padding: 4px;
+            z-index: 20;
+        }
+
+        .dropdown-menu button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 6px 10px;
+            border: none;
+            background: none;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: var(--text);
+        }
+
+        .dropdown-menu button:hover {
+            background: var(--muted);
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        .table th {
+            padding: .65rem .6rem;
+            background: var(--muted);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .table th.sortable {
+            cursor: pointer;
+        }
+
+        .table th.sortable:hover {
+            color: var(--text);
+        }
+
+        .table td {
+            padding: .55rem .6rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .table tr:hover td {
+            background: #f8f9fb;
+        }
+
+        .accordion-group {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            padding: .8rem 1.1rem;
+            background: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .accordion-body {
+            padding: .5rem;
+            background: var(--card);
+            border-top: 1px solid var(--border);
+        }
+
+        .batch-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            background: var(--card);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, .06);
+            transform: translateY(100%);
+            transition: transform .22s ease;
+        }
+
+        .batch-bar.visible {
+            transform: translateY(0);
+        }
+
+        .batch-bar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            gap: 12px;
+        }
+
+        .batch-bar-inner .count {
+            font-size: 13px;
+        }
+
+        .batch-bar-inner .count strong {
+            color: var(--primary);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .rec-source-card {
+            padding: 12px 14px;
+            margin-top: 8px;
+            background: var(--muted);
+            border-radius: 8px;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 76px;
+            right: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .toast {
+            padding: .65rem 1rem;
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            border-left: 3px solid var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+            opacity: 1;
+            transition: opacity .2s;
+        }
+
+        .toast-error {
+            border-left-color: var(--accent);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-3 {
+            gap: 12px;
+        }
+
+        .flex-1 {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .space-y-3>*+* {
+            margin-top: 12px;
+        }
+
+        .space-y-4>*+* {
+            margin-top: 16px;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+
+        .text-xs {
+            font-size: 12px;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .truncate {
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        main {
+            padding-top: 16px;
+            padding-bottom: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toast-container" class="toast-container"></div>
+
+    <header class="app-header">
+        <div class="container header-inner">
+            <div class="brand">
+                <div class="logo">GT</div>
+                <div>
+                    <h1>GameTube Monitor</h1>
+                    <p>游戏视频监测 · 爆款对标</p>
+                </div>
+            </div>
+            <div class="header-stats">
+                <span>频道 <strong id="header-stat-channels">0</strong></span>
+                <span>视频 <strong id="header-stat-videos">0</strong></span>
+            </div>
+            <div class="header-actions">
+                <span id="key-status" class="badge badge-primary" title="YouTube API Key 自动轮换状态"></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container space-y-4">
+        <div id="onboarding-banner" class="onboarding hidden">
+            <span class="onboarding-icon" id="onboarding-icon">💡</span>
+            <span class="onboarding-text" id="onboarding-text"></span>
+            <button id="onboarding-action" class="btn btn-primary btn-sm"></button>
+        </div>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>📺 频道监测</h2>
+                <span class="text-xs text-secondary" id="channel-count-hint">未添加频道</span>
+            </div>
+
+            <div class="capture-input-row">
+                <input id="input-channel" type="text" class="input flex-1"
+                    placeholder="粘贴 YouTube 频道 URL / @句柄 / 频道 ID（支持逗号批量）" />
+                <button id="btn-add-channel" class="btn btn-primary" style="white-space:nowrap;">添加</button>
+            </div>
+
+            <div class="channel-section">
+                <div class="channel-section-header">
+                    <span class="text-xs text-secondary">频道列表（勾选参与抓取）</span>
+                    <div class="flex gap-2">
+                        <button id="btn-select-all-channels" class="btn btn-outline btn-xs">全选</button>
+                        <button id="btn-deselect-all-channels" class="btn btn-outline btn-xs">清空</button>
+                    </div>
+                </div>
+                <div id="channel-chips-container" class="channel-chips"></div>
+            </div>
+
+            <div class="capture-actions">
+                <div class="flex items-center gap-2">
+                    <select id="select-capture-period" class="input input-sm" style="width:130px;">
+                        <option value="7d" selected>最近 7 天</option>
+                        <option value="15d">最近 15 天</option>
+                        <option value="10m">最近 10 个月</option>
+                    </select>
+                    <button id="btn-start-fetch" class="btn btn-primary">🚀 开始抓取</button>
+                    <button id="btn-refresh-types" class="btn btn-outline btn-sm">补全类型</button>
+                </div>
+                <span id="fetch-progress-msg" class="text-xs text-secondary"></span>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <h2>📊 视频数据</h2>
+                    <span id="badge-total-videos" class="badge">0 条</span>
+                </div>
+                <button id="btn-toggle-app-grouping" class="btn btn-outline btn-sm">按 APP 归纳</button>
+            </div>
+
+            <div class="toolbar">
+                <input id="filter-query" type="text" class="input input-sm toolbar-search"
+                    placeholder="🔍 搜索标题 / 游戏 / 频道" />
+                <select id="filter-video-type" class="input input-sm" style="width:110px;">
+                    <option value="all">全部类型</option>
+                    <option value="Video">Video</option>
+                    <option value="Shorts">Shorts</option>
+                    <option value="待确认">待确认</option>
+                </select>
+                <button id="btn-toggle-advanced-filter" class="btn btn-outline btn-sm">筛选 ▾</button>
+                <div class="spacer"></div>
+                <details class="dropdown">
+                    <summary class="btn btn-outline btn-sm">导出 ▾</summary>
+                    <div class="dropdown-menu">
+                        <button id="btn-export-csv">导出 CSV</button>
+                        <button id="btn-export-xlsx">导出 Excel</button>
+                    </div>
+                </details>
+            </div>
+
+            <div id="advanced-filter" class="advanced-filter hidden">
+                <span class="text-xs text-secondary">播放量</span>
+                <input id="filter-min-views" type="number" class="input input-sm" placeholder="最小"
+                    style="width:100px;" />
+                <span class="text-secondary">~</span>
+                <input id="filter-max-views" type="number" class="input input-sm" placeholder="最大"
+                    style="width:100px;" />
+                <button id="btn-reset-filters" class="btn btn-outline btn-xs">重置全部筛选</button>
+                <span class="text-xs text-secondary" style="margin-left:auto;">范围：下限严格大于 · 上限包含等于</span>
+            </div>
+
+            <div id="video-content-container" class="table-wrapper"></div>
+        </section>
+
+        <section id="section-recommendations" class="card hidden">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <h2>🔥 爆款对标推荐</h2>
+                    <span class="badge badge-accent" id="rec-count-badge">0 条</span>
+                </div>
+                <button id="btn-close-rec" class="btn btn-outline btn-sm">收起</button>
+            </div>
+            <div id="rec-workspace"></div>
+        </section>
+    </main>
+
+    <div id="batch-bar" class="batch-bar hidden">
+        <div class="container batch-bar-inner">
+            <span class="count">已选 <strong id="count-selected-videos">0</strong> 条</span>
+            <div class="flex items-center gap-2">
+                <button id="btn-batch-ai-identify" class="btn btn-outline btn-sm">🤖 AI 识别游戏</button>
+                <button id="btn-scroll-to-rec" class="btn btn-primary btn-sm">🔥 查看推荐</button>
+                <button id="btn-clear-selection" class="btn btn-outline btn-sm">清空</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚠️ 内部常量
+        // ==========================================
+        // YouTube Data API Key 池（配额用尽时自动轮换）
+        const YT_API_KEYS = [
+            "AIzaSyBX7YiD9hL6V5_uoG-5dVvoZ6mdNTvLWIM",
+            "AIzaSyDIC5HCCD0UIjHu3F988-3rYg7Eax2hnAQ",
+            "AIzaSyCYRu3QAFeX9fIqBBrA0LD5Hysut-NFpqs",
+        ];
+        let currentKeyIndex = 0;
+
+        // Gemini API Key（仅用于「AI 批量识别游戏名称」）
+        // ⚠️ 之前的代码里没有硬编码过真实 Key（均通过设置弹窗手填），
+        //    请将你的 Gemini Key 粘贴到下面这一行即可启用 AI 功能。
+        const GEMINI_API_KEY = ''; // ← 在这里粘贴 Gemini Key
+
+        const YT_BASE = 'https://www.googleapis.com/youtube/v3';
+        const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+        // ==========================================
+        // 状态
+        // ==========================================
+        const STORAGE = {
+            CHANNELS: 'yt_channels',
+            SELECTED_CHANNELS: 'yt_selected_channels',
+            ROWS: 'yt_rows',
+        };
+
+        const state = {
+            channels: safeParse(STORAGE.CHANNELS, []),
+            selectedChannelIds: new Set(safeParse(STORAGE.SELECTED_CHANNELS, [])),
+            rows: safeParse(STORAGE.ROWS, []),
+            selectedUrls: new Set(),
+            groupByApp: false,
+            filters: { query: '', minViews: '', maxViews: '', videoType: 'all' },
+            sortKey: 'published', sortDir: -1,
+            recSources: [], activeRecUrl: '', recTags: {}, recResults: {},
+        };
+
+        function safeParse(k, f) {
+            try { return JSON.parse(localStorage.getItem(k) || 'null') ?? f; }
+            catch { return f; }
+        }
+
+        // ==========================================
+        // 工具
+        // ==========================================
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+        function parseDurationSeconds(iso) {
+            if (!iso) return 0;
+            const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            return m ? (parseInt(m[1] || '0') * 3600) + (parseInt(m[2] || '0') * 60) + parseInt(m[3] || '0') : 0;
+        }
+        function formatViews(v) {
+            const n = Number(v) || 0;
+            if (n >= 1e8) return (n / 1e8).toFixed(1) + ' 亿';
+            if (n >= 1e4) return (n / 1e4).toFixed(1) + ' 万';
+            return n.toLocaleString('zh-CN');
+        }
+        function classifyVideo(sec) {
+            if (!sec || sec <= 0) return '待确认';
+            return sec > 60 ? 'Video' : 'Shorts';
+        }
+        function showToast(msg, isError = false, ms = 2800) {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = 'toast' + (isError ? ' toast-error' : '');
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 220); }, ms);
+        }
+
+        // ==========================================
+        // Key 轮换与统一请求
+        // ==========================================
+        function updateKeyStatus() {
+            const el = document.getElementById('key-status');
+            if (el) el.textContent = `Key ${currentKeyIndex + 1}/${YT_API_KEYS.length}`;
+        }
+        function rotateKey() {
+            currentKeyIndex = (currentKeyIndex + 1) % YT_API_KEYS.length;
+            updateKeyStatus();
+            console.warn(`[Key 轮换] 切换到第 ${currentKeyIndex + 1}/${YT_API_KEYS.length} 组`);
+        }
+
+        /**
+         * 统一 YouTube API 请求：URL 里不要带 key，内部注入并自动轮换。
+         * 命中配额/权限/限速类错误时切换到下一组 Key 重试，全部失败才抛错。
+         */
+        async function ytFetch(urlWithoutKey) {
+            const maxAttempts = YT_API_KEYS.length;
+            let lastError = null;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const sep = urlWithoutKey.includes('?') ? '&' : '?';
+                const url = `${urlWithoutKey}${sep}key=${YT_API_KEYS[currentKeyIndex]}`;
+
+                let res;
+                try {
+                    res = await fetch(url);
+                } catch (e) {
+                    lastError = e;
+                    rotateKey();
+                    continue;
+                }
+
+                if (res.ok) return res.json();
+
+                let errData = {};
+                try { errData = await res.json(); } catch { }
+                const reason = errData.error?.errors?.[0]?.reason || '';
+                const message = errData.error?.message || `HTTP ${res.status}`;
+
+                const isKeyIssue =
+                    reason === 'quotaExceeded' ||
+                    reason === 'rateLimitExceeded' ||
+                    reason === 'keyInvalid' ||
+                    res.status === 403 ||
+                    res.status === 429;
+
+                if (isKeyIssue && attempt < maxAttempts - 1) {
+                    lastError = new Error(message);
+                    rotateKey();
+                    continue;
+                }
+                throw new Error(message);
+            }
+            throw lastError || new Error('所有 API Key 均不可用');
+        }
+
+        // ==========================================
+        // Header & Onboarding
+        // ==========================================
+        function updateHeaderStats() {
+            document.getElementById('header-stat-channels').textContent = state.channels.length;
+            document.getElementById('header-stat-videos').textContent = state.rows.length;
+        }
+        function updateOnboarding() {
+            const banner = document.getElementById('onboarding-banner');
+            const icon = document.getElementById('onboarding-icon');
+            const text = document.getElementById('onboarding-text');
+            const btn = document.getElementById('onboarding-action');
+
+            if (state.channels.length === 0) {
+                icon.textContent = '📺';
+                text.innerHTML = '还没有频道。粘贴一个 <strong>YouTube 频道 URL 或 @句柄</strong> 到下方输入框开始。';
+                btn.textContent = '去添加';
+                btn.onclick = () => document.getElementById('input-channel').focus();
+                banner.classList.remove('hidden');
+                return;
+            }
+            if (state.rows.length === 0) {
+                icon.textContent = '🚀';
+                text.innerHTML = '频道已就绪，点击 <strong>开始抓取</strong> 获取最近的视频数据。';
+                btn.textContent = '去抓取';
+                btn.onclick = () => {
+                    document.getElementById('btn-start-fetch').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById('btn-start-fetch').focus();
+                };
+                banner.classList.remove('hidden');
+                return;
+            }
+            banner.classList.add('hidden');
+        }
+
+        // ==========================================
+        // YouTube API（业务层）
+        // ==========================================
+        async function resolveChannel(input) {
+            const clean = String(input || '').trim();
+            if (!clean) throw new Error('请输入频道 URL / @句柄 / 频道 ID');
+            const mId = clean.match(/channel\/(UC[a-zA-Z0-9_-]{22})/);
+            const mHandle = clean.match(/@([a-zA-Z0-9_.-]+)/);
+            let url = '';
+            if (mId) url = `${YT_BASE}/channels?part=snippet,contentDetails&id=${mId[1]}`;
+            else if (mHandle) url = `${YT_BASE}/channels?part=snippet,contentDetails&forHandle=${mHandle[1]}`;
+            else if (/^UC[a-zA-Z0-9_-]{22}$/.test(clean)) url = `${YT_BASE}/channels?part=snippet,contentDetails&id=${clean}`;
+            else {
+                const sData = await ytFetch(`${YT_BASE}/search?part=snippet&type=channel&q=${encodeURIComponent(clean)}&maxResults=1`);
+                const first = sData.items?.[0];
+                if (!first) throw new Error('未找到频道');
+                url = `${YT_BASE}/channels?part=snippet,contentDetails&id=${first.snippet.channelId}`;
+            }
+            const data = await ytFetch(url);
+            const item = data.items?.[0];
+            if (!item) throw new Error('解析频道失败');
+            return { id: item.id, title: item.snippet.title, uploads: item.contentDetails.relatedPlaylists.uploads };
+        }
+
+        async function fetchVideosFromChannel(channel, period, limit) {
+            const now = new Date();
+            const cutoff = new Date(now);
+            if (period === '7d') cutoff.setDate(now.getDate() - 7);
+            else if (period === '15d') cutoff.setDate(now.getDate() - 15);
+            else if (period === '10m') cutoff.setMonth(now.getMonth() - 10);
+
+            const basic = [];
+            let pageToken = '';
+            while (basic.length < limit) {
+                const pUrl = `${YT_BASE}/playlistItems?part=snippet&playlistId=${channel.uploads}&maxResults=50${pageToken ? '&pageToken=' + pageToken : ''}`;
+                const data = await ytFetch(pUrl);
+                if (!data.items || data.items.length === 0) break;
+                let reachedOld = false;
+                for (const it of data.items) {
+                    if (new Date(it.snippet.publishedAt) < cutoff) { reachedOld = true; break; }
+                    basic.push({
+                        id: it.snippet.resourceId.videoId, title: it.snippet.title,
+                        published: it.snippet.publishedAt.slice(0, 10), channel: channel.title,
+                        thumb: it.snippet.thumbnails?.medium?.url || '',
+                        url: `https://www.youtube.com/watch?v=${it.snippet.resourceId.videoId}`,
+                    });
+                    if (basic.length >= limit) break;
+                }
+                if (reachedOld || basic.length >= limit) break;
+                pageToken = data.nextPageToken;
+                if (!pageToken) break;
+            }
+            if (basic.length === 0) return [];
+
+            const enriched = [];
+            for (let i = 0; i < basic.length; i += 50) {
+                const batch = basic.slice(i, i + 50);
+                const ids = batch.map(v => v.id).join(',');
+                const vData = await ytFetch(`${YT_BASE}/videos?part=statistics,contentDetails&id=${ids}`);
+                const map = {};
+                (vData.items || []).forEach(it => {
+                    map[it.id] = { views: Number(it.statistics?.viewCount) || 0, duration: it.contentDetails?.duration || '' };
+                });
+                for (const v of batch) {
+                    const d = map[v.id] || { views: 0, duration: '' };
+                    const sec = parseDurationSeconds(d.duration);
+                    enriched.push({ ...v, views: d.views, durationSec: sec, videoType: classifyVideo(sec), game: '未知游戏', download: '' });
+                }
+            }
+            return enriched;
+        }
+
+        // ==========================================
+        // 主表格
+        // ==========================================
+        function getFilteredRows() {
+            const q = state.filters.query.toLowerCase().trim();
+            const minV = state.filters.minViews !== '' ? Number(state.filters.minViews) : null;
+            const maxV = state.filters.maxViews !== '' ? Number(state.filters.maxViews) : null;
+            let list = state.rows.filter(r => {
+                if (q && !(r.game || '').toLowerCase().includes(q) && !(r.title || '').toLowerCase().includes(q) && !(r.channel || '').toLowerCase().includes(q)) return false;
+                if (minV !== null && r.views <= minV) return false;
+                if (maxV !== null && r.views > maxV) return false;
+                if (state.filters.videoType !== 'all' && r.videoType !== state.filters.videoType) return false;
+                return true;
+            });
+            const collator = new Intl.Collator('zh-CN', { numeric: true });
+            return list.sort((a, b) => {
+                const va = a[state.sortKey] ?? '', vb = b[state.sortKey] ?? '';
+                if (state.sortKey === 'views') return (Number(va) - Number(vb)) * state.sortDir;
+                return collator.compare(String(va), String(vb)) * state.sortDir;
+            });
+        }
+        function sortArrow(key) {
+            if (state.sortKey !== key) return '';
+            return state.sortDir > 0 ? ' ▲' : ' ▼';
+        }
+        function renderMainView() {
+            const container = document.getElementById('video-content-container');
+            const rows = getFilteredRows();
+            document.getElementById('badge-total-videos').textContent = `${rows.length} / ${state.rows.length} 条`;
+            updateHeaderStats();
+
+            if (state.groupByApp) {
+                const groups = {};
+                rows.forEach(r => {
+                    const g = r.game || '未知游戏';
+                    if (!groups[g]) groups[g] = { app: g, views: 0, rows: [] };
+                    groups[g].views += (r.views || 0); groups[g].rows.push(r);
+                });
+                const sorted = Object.values(groups).sort((a, b) => b.views - a.views);
+                container.innerHTML = sorted.map((g, idx) => `
+      <div class="accordion-group">
+        <div class="accordion-header" data-acc-toggle>
+          <span>${esc(g.app)}（${g.rows.length} 个视频）</span>
+          <span>总播放 <strong>${formatViews(g.views)}</strong> ↕</span>
+        </div>
+        <div class="accordion-body ${idx === 0 ? '' : 'hidden'}">${renderTableHTML(g.rows)}</div>
+      </div>
+    `).join('') || '<div style="text-align:center;padding:2rem;color:var(--text-secondary);">暂无数据</div>';
+                container.querySelectorAll('[data-acc-toggle]').forEach(el => {
+                    el.addEventListener('click', () => el.nextElementSibling.classList.toggle('hidden'));
+                });
+            } else {
+                container.innerHTML = renderTableHTML(rows);
+            }
+            bindTableEvents(container);
+        }
+        function renderTableHTML(rows) {
+            if (rows.length === 0) {
+                return state.rows.length === 0
+                    ? '<div style="text-align:center;padding:2.5rem 1rem;color:var(--text-secondary);"><div style="font-size:32px;margin-bottom:8px;">📭</div>还没有数据，先在上方添加频道并抓取视频</div>'
+                    : '<div style="text-align:center;padding:2.5rem 1rem;color:var(--text-secondary);"><div style="font-size:32px;margin-bottom:8px;">🔍</div>没有符合当前筛选条件的视频</div>';
+            }
+            const allChecked = rows.every(r => state.selectedUrls.has(r.url));
+            return `
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:32px;"><input type="checkbox" id="check-all" ${allChecked ? 'checked' : ''} /></th>
+          <th style="width:130px;" class="sortable" data-key="game">游戏 / APP${sortArrow('game')}</th>
+          <th style="width:80px;" class="sortable" data-key="videoType">类型${sortArrow('videoType')}</th>
+          <th style="width:66px;">封面</th>
+          <th class="sortable" data-key="title">标题${sortArrow('title')}</th>
+          <th style="width:110px;" class="sortable" data-key="channel">频道${sortArrow('channel')}</th>
+          <th style="width:80px;" class="sortable" data-key="views">播放量${sortArrow('views')}</th>
+          <th style="width:90px;" class="sortable" data-key="published">时间${sortArrow('published')}</th>
+          <th style="width:150px;">下载链接</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr data-url="${esc(r.url)}">
+            <td><input type="checkbox" class="row-check" ${state.selectedUrls.has(r.url) ? 'checked' : ''} /></td>
+            <td><input type="text" class="input input-sm edit-game" value="${esc(r.game)}" /></td>
+            <td>
+              <select class="input input-sm edit-type">
+                <option value="Video" ${r.videoType === 'Video' ? 'selected' : ''}>Video</option>
+                <option value="Shorts" ${r.videoType === 'Shorts' ? 'selected' : ''}>Shorts</option>
+                <option value="待确认" ${r.videoType === '待确认' ? 'selected' : ''}>待确认</option>
+              </select>
+            </td>
+            <td><a href="${esc(r.url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb)}" alt="" style="width:3.2rem;height:1.9rem;object-fit:cover;border-radius:4px;border:1px solid var(--border);" /></a></td>
+            <td><a href="${esc(r.url)}" target="_blank" rel="noopener" class="truncate" style="color:var(--text);text-decoration:none;">${esc(r.title)}</a></td>
+            <td class="text-secondary">${esc(r.channel)}</td>
+            <td style="font-weight:600;color:var(--primary);">${formatViews(r.views)}</td>
+            <td class="text-secondary">${esc(r.published)}</td>
+            <td><input type="text" class="input input-sm edit-down" value="${esc(r.download || '')}" placeholder="添加链接..." /></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+        }
+        function bindTableEvents(container) {
+            container.querySelector('#check-all')?.addEventListener('change', (e) => {
+                getFilteredRows().forEach(r => e.target.checked ? state.selectedUrls.add(r.url) : state.selectedUrls.delete(r.url));
+                updateSelectedUI(); renderMainView();
+            });
+            container.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const k = th.dataset.key;
+                    state.sortDir = state.sortKey === k ? -state.sortDir : -1;
+                    state.sortKey = k; renderMainView();
+                });
+            });
+            container.querySelectorAll('tbody tr').forEach(tr => {
+                const url = tr.dataset.url;
+                tr.querySelector('.row-check')?.addEventListener('change', (e) => {
+                    e.target.checked ? state.selectedUrls.add(url) : state.selectedUrls.delete(url);
+                    updateSelectedUI();
+                });
+                tr.querySelector('.edit-game')?.addEventListener('blur', (e) => {
+                    state.rows = state.rows.map(r => r.url === url ? { ...r, game: e.target.value.trim() } : r);
+                    localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                });
+                tr.querySelector('.edit-type')?.addEventListener('change', (e) => {
+                    state.rows = state.rows.map(r => r.url === url ? { ...r, videoType: e.target.value } : r);
+                    localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                });
+                tr.querySelector('.edit-down')?.addEventListener('blur', (e) => {
+                    state.rows = state.rows.map(r => r.url === url ? { ...r, download: e.target.value.trim() } : r);
+                    localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                });
+            });
+        }
+        function updateSelectedUI() {
+            const count = state.selectedUrls.size;
+            document.getElementById('count-selected-videos').textContent = count;
+            const bar = document.getElementById('batch-bar');
+            if (count > 0) bar.classList.remove('hidden'), requestAnimationFrame(() => bar.classList.add('visible'));
+            else bar.classList.remove('visible'), setTimeout(() => { if (state.selectedUrls.size === 0) bar.classList.add('hidden'); }, 220);
+            syncRecommendationSection();
+        }
+
+        // ==========================================
+        // 推荐
+        // ==========================================
+        function renderReadonlyTable(rows) {
+            if (!rows.length) return '<div style="text-align:center;padding:1.5rem;color:var(--text-secondary);font-size:12px;">暂无推荐结果</div>';
+            return `
+    <table class="table">
+      <thead><tr><th>封面</th><th>标题</th><th>频道</th><th>播放量</th><th>发布时间</th><th></th></tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td style="width:66px;"><a href="${esc(r.url)}" target="_blank" rel="noopener"><img src="${esc(r.thumb)}" alt="" style="width:3.2rem;height:1.9rem;object-fit:cover;border-radius:4px;border:1px solid var(--border);" /></a></td>
+            <td><a href="${esc(r.url)}" target="_blank" rel="noopener" class="truncate" style="color:var(--text);text-decoration:none;">${esc(r.title)}</a></td>
+            <td class="text-secondary">${esc(r.channel)}</td>
+            <td style="font-weight:600;color:var(--primary);">${formatViews(r.views)}</td>
+            <td class="text-secondary">${esc(r.published)}</td>
+            <td><a href="${esc(r.url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">打开</a></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+        }
+        function syncRecommendationSection() {
+            const selected = state.rows.filter(r => state.selectedUrls.has(r.url));
+            state.recSources = selected;
+            const section = document.getElementById('section-recommendations');
+            document.getElementById('rec-count-badge').textContent = `${selected.length} 条`;
+
+            if (selected.length === 0) { section.classList.add('hidden'); return; }
+            if (!selected.some(s => s.url === state.activeRecUrl)) state.activeRecUrl = selected[0].url;
+            const active = selected.find(s => s.url === state.activeRecUrl) || selected[0];
+
+            if (!state.recTags[active.url]) {
+                const tags = [];
+                if (active.game && active.game !== '未知游戏') tags.push(active.game);
+                const fw = (active.title || '').split(/\s+/)[0];
+                if (fw) tags.push(fw);
+                state.recTags[active.url] = tags;
+            }
+
+            document.getElementById('rec-workspace').innerHTML = `
+    <div class="flex gap-2" style="overflow-x:auto;padding-bottom:8px;border-bottom:1px solid var(--border);">
+      ${selected.map((s, i) => `
+        <button class="btn btn-sm ${s.url === active.url ? 'btn-primary' : 'btn-outline'}" data-rec-url="${esc(s.url)}">
+          ${i + 1}. ${esc(s.game !== '未知游戏' ? s.game : s.title.slice(0, 12))}
+        </button>
+      `).join('')}
+    </div>
+    <div class="rec-source-card">
+      <div class="flex items-center justify-between gap-3" style="flex-wrap:wrap;">
+        <div class="flex-1" style="min-width:200px;">
+          <div class="text-xs text-secondary" style="margin-bottom:2px;">原视频</div>
+          <div class="font-semibold" style="font-size:13px;">${esc(active.title)}</div>
+          <div class="text-xs" style="margin-top:6px;">
+            <span class="text-secondary">标签：</span>
+            ${state.recTags[active.url].map(t => `<span class="badge" style="margin-right:4px;">${esc(t)}</span>`).join('')}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" data-run-rec="${esc(active.url)}">🔍 检索同款</button>
+      </div>
+    </div>
+    <div style="margin-top:8px;">${renderReadonlyTable(state.recResults[active.url] || [])}</div>
+  `;
+
+            document.querySelectorAll('[data-rec-url]').forEach(btn => {
+                btn.addEventListener('click', () => { state.activeRecUrl = btn.dataset.recUrl; syncRecommendationSection(); });
+            });
+            document.querySelector('[data-run-rec]')?.addEventListener('click', (e) => {
+                runSingleRec(e.currentTarget.dataset.runRec);
+            });
+        }
+        async function runSingleRec(url) {
+            const source = state.recSources.find(s => s.url === url);
+            if (!source) return;
+            const tags = state.recTags[url] || [];
+            if (tags.length === 0) { showToast('该视频没有可用搜索标签', true); return; }
+            showToast('正在检索...');
+            try {
+                const q = tags.join(' ');
+                const oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                const sData = await ytFetch(`${YT_BASE}/search?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=15&order=viewCount&publishedAfter=${oneYearAgo.toISOString()}`);
+                const items = sData.items || [];
+                if (items.length === 0) { state.recResults[url] = []; syncRecommendationSection(); showToast('未检索到结果'); return; }
+                const ids = items.map(i => i.id.videoId).join(',');
+                const vData = await ytFetch(`${YT_BASE}/videos?part=statistics&id=${ids}`);
+                const statMap = {};
+                (vData.items || []).forEach(it => statMap[it.id] = Number(it.statistics?.viewCount) || 0);
+                state.recResults[url] = items.map(it => ({
+                    url: `https://www.youtube.com/watch?v=${it.id.videoId}`, title: it.snippet.title,
+                    channel: it.snippet.channelTitle, thumb: it.snippet.thumbnails?.medium?.url || '',
+                    published: it.snippet.publishedAt.slice(0, 10), views: statMap[it.id.videoId] || 0,
+                })).sort((a, b) => b.views - a.views);
+                syncRecommendationSection();
+                showToast(`获取 ${state.recResults[url].length} 条推荐`);
+            } catch (e) { showToast('推荐失败：' + e.message, true, 4000); }
+        }
+
+        // ==========================================
+        // 导出
+        // ==========================================
+        function csvCell(s) { return '"' + String(s ?? '').replace(/"/g, '""') + '"'; }
+        function exportData(type) {
+            const rows = getFilteredRows();
+            const headers = ['游戏/APP', '类型', '标题', '频道', '播放量', '发布时间', '视频链接', '下载链接', '封面'];
+            if (type === 'csv') {
+                const lines = [headers.map(csvCell).join(',')];
+                rows.forEach(r => lines.push([r.game, r.videoType, r.title, r.channel, r.views, r.published, r.url, r.download, r.thumb].map(csvCell).join(',')));
+                const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gametube-export.csv'; a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            } else {
+                const aoa = [headers, ...rows.map(r => [r.game, r.videoType, r.title, r.channel, r.views, r.published, r.url, r.download, r.thumb])];
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '监测');
+                XLSX.writeFile(wb, 'gametube-export.xlsx');
+            }
+            showToast(`已导出 ${rows.length} 条`);
+        }
+
+        // ==========================================
+        // AI 识别
+        // ==========================================
+        async function aiIdentifyGame(video) {
+            if (!GEMINI_API_KEY) {
+                throw new Error('未配置 Gemini API Key（请在代码顶部 GEMINI_API_KEY 常量中填入）');
+            }
+            const prompt = `从以下YouTube游戏视频标题中识别游戏或APP名称。只返回名称本身，无法确定则返回"未知游戏"。\n标题: ${video.title}`;
+            const res = await fetch(`${GEMINI_BASE}?key=${GEMINI_API_KEY}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 30 } }),
+            });
+            if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+            const data = await res.json();
+            return (data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '未知游戏').replace(/^["'「『]|["'」』]$/g, '').slice(0, 50);
+        }
+
+        // ==========================================
+        // 初始化
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            updateKeyStatus();
+
+            // 清理旧版本遗留的密钥记录（防止残留）
+            try { localStorage.removeItem('yt_api_key'); localStorage.removeItem('gemini_api_key'); } catch { }
+
+            let ft;
+            const onFilter = () => {
+                clearTimeout(ft);
+                ft = setTimeout(() => {
+                    state.filters.query = document.getElementById('filter-query').value;
+                    state.filters.minViews = document.getElementById('filter-min-views').value;
+                    state.filters.maxViews = document.getElementById('filter-max-views').value;
+                    state.filters.videoType = document.getElementById('filter-video-type').value;
+                    renderMainView();
+                }, 200);
+            };
+            ['filter-query', 'filter-min-views', 'filter-max-views', 'filter-video-type'].forEach(id => {
+                document.getElementById(id)?.addEventListener('input', onFilter);
+                document.getElementById(id)?.addEventListener('change', onFilter);
+            });
+
+            document.getElementById('btn-toggle-advanced-filter').addEventListener('click', (e) => {
+                const af = document.getElementById('advanced-filter');
+                const hidden = af.classList.toggle('hidden');
+                e.currentTarget.textContent = hidden ? '筛选 ▾' : '筛选 ▴';
+            });
+
+            document.getElementById('btn-reset-filters').addEventListener('click', () => {
+                document.getElementById('filter-query').value = '';
+                document.getElementById('filter-min-views').value = '';
+                document.getElementById('filter-max-views').value = '';
+                document.getElementById('filter-video-type').value = 'all';
+                state.filters = { query: '', minViews: '', maxViews: '', videoType: 'all' };
+                renderMainView();
+            });
+
+            document.getElementById('btn-toggle-app-grouping').addEventListener('click', (e) => {
+                state.groupByApp = !state.groupByApp;
+                e.currentTarget.textContent = state.groupByApp ? '平铺列表' : '按 APP 归纳';
+                renderMainView();
+            });
+
+            // 抓取
+            document.getElementById('btn-start-fetch').addEventListener('click', async () => {
+                const sel = state.channels.filter(c => state.selectedChannelIds.has(c.id));
+                if (sel.length === 0) { showToast('请先勾选频道', true); return; }
+                const period = document.getElementById('select-capture-period').value;
+                const msg = document.getElementById('fetch-progress-msg');
+                const btn = document.getElementById('btn-start-fetch');
+                btn.disabled = true;
+                let all = []; const errors = [];
+                for (let i = 0; i < sel.length; i++) {
+                    msg.textContent = `抓取中 ${i + 1}/${sel.length} · ${sel[i].title}`;
+                    try { all.push(...await fetchVideosFromChannel(sel[i], period, 25)); }
+                    catch (e) { errors.push(`${sel[i].title}: ${e.message}`); }
+                }
+                const seen = new Set();
+                state.rows = all.filter(r => !seen.has(r.url) && (seen.add(r.url), true));
+                localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                msg.textContent = `✅ 完成 ${state.rows.length} 条${errors.length ? `（${errors.length} 个频道失败）` : ''}`;
+                if (errors.length) showToast('部分失败：' + errors[0], true, 4500);
+                else showToast(`抓取完成，共 ${state.rows.length} 条`);
+                btn.disabled = false;
+                renderMainView(); updateSelectedUI(); updateOnboarding();
+            });
+
+            // 补全类型
+            document.getElementById('btn-refresh-types').addEventListener('click', async () => {
+                const targets = state.rows.filter(r => r.videoType === '待确认' || !r.durationSec);
+                if (targets.length === 0) { showToast('所有视频已识别类型'); return; }
+                const btn = document.getElementById('btn-refresh-types');
+                btn.disabled = true;
+                let done = 0;
+                try {
+                    for (let i = 0; i < targets.length; i += 50) {
+                        const batch = targets.slice(i, i + 50);
+                        const ids = batch.map(r => new URL(r.url).searchParams.get('v')).filter(Boolean).join(',');
+                        if (!ids) continue;
+                        const vData = await ytFetch(`${YT_BASE}/videos?part=contentDetails&id=${ids}`);
+                        const map = {};
+                        (vData.items || []).forEach(it => map[it.id] = it.contentDetails?.duration || '');
+                        state.rows = state.rows.map(r => {
+                            const vid = new URL(r.url).searchParams.get('v');
+                            if (!map[vid]) return r;
+                            const sec = parseDurationSeconds(map[vid]);
+                            return { ...r, durationSec: sec, videoType: classifyVideo(sec) };
+                        });
+                        done += batch.length;
+                        btn.textContent = `补全 ${done}/${targets.length}`;
+                    }
+                    localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                    renderMainView(); showToast(`补全 ${done} 条`);
+                } catch (e) { showToast('补全失败：' + e.message, true, 4000); }
+                finally { btn.disabled = false; btn.textContent = '补全类型'; }
+            });
+
+            // 添加频道
+            document.getElementById('btn-add-channel').addEventListener('click', async () => {
+                const input = document.getElementById('input-channel');
+                const val = input.value.trim();
+                if (!val) return;
+                const parts = val.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                let added = 0, failed = 0;
+                const btn = document.getElementById('btn-add-channel');
+                btn.disabled = true;
+                for (const p of parts) {
+                    try {
+                        const ch = await resolveChannel(p);
+                        if (!state.channels.some(c => c.id === ch.id)) {
+                            state.channels.push(ch); state.selectedChannelIds.add(ch.id); added++;
+                        }
+                    } catch { failed++; }
+                }
+                localStorage.setItem(STORAGE.CHANNELS, JSON.stringify(state.channels));
+                localStorage.setItem(STORAGE.SELECTED_CHANNELS, JSON.stringify([...state.selectedChannelIds]));
+                input.value = ''; renderChannels(); updateOnboarding(); updateHeaderStats();
+                btn.disabled = false;
+                if (added) showToast(`添加 ${added} 个频道${failed ? `，${failed} 个失败` : ''}`);
+                else if (failed) showToast('添加失败，请检查输入或 API 配额', true);
+            });
+
+            document.getElementById('btn-select-all-channels').addEventListener('click', () => {
+                state.channels.forEach(c => state.selectedChannelIds.add(c.id));
+                localStorage.setItem(STORAGE.SELECTED_CHANNELS, JSON.stringify([...state.selectedChannelIds]));
+                renderChannels();
+            });
+            document.getElementById('btn-deselect-all-channels').addEventListener('click', () => {
+                state.selectedChannelIds.clear();
+                localStorage.setItem(STORAGE.SELECTED_CHANNELS, JSON.stringify([]));
+                renderChannels();
+            });
+
+            function renderChannels() {
+                const c = document.getElementById('channel-chips-container');
+                const hint = document.getElementById('channel-count-hint');
+                if (state.channels.length === 0) {
+                    c.innerHTML = '<span class="text-xs text-secondary" style="font-style:italic;">暂无频道，请在上方输入添加</span>';
+                    hint.textContent = '未添加频道';
+                    return;
+                }
+                hint.textContent = `已选 ${state.selectedChannelIds.size} / 共 ${state.channels.length} 个频道`;
+                c.innerHTML = state.channels.map(ch => `
+      <label class="badge" style="cursor:pointer;padding:.3rem .55rem;">
+        <input type="checkbox" data-ch-id="${esc(ch.id)}" ${state.selectedChannelIds.has(ch.id) ? 'checked' : ''} />
+        <strong style="margin-left:4px;font-weight:500;">${esc(ch.title)}</strong>
+      </label>
+    `).join('');
+                c.querySelectorAll('[data-ch-id]').forEach(cb => {
+                    cb.addEventListener('change', (e) => {
+                        const id = e.target.dataset.chId;
+                        e.target.checked ? state.selectedChannelIds.add(id) : state.selectedChannelIds.delete(id);
+                        localStorage.setItem(STORAGE.SELECTED_CHANNELS, JSON.stringify([...state.selectedChannelIds]));
+                        hint.textContent = `已选 ${state.selectedChannelIds.size} / 共 ${state.channels.length} 个频道`;
+                    });
+                });
+            }
+
+            document.getElementById('btn-export-csv').onclick = () => exportData('csv');
+            document.getElementById('btn-export-xlsx').onclick = () => exportData('xlsx');
+
+            // 粘性条
+            document.getElementById('btn-batch-ai-identify').addEventListener('click', async () => {
+                if (!GEMINI_API_KEY) {
+                    showToast('未配置 Gemini Key（代码顶部 GEMINI_API_KEY 常量）', true, 4000);
+                    return;
+                }
+                const targets = state.rows.filter(r => state.selectedUrls.has(r.url) && (!r.game || r.game === '未知游戏'));
+                if (targets.length === 0) { showToast('勾选项中均已有游戏名'); return; }
+                const btn = document.getElementById('btn-batch-ai-identify');
+                btn.disabled = true;
+                let done = 0, success = 0;
+                for (const row of targets) {
+                    done++;
+                    btn.textContent = `识别中 ${done}/${targets.length}`;
+                    try {
+                        const game = await aiIdentifyGame(row);
+                        if (game && game !== '未知游戏') {
+                            state.rows = state.rows.map(r => r.url === row.url ? { ...r, game } : r);
+                            success++;
+                        }
+                    } catch (e) {
+                        if (/API key|quota|400|403/.test(e.message)) { showToast('中断：' + e.message, true, 4000); break; }
+                    }
+                    await new Promise(r => setTimeout(r, 350));
+                }
+                localStorage.setItem(STORAGE.ROWS, JSON.stringify(state.rows));
+                renderMainView(); updateSelectedUI();
+                btn.disabled = false; btn.textContent = '🤖 AI 识别游戏';
+                showToast(`完成 ${success}/${targets.length}`);
+            });
+
+            document.getElementById('btn-scroll-to-rec').addEventListener('click', () => {
+                const sec = document.getElementById('section-recommendations');
+                sec.classList.remove('hidden');
+                syncRecommendationSection();
+                sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            document.getElementById('btn-clear-selection').addEventListener('click', () => {
+                state.selectedUrls.clear();
+                updateSelectedUI(); renderMainView();
+            });
+
+            document.getElementById('btn-close-rec').addEventListener('click', () => {
+                document.getElementById('section-recommendations').classList.add('hidden');
+            });
+
+            // 初始化渲染
+            renderChannels(); renderMainView(); updateSelectedUI(); updateOnboarding(); updateHeaderStats();
+        });
+    </script>
+</body>
+
+</html>
