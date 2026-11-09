@@ -1,15 +1,15 @@
 // ================== AI 处理器类 ==================
 class AITitleProcessor {
     constructor() {
-        this.apiKey = "REMOVED_SECRET";
-        this.apiUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+        // 请求你自己的后端
+        this.apiUrl = "https://tower-pc.tail3cd725.ts.net/other/api/ai/chat";
     }
     async getAIResponse(prompt, retries = 2) {
         for (let i = 0; i <= retries; i++) {
             try {
                 const response = await fetch(this.apiUrl, {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "deepseek-v4-1-flash-260910",
                         messages: [{ role: "user", content: prompt }],
@@ -18,13 +18,13 @@ class AITitleProcessor {
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
-                const content = result.choices?.[0]?.message?.content?.trim();
+                const content = result.content?.trim();
                 if (content) return content;
                 throw new Error("Empty response");
             } catch (error) {
                 console.error(`AI请求错误 (尝试 ${i + 1}/${retries + 1}):`, error);
                 if (i === retries) throw error;
-                await delay(500);
+                await new Promise(r => setTimeout(r, 500));
             }
         }
     }

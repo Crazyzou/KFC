@@ -14,20 +14,19 @@ let cardState = {};
 let pendingTtsItems = [];
 let pendingTranslateItems = null;
 let voiceListCache = { google: [], aliyun: [] };
-let ttsFailedMap = {};   // transId -> 错误信息（用于单条重试按钮）
+let ttsFailedMap = {};
 const TTS_SETTINGS_KEY = 'tts_settings';
 
 /* ============================================================
- * AI 翻译配置（DeepSeek / 火山引擎方舟）
+ * AI 翻译配置（走自建后端）
  * ============================================================ */
 const AI_CONFIG = {
-    apiKey: 'REMOVED_SECRET',
-    apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+    apiUrl: `${BASE}/api/ai/chat`,
     model: 'deepseek-v4-1-flash-260910'
 };
-const AI_TRANSLATE_MAX_CHARS = 8000;   // 单块最大字符数，块间并行
-const AI_TRANSLATE_TIMEOUT = 90000;    // 单次请求超时 90s
-const TRANSLATE_TWO_PASS = true;   // 两段式：直译 → 本地化重写；关掉则只跑第一段
+const AI_TRANSLATE_MAX_CHARS = 8000;
+const AI_TRANSLATE_TIMEOUT = 90000;
+const TRANSLATE_TWO_PASS = true;
 
 /* 语言别名 → 中文名 */
 const LANG_CODE_MAP = {
@@ -303,10 +302,6 @@ function getLangName(c) {
     return m[k] || c || '未知';
 }
 
-/**
- * 把用户输入的语种 token（中文名 / 代码）解析为内部语言代码。
- * 优先复用 items 里已有的语言代码，避免 zh/cn、ja/jp 这类别名被改写。
- */
 function resolveLangCode(token, items) {
     const raw = String(token || '').trim();
     if (!raw) return '';
@@ -841,7 +836,6 @@ function updateTransLine(transId, idx, val) {
     }
 }
 
-/* 一键复制原文（跳过已删除行和空行） */
 function copyOriginText(textId) {
     const t = textList.find(x => x.id === textId);
     if (!t) return;
@@ -855,7 +849,6 @@ function copyOriginText(textId) {
     copyText(parts.join('\n'), `已复制原文 ${parts.length} 行`);
 }
 
-/* 追加一行原文并自动聚焦 */
 function addOriginLine(textId) {
     const t = textList.find(x => x.id === textId);
     if (!t) return;
@@ -908,9 +901,12 @@ function switchLangTab(textId, lang) {
     });
 }
 
+/* ★ 改：复制成功才标绿 */
 function copyLine(transId, idx, btn) {
     const t = transList.find(x => x.id === transId);
     if (!t || !t.lines || t.lines[idx] === undefined) return;
+    const ok = copyText(t.lines[idx]);
+    if (!ok) return;
     if (btn) {
         btn.classList.add('done');
         btn.textContent = '已复制 ✓';
@@ -919,7 +915,6 @@ function copyLine(transId, idx, btn) {
     }
     markCopied(transId, idx);
     updateLangTab(transId);
-    copyText(t.lines[idx]);
 }
 function updateLangTab(transId) {
     const t = transList.find(x => x.id === transId);
@@ -1013,7 +1008,7 @@ function seekInline(e, transId) {
 }
 
 /* ============================================================
- * AI 调用 / 整体翻译（本土化）
+ * AI 调用（兼容 {content} 和火山原始格式）
  * ============================================================ */
 async function aiChat(prompt, { temperature = 0.3, retries = 2, timeout = AI_TRANSLATE_TIMEOUT } = {}) {
     for (let i = 0; i <= retries; i++) {
@@ -1022,10 +1017,7 @@ async function aiChat(prompt, { temperature = 0.3, retries = 2, timeout = AI_TRA
             const timer = setTimeout(() => controller.abort(), timeout);
             const res = await fetch(AI_CONFIG.apiUrl, {
                 method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${AI_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: AI_CONFIG.model,
                     messages: [{ role: 'user', content: prompt }],
@@ -1034,14 +1026,16 @@ async function aiChat(prompt, { temperature = 0.3, retries = 2, timeout = AI_TRA
                 signal: controller.signal
             });
             clearTimeout(timer);
-            if (!res.ok) {
-                const et = await res.text().catch(() => '');
-                throw new Error('HTTP ' + res.status + (et ? ' ' + et.slice(0, 120) : ''));
-            }
+
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
             const json = await res.json();
-            const content = json.choices && json.choices[0] && json.choices[0].message
-                ? String(json.choices[0].message.content || '').trim()
-                : '';
+            // ★ 兼容两种返回格式：服务端简化 {content} 或火山原始 {choices[0].message.content}
+            const content = (
+                json.content
+                || (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content)
+                || ''
+            ).trim();
             if (!content) throw new Error('Empty response');
             return content;
         } catch (err) {
@@ -1179,12 +1173,10 @@ async function translateTextItem(textItem, langName, langCode) {
     const chunkResults = await Promise.all(chunks.map(async chunk => {
         const nos = chunk.map(c => c.no);
 
-        // Pass 1：本地化翻译（temperature 0.6）
         const prompt = buildTranslatePrompt(chunk, langName, langCode);
         const raw = await aiChat(prompt, { temperature: 0.6, timeout: AI_TRANSLATE_TIMEOUT });
         let map = parseNumberedTranslation(raw, nos);
 
-        // Pass 2：本地化重写（temperature 0.7）；失败则回退到 Pass 1
         if (TRANSLATE_TWO_PASS) {
             try {
                 const polishPrompt = buildPolishPrompt(chunk, map, langName, langCode);
@@ -1211,8 +1203,9 @@ async function translateTextItem(textItem, langName, langCode) {
     }
     return out;
 }
+
 /* ============================================================
- * 翻译入口（整体翻译 + 多语言并行）
+ * 翻译入口
  * ============================================================ */
 function singleTranslate(textId) {
     const t = textList.find(x => x.id === textId);
@@ -1500,8 +1493,6 @@ async function playVoiceDemo() {
 /* ============================================================
  * 语音生成
  * ============================================================ */
-
-/* 根据 transId 还原 TTS item（含无译文时的伪条目 orig_<textId>） */
 function getTtsItemById(transId) {
     const t = transList.find(x => x.id === transId);
     if (t) return t;
@@ -1621,7 +1612,6 @@ async function generateTtsForTrans(item, voice, model, interval, useTextName, ma
     return { success: false, item, error: lastErr };
 }
 
-/* 单条重试：仅重新生成某个 transId 的语音 */
 async function retryTtsSingle(transId, btn) {
     const item = getTtsItemById(transId);
     if (!item) return showToast('找不到该译文', 'warning');
@@ -1671,8 +1661,9 @@ async function executeTts() {
     if (!voice) return showToast('请选择音色', 'warning');
     if (pendingTtsItems.length === 0) return showToast('没有待处理的条目', 'warning');
 
-    /* —— 应用「目标语种」输入 —— */
-    const langRaw = (document.getElementById('ttsLangInput').value || '').trim();
+    /* ★ 判空：ttsLangInput 可能不存在 */
+    const langEl = document.getElementById('ttsLangInput');
+    const langRaw = (langEl && langEl.value || '').trim();
     if (langRaw) {
         const tokens = langRaw.split(/[,，、;；\/\s]+/).map(s => s.trim()).filter(Boolean);
         if (tokens.length === 1) {
